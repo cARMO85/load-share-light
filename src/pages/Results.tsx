@@ -23,7 +23,10 @@ const Results: React.FC = () => {
     let partnerVisibleTime = 0;
     let partnerMentalLoad = 0;
 
-    state.taskResponses.forEach(response => {
+    // Filter out not applicable tasks
+    const applicableResponses = state.taskResponses.filter(response => !response.notApplicable);
+
+    applicableResponses.forEach(response => {
       const task = taskLookup[response.taskId];
       if (!task) return;
 
@@ -31,29 +34,26 @@ const Results: React.FC = () => {
       const mentalWeight = task.mental_load_weight;
 
       if (response.assignment === 'me') {
-        const share = (response.personalShare || 8) / 10;
-        myVisibleTime += minutes * share;
-        myMentalLoad += minutes * mentalWeight * share;
-        
-        if (state.householdSetup.adults === 2) {
-          partnerVisibleTime += minutes * (1 - share);
-          partnerMentalLoad += minutes * mentalWeight * (1 - share);
-        }
+        // Me: 100% to me, 0% to partner
+        myVisibleTime += minutes;
+        myMentalLoad += minutes * mentalWeight;
       } else if (response.assignment === 'partner') {
-        const partnerShare = (response.personalShare || 8) / 10;
-        partnerVisibleTime += minutes * partnerShare;
-        partnerMentalLoad += minutes * mentalWeight * partnerShare;
-        myVisibleTime += minutes * (1 - partnerShare);
-        myMentalLoad += minutes * mentalWeight * (1 - partnerShare);
-      } else { // shared
-        const halfMinutes = minutes / 2;
-        const halfMental = (minutes * mentalWeight) / 2;
-        myVisibleTime += halfMinutes;
-        myMentalLoad += halfMental;
+        // Partner: 0% to me, 100% to partner
+        if (state.householdSetup.adults === 2) {
+          partnerVisibleTime += minutes;
+          partnerMentalLoad += minutes * mentalWeight;
+        }
+      } else if (response.assignment === 'shared') {
+        // Shared: use mySharePercentage (default 50%)
+        const myShare = (response.mySharePercentage || 50) / 100;
+        const partnerShare = 1 - myShare;
+        
+        myVisibleTime += minutes * myShare;
+        myMentalLoad += minutes * mentalWeight * myShare;
         
         if (state.householdSetup.adults === 2) {
-          partnerVisibleTime += halfMinutes;
-          partnerMentalLoad += halfMental;
+          partnerVisibleTime += minutes * partnerShare;
+          partnerMentalLoad += minutes * mentalWeight * partnerShare;
         }
       }
     });

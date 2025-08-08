@@ -10,8 +10,9 @@ export interface HouseholdSetup {
 export interface TaskResponse {
   taskId: string;
   assignment: 'me' | 'shared' | 'partner';
-  personalShare?: number; // 6-10 scale when 'me' or 'partner' selected
+  mySharePercentage?: number; // 0-100 percentage when 'shared' selected
   estimatedMinutes: number; // user can edit the baseline
+  notApplicable?: boolean; // task not relevant to household
 }
 
 export interface AssessmentData {

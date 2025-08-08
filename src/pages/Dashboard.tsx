@@ -42,7 +42,10 @@ const Dashboard: React.FC = () => {
       categoryBreakdown[category] = { visible: 0, mental: 0 };
     });
 
-    state.taskResponses.forEach(response => {
+    // Filter out not applicable tasks
+    const applicableResponses = state.taskResponses.filter(response => !response.notApplicable);
+
+    applicableResponses.forEach(response => {
       const task = taskLookup[response.taskId];
       if (!task) return;
 
@@ -50,36 +53,36 @@ const Dashboard: React.FC = () => {
       const mentalWeight = task.mental_load_weight;
 
       if (response.assignment === 'me') {
-        const share = (response.personalShare || 8) / 10;
-        const visibleContrib = minutes * share;
-        const mentalContrib = minutes * mentalWeight * share;
+        // Me: 100% to me, 0% to partner
+        const visibleContrib = minutes;
+        const mentalContrib = minutes * mentalWeight;
         
         myVisibleTime += visibleContrib;
         myMentalLoad += mentalContrib;
         categoryBreakdown[task.category].visible += visibleContrib;
         categoryBreakdown[task.category].mental += mentalContrib;
-        
-        if (state.householdSetup.adults === 2) {
-          partnerVisibleTime += minutes * (1 - share);
-          partnerMentalLoad += minutes * mentalWeight * (1 - share);
-        }
       } else if (response.assignment === 'partner') {
-        const partnerShare = (response.personalShare || 8) / 10;
-        partnerVisibleTime += minutes * partnerShare;
-        partnerMentalLoad += minutes * mentalWeight * partnerShare;
-        myVisibleTime += minutes * (1 - partnerShare);
-        myMentalLoad += minutes * mentalWeight * (1 - partnerShare);
-      } else { // shared
-        const halfMinutes = minutes / 2;
-        const halfMental = (minutes * mentalWeight) / 2;
-        myVisibleTime += halfMinutes;
-        myMentalLoad += halfMental;
-        categoryBreakdown[task.category].visible += halfMinutes;
-        categoryBreakdown[task.category].mental += halfMental;
+        // Partner: 0% to me, 100% to partner
+        if (state.householdSetup.adults === 2) {
+          partnerVisibleTime += minutes;
+          partnerMentalLoad += minutes * mentalWeight;
+        }
+      } else if (response.assignment === 'shared') {
+        // Shared: use mySharePercentage (default 50%)
+        const myShare = (response.mySharePercentage || 50) / 100;
+        const partnerShare = 1 - myShare;
+        
+        const myVisibleContrib = minutes * myShare;
+        const myMentalContrib = minutes * mentalWeight * myShare;
+        
+        myVisibleTime += myVisibleContrib;
+        myMentalLoad += myMentalContrib;
+        categoryBreakdown[task.category].visible += myVisibleContrib;
+        categoryBreakdown[task.category].mental += myMentalContrib;
         
         if (state.householdSetup.adults === 2) {
-          partnerVisibleTime += halfMinutes;
-          partnerMentalLoad += halfMental;
+          partnerVisibleTime += minutes * partnerShare;
+          partnerMentalLoad += minutes * mentalWeight * partnerShare;
         }
       }
     });
@@ -246,10 +249,10 @@ const Dashboard: React.FC = () => {
           
           <Card className="text-center shadow-md border-0 bg-gradient-to-br from-accent/5 to-accent/10">
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-accent mb-2">
-                {state.taskResponses.length}
-              </div>
-              <div className="text-sm text-muted-foreground">Tasks Assessed</div>
+               <div className="text-2xl font-bold text-accent mb-2">
+                 {state.taskResponses.filter(r => !r.notApplicable).length}
+               </div>
+               <div className="text-sm text-muted-foreground">Tasks Assessed</div>
             </CardContent>
           </Card>
         </div>

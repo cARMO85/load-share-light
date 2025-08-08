@@ -9,7 +9,7 @@ import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks } from '@/data/tasks';
 import { TaskResponse } from '@/types/assessment';
-import { Clock, Brain, Users } from 'lucide-react';
+import { Clock, Brain, Users, Info, X } from 'lucide-react';
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
@@ -60,8 +60,9 @@ const TaskQuestionnaire: React.FC = () => {
 
     const newResponse = {
       taskId,
-      assignment: responses[taskId]?.assignment || 'shared',
+      assignment: responses[taskId]?.assignment || 'me',
       estimatedMinutes: responses[taskId]?.estimatedMinutes || task.baseline_minutes_week,
+      notApplicable: false,
       ...updates
     } as TaskResponse;
 
@@ -74,8 +75,31 @@ const TaskQuestionnaire: React.FC = () => {
     navigate('/results');
   };
 
-  const isComplete = relevantTasks.every(task => responses[task.id]?.assignment);
-  const completedTasks = relevantTasks.filter(task => responses[task.id]?.assignment).length;
+  const isSingleAdult = state.householdSetup.adults === 1;
+  const applicableTasks = relevantTasks.filter(task => !responses[task.id]?.notApplicable);
+  const isComplete = applicableTasks.every(task => 
+    responses[task.id]?.assignment || responses[task.id]?.notApplicable
+  );
+  const completedTasks = applicableTasks.filter(task => 
+    responses[task.id]?.assignment && !responses[task.id]?.notApplicable
+  ).length;
+
+  const getAssignmentLabels = () => {
+    if (isSingleAdult) {
+      return {
+        me: "Me",
+        shared: "Both of us", 
+        partner: "My partner"
+      };
+    }
+    return {
+      me: "Me",
+      shared: "Shared",
+      partner: "Partner"
+    };
+  };
+
+  const labels = getAssignmentLabels();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
@@ -89,24 +113,35 @@ const TaskQuestionnaire: React.FC = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             For each task, indicate who primarily handles it and estimate the time involved.
           </p>
+          {isSingleAdult && (
+            <p className="text-sm text-muted-foreground mt-2 max-w-2xl mx-auto">
+              Even if your partner isn't taking this assessment, you can still indicate their responsibilities.
+            </p>
+          )}
           <div className="mt-4 text-sm text-muted-foreground">
-            Progress: {completedTasks} of {relevantTasks.length} tasks completed
+            Progress: {completedTasks} of {applicableTasks.length} tasks completed
           </div>
         </div>
 
         <div className="space-y-6 mb-8">
           {relevantTasks.map((task) => {
             const response = responses[task.id];
-            const showSlider = response?.assignment === 'me' || response?.assignment === 'partner';
+            const showSlider = response?.assignment === 'shared' && !response?.notApplicable;
+            const isNotApplicable = response?.notApplicable;
             
             return (
-              <Card key={task.id} className="shadow-md border-0 bg-gradient-to-br from-card to-card/80">
+              <Card key={task.id} className={`shadow-md border-0 transition-all ${
+                isNotApplicable 
+                  ? 'opacity-50 bg-muted/50' 
+                  : 'bg-gradient-to-br from-card to-card/80'
+              }`}>
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-lg text-foreground flex items-center gap-2">
                         <Brain className="h-5 w-5 text-primary" />
                         {task.task_name}
+                        {isNotApplicable && <span className="text-muted-foreground">(Not Applicable)</span>}
                       </CardTitle>
                       <CardDescription className="mt-1">
                         Category: {task.category} • Mental load weight: {task.mental_load_weight}x
@@ -116,75 +151,105 @@ const TaskQuestionnaire: React.FC = () => {
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium mb-3 block">Who primarily handles this?</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={response?.assignment === 'me' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => updateResponse(task.id, { assignment: 'me', personalShare: 8 })}
-                        className="flex-1"
-                      >
-                        Me
-                      </Button>
-                      <Button
-                        variant={response?.assignment === 'shared' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => updateResponse(task.id, { assignment: 'shared' })}
-                        className="flex-1"
-                      >
-                        <Users className="h-4 w-4 mr-1" />
-                        Shared
-                      </Button>
-                      {state.householdSetup.adults === 2 && (
+                  {!isNotApplicable ? (
+                    <>
+                      <div>
+                        <Label className="text-sm font-medium mb-3 block">Who primarily handles this?</Label>
+                        <div className="flex gap-2 mb-2">
+                          <Button
+                            variant={response?.assignment === 'me' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => updateResponse(task.id, { assignment: 'me', mySharePercentage: undefined })}
+                            className="flex-1"
+                          >
+                            {labels.me}
+                          </Button>
+                          <Button
+                            variant={response?.assignment === 'shared' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => updateResponse(task.id, { assignment: 'shared', mySharePercentage: 50 })}
+                            className="flex-1"
+                          >
+                            <Users className="h-4 w-4 mr-1" />
+                            {labels.shared}
+                          </Button>
+                          <Button
+                            variant={response?.assignment === 'partner' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => updateResponse(task.id, { assignment: 'partner', mySharePercentage: undefined })}
+                            className="flex-1"
+                          >
+                            {labels.partner}
+                          </Button>
+                        </div>
                         <Button
-                          variant={response?.assignment === 'partner' ? 'default' : 'outline'}
+                          variant="ghost"
                           size="sm"
-                          onClick={() => updateResponse(task.id, { assignment: 'partner', personalShare: 8 })}
-                          className="flex-1"
+                          onClick={() => updateResponse(task.id, { notApplicable: true })}
+                          className="w-full text-muted-foreground hover:text-foreground"
                         >
-                          Partner
+                          <X className="h-4 w-4 mr-1" />
+                          Not applicable to my household
                         </Button>
-                      )}
-                    </div>
-                  </div>
+                      </div>
 
-                  {showSlider && (
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">
-                        How much do you handle? (Scale: 6 = barely any, 10 = almost all)
-                      </Label>
-                      <div className="px-3">
-                        <Slider
-                          value={[response?.personalShare || 8]}
-                          onValueChange={([value]) => updateResponse(task.id, { personalShare: value })}
-                          min={6}
-                          max={10}
-                          step={1}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                          <span>Minimal</span>
-                          <span className="font-medium">{response?.personalShare}/10</span>
-                          <span>Almost all</span>
+                      {showSlider && (
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">
+                            What percentage do you handle? ({response?.mySharePercentage || 50}%)
+                          </Label>
+                          <div className="px-3">
+                            <Slider
+                              value={[response?.mySharePercentage || 50]}
+                              onValueChange={([value]) => updateResponse(task.id, { mySharePercentage: value })}
+                              min={0}
+                              max={100}
+                              step={5}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                              <span>Partner does it all</span>
+                              <span>50/50</span>
+                              <span>I do it all</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <Label className="text-sm font-medium">Estimated minutes per week:</Label>
+                          <Input
+                            type="number"
+                            value={response?.estimatedMinutes || task.baseline_minutes_week}
+                            onChange={(e) => updateResponse(task.id, { 
+                              estimatedMinutes: parseInt(e.target.value) || task.baseline_minutes_week 
+                            })}
+                            className="w-20"
+                            min="0"
+                          />
+                        </div>
+                        <div className="flex items-start gap-2 text-xs text-muted-foreground pl-7">
+                          <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <div>Typical range: {task.time_range}</div>
+                            <div>Source: {task.source_details}</div>
+                          </div>
                         </div>
                       </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateResponse(task.id, { notApplicable: false })}
+                      >
+                        Mark as applicable
+                      </Button>
                     </div>
                   )}
-
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-sm font-medium">Estimated minutes per week:</Label>
-                    <Input
-                      type="number"
-                      value={response?.estimatedMinutes || task.baseline_minutes_week}
-                      onChange={(e) => updateResponse(task.id, { 
-                        estimatedMinutes: parseInt(e.target.value) || task.baseline_minutes_week 
-                      })}
-                      className="w-20"
-                      min="0"
-                    />
-                  </div>
                 </CardContent>
               </Card>
             );
@@ -199,7 +264,7 @@ const TaskQuestionnaire: React.FC = () => {
             disabled={!isComplete}
             className="px-8"
           >
-            {isComplete ? 'View Results' : `Complete ${relevantTasks.length - completedTasks} more tasks`}
+            {isComplete ? 'View Results' : `Complete ${applicableTasks.length - completedTasks} more tasks`}
           </Button>
         </div>
       </div>
