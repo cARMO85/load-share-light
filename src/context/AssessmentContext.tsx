@@ -11,6 +11,8 @@ type AssessmentAction =
 
 const initialState: AssessmentState = {
   householdSetup: {
+    householdType: 'single' as const,
+    assessmentMode: 'solo' as const,
     adults: 1,
     children: 0,
     hasPets: false,

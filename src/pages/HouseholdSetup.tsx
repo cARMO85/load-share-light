@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { HouseholdSetup as HouseholdSetupType } from '@/types/assessment';
-import { Users, Baby, Dog, TreePine, Briefcase } from 'lucide-react';
+import { Users, Baby, Dog, TreePine, Briefcase, Home, Heart, UserCheck } from 'lucide-react';
 
 const HouseholdSetup: React.FC = () => {
   const navigate = useNavigate();
@@ -29,7 +29,22 @@ const HouseholdSetup: React.FC = () => {
   ];
 
   const updateSetup = (updates: Partial<HouseholdSetupType>) => {
-    setSetup(prev => ({ ...prev, ...updates }));
+    const newSetup = { ...setup, ...updates };
+    
+    // Auto-derive adults count from household type
+    if (updates.householdType) {
+      if (updates.householdType === 'single' || updates.householdType === 'single_parent') {
+        newSetup.adults = 1;
+        newSetup.partnerEmployed = undefined;
+        newSetup.assessmentMode = 'solo';
+      } else if (updates.householdType === 'couple' || updates.householdType === 'couple_with_children') {
+        newSetup.adults = 2;
+      } else {
+        newSetup.adults = setup.adults; // Keep current for 'other'
+      }
+    }
+    
+    setSetup(newSetup);
   };
 
   return (
@@ -55,55 +70,132 @@ const HouseholdSetup: React.FC = () => {
           </CardHeader>
           
           <CardContent className="space-y-8">
-            {/* Adults */}
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-3">
-                <Users className="h-6 w-6 text-primary" />
-                <div>
-                  <Label className="text-base font-medium">Number of adults</Label>
-                  <p className="text-sm text-muted-foreground">How many adults live in your household?</p>
-                </div>
+            {/* Household Type */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <Label className="text-lg font-semibold">What best describes your household?</Label>
+                <p className="text-sm text-muted-foreground mt-1">This helps us show you relevant tasks</p>
               </div>
-              <div className="flex gap-2">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Button
-                  variant={setup.adults === 1 ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => updateSetup({ adults: 1, partnerEmployed: undefined })}
+                  variant={setup.householdType === 'single' ? "default" : "outline"}
+                  onClick={() => updateSetup({ householdType: 'single' })}
+                  className="h-auto p-4 flex flex-col items-center gap-2"
                 >
-                  1
+                  <UserCheck className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-medium">Single Person</div>
+                    <div className="text-xs text-muted-foreground">Living alone</div>
+                  </div>
                 </Button>
+                
                 <Button
-                  variant={setup.adults === 2 ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => updateSetup({ adults: 2 })}
+                  variant={setup.householdType === 'single_parent' ? "default" : "outline"}
+                  onClick={() => updateSetup({ householdType: 'single_parent' })}
+                  className="h-auto p-4 flex flex-col items-center gap-2"
                 >
-                  2
+                  <Baby className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-medium">Single Parent</div>
+                    <div className="text-xs text-muted-foreground">One adult with children</div>
+                  </div>
+                </Button>
+                
+                <Button
+                  variant={setup.householdType === 'couple' ? "default" : "outline"}
+                  onClick={() => updateSetup({ householdType: 'couple' })}
+                  className="h-auto p-4 flex flex-col items-center gap-2"
+                >
+                  <Heart className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-medium">Couple</div>
+                    <div className="text-xs text-muted-foreground">Two adults, no children</div>
+                  </div>
+                </Button>
+                
+                <Button
+                  variant={setup.householdType === 'couple_with_children' ? "default" : "outline"}
+                  onClick={() => updateSetup({ householdType: 'couple_with_children' })}
+                  className="h-auto p-4 flex flex-col items-center gap-2"
+                >
+                  <Home className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-medium">Family</div>
+                    <div className="text-xs text-muted-foreground">Two adults with children</div>
+                  </div>
                 </Button>
               </div>
             </div>
 
-            {/* Children */}
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-3">
-                <Baby className="h-6 w-6 text-primary" />
-                <div>
-                  <Label className="text-base font-medium">Number of children</Label>
-                  <p className="text-sm text-muted-foreground">Children living at home</p>
+            {/* Assessment Mode for Couples */}
+            {(setup.householdType === 'couple' || setup.householdType === 'couple_with_children') && (
+              <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="text-center">
+                  <Label className="text-lg font-semibold text-primary">How would you like to take this assessment?</Label>
+                  <p className="text-sm text-muted-foreground mt-1">Choose your preferred approach</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Button
+                    variant={setup.assessmentMode === 'solo' ? "default" : "outline"}
+                    onClick={() => updateSetup({ assessmentMode: 'solo' })}
+                    className="h-auto p-4 flex flex-col items-center gap-2"
+                  >
+                    <UserCheck className="h-5 w-5" />
+                    <div className="text-center">
+                      <div className="font-medium">Just Me</div>
+                      <div className="text-xs text-muted-foreground">I'll complete this on my own</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    variant={setup.assessmentMode === 'together' ? "default" : "outline"}
+                    onClick={() => updateSetup({ assessmentMode: 'together' })}
+                    className="h-auto p-4 flex flex-col items-center gap-2"
+                  >
+                    <Users className="h-5 w-5" />
+                    <div className="text-center">
+                      <div className="font-medium">Together</div>
+                      <div className="text-xs text-muted-foreground">We'll take turns answering</div>
+                    </div>
+                  </Button>
+                </div>
+                
+                {setup.assessmentMode === 'together' && (
+                  <div className="p-3 rounded-lg bg-secondary/10 border border-secondary/20">
+                    <p className="text-xs text-muted-foreground text-center">
+                      💡 <strong>Together Mode:</strong> You'll each answer for the same tasks, and we'll compare your perspectives at the end.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Children - Only show if not already specified by household type */}
+            {(setup.householdType === 'single_parent' || setup.householdType === 'couple_with_children' || setup.householdType === 'other') && (
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <Baby className="h-6 w-6 text-primary" />
+                  <div>
+                    <Label className="text-base font-medium">Number of children</Label>
+                    <p className="text-sm text-muted-foreground">Children living at home</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {[0, 1, 2, 3].map(num => (
+                    <Button
+                      key={num}
+                      variant={setup.children === num ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateSetup({ children: num })}
+                    >
+                      {num === 3 ? "3+" : num}
+                    </Button>
+                  ))}
                 </div>
               </div>
-              <div className="flex gap-2">
-                {[0, 1, 2, 3].map(num => (
-                  <Button
-                    key={num}
-                    variant={setup.children === num ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => updateSetup({ children: num })}
-                  >
-                    {num === 3 ? "3+" : num}
-                  </Button>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Pets */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
@@ -174,9 +266,15 @@ const HouseholdSetup: React.FC = () => {
                 variant="hero" 
                 size="lg" 
                 className="w-full"
+                disabled={!setup.householdType}
               >
                 Continue to Task Assessment
               </Button>
+              {!setup.householdType && (
+                <p className="text-center text-sm text-muted-foreground mt-2">
+                  Please select your household type to continue
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

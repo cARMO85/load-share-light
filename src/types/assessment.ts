@@ -1,5 +1,10 @@
+export type HouseholdType = 'single' | 'single_parent' | 'couple' | 'couple_with_children' | 'other';
+export type AssessmentMode = 'solo' | 'together';
+
 export interface HouseholdSetup {
-  adults: number;
+  householdType: HouseholdType;
+  assessmentMode: AssessmentMode;
+  adults: number; // derived from householdType
   children: number;
   hasPets: boolean;
   hasGarden: boolean;
