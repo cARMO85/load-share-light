@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
-import { mentalLoadTasks } from '@/data/tasks';
-import { CalculatedResults } from '@/types/assessment';
-import { Clock, Brain, BarChart3, Users, UserCheck, Heart } from 'lucide-react';
+import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
+import { CalculatedResults, TaskResponse } from '@/types/assessment';
+import { Clock, Brain, BarChart3, Users, UserCheck, Heart, Lightbulb, Calendar, Eye, Monitor, HeartHandshake } from 'lucide-react';
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
@@ -123,6 +123,148 @@ const Results: React.FC = () => {
       perceptionGaps
     };
   }, [state.taskResponses, state.partnerTaskResponses, state.householdSetup]);
+
+  // Category analysis for personalized advice
+  const categoryAnalysis = useMemo(() => {
+    const taskLookup = mentalLoadTasks.reduce((acc, task) => {
+      acc[task.id] = task;
+      return acc;
+    }, {} as Record<string, typeof mentalLoadTasks[0]>);
+
+    const categories = Object.values(TASK_CATEGORIES);
+    const analysis: Record<string, {
+      myMentalLoad: number;
+      partnerMentalLoad: number;
+      myPercentage: number;
+      partnerPercentage: number;
+      taskCount: number;
+    }> = {};
+
+    categories.forEach(category => {
+      let myLoad = 0;
+      let partnerLoad = 0;
+      let taskCount = 0;
+
+      state.taskResponses.forEach(response => {
+        const task = taskLookup[response.taskId];
+        if (!task || task.category !== category || response.notApplicable) return;
+
+        taskCount++;
+        const timeInMinutes = response.estimatedMinutes;
+        const mentalLoadWeight = task.mental_load_weight;
+
+        if (response.assignment === 'me') {
+          const sharePercent = (response.mySharePercentage || 100) / 100;
+          myLoad += timeInMinutes * mentalLoadWeight * sharePercent;
+          if (state.householdSetup.adults === 2) {
+            partnerLoad += timeInMinutes * mentalLoadWeight * (1 - sharePercent);
+          }
+        } else if (response.assignment === 'partner') {
+          const sharePercent = (response.mySharePercentage || 0) / 100;
+          myLoad += timeInMinutes * mentalLoadWeight * sharePercent;
+          if (state.householdSetup.adults === 2) {
+            partnerLoad += timeInMinutes * mentalLoadWeight * (1 - sharePercent);
+          }
+        } else if (response.assignment === 'shared') {
+          const mySharePercent = 0.5;
+          myLoad += timeInMinutes * mentalLoadWeight * mySharePercent;
+          if (state.householdSetup.adults === 2) {
+            partnerLoad += timeInMinutes * mentalLoadWeight * (1 - mySharePercent);
+          }
+        }
+      });
+
+      const totalLoad = myLoad + partnerLoad;
+      analysis[category] = {
+        myMentalLoad: Math.round(myLoad),
+        partnerMentalLoad: Math.round(partnerLoad),
+        myPercentage: totalLoad > 0 ? Math.round((myLoad / totalLoad) * 100) : 0,
+        partnerPercentage: totalLoad > 0 ? Math.round((partnerLoad / totalLoad) * 100) : 0,
+        taskCount
+      };
+    });
+
+    return analysis;
+  }, [state.taskResponses, state.householdSetup]);
+
+  // Generate personalized advice
+  const personalizedAdvice = useMemo(() => {
+    const advice: string[] = [];
+    const isTwoAdults = state.householdSetup.adults === 2;
+    
+    if (!isTwoAdults) {
+      advice.push("As a single adult household, you're managing all the mental load responsibilities. Consider strategies for reducing overall burden through simplification and external support when possible.");
+      return advice;
+    }
+
+    // Find dominant categories for each person
+    const myDominantCategories = Object.entries(categoryAnalysis)
+      .filter(([_, data]) => data.myPercentage > 70 && data.taskCount > 0)
+      .map(([category, _]) => category);
+
+    const partnerDominantCategories = Object.entries(categoryAnalysis)
+      .filter(([_, data]) => data.partnerPercentage > 70 && data.taskCount > 0)
+      .map(([category, _]) => category);
+
+    // Overall mental load balance
+    const myTotalPercentage = results.myMentalPercentage;
+    const partnerTotalPercentage = results.partnerMentalPercentage || 0;
+
+    if (Math.abs(myTotalPercentage - 50) > 20) {
+      if (myTotalPercentage > 70) {
+        advice.push(`⚖️ **Workload Imbalance**: You're carrying ${myTotalPercentage}% of the mental load, which is significantly higher than your partner's ${partnerTotalPercentage}%. This imbalance can lead to stress and relationship tension over time.`);
+      } else if (myTotalPercentage < 30) {
+        advice.push(`⚖️ **Partner Carries More**: Your partner is handling ${partnerTotalPercentage}% of the mental load. While this might work for your relationship, it's worth checking if this distribution feels fair to both of you.`);
+      }
+    } else {
+      advice.push(`✅ **Balanced Distribution**: You have a relatively balanced mental load distribution (${myTotalPercentage}% vs ${partnerTotalPercentage}%). This suggests good collaboration in household management.`);
+    }
+
+    // Category-specific insights
+    if (myDominantCategories.includes(TASK_CATEGORIES.ANTICIPATION)) {
+      advice.push(`📅 **You Lead Planning**: You're handling most of the **Anticipation** tasks, which means you're the household's primary planner. This involves thinking ahead about meals, schedules, and future needs. This mental work often goes unnoticed but is crucial for smooth household functioning.`);
+    }
+
+    if (myDominantCategories.includes(TASK_CATEGORIES.EMOTIONAL_LABOUR)) {
+      advice.push(`💕 **Emotional Manager**: You're carrying most of the **Emotional Labour** in your relationship. This includes managing family conflicts, providing emotional support, and maintaining relationships. This type of mental work can be particularly draining as it requires constant emotional availability.`);
+    }
+
+    if (myDominantCategories.includes(TASK_CATEGORIES.MONITORING)) {
+      advice.push(`👀 **The Tracker**: You're responsible for most **Monitoring** tasks - keeping track of appointments, following up on delegated tasks, and ensuring things get done. This makes you the household's memory and quality controller.`);
+    }
+
+    if (partnerDominantCategories.includes(TASK_CATEGORIES.ANTICIPATION)) {
+      advice.push(`📋 **Partner Plans Ahead**: Your partner is taking the lead on **Anticipation** tasks, handling the future-focused planning that keeps your household running smoothly. This frees you from having to constantly think ahead about upcoming needs.`);
+    }
+
+    if (partnerDominantCategories.includes(TASK_CATEGORIES.EMOTIONAL_LABOUR)) {
+      advice.push(`💝 **Partner Manages Emotions**: Your partner is handling most of the **Emotional Labour**, including family relationship management and emotional support. This is valuable invisible work that contributes significantly to family well-being.`);
+    }
+
+    if (partnerDominantCategories.includes(TASK_CATEGORIES.DECISION_MAKING)) {
+      advice.push(`🤔 **Partner Makes Decisions**: Your partner is taking responsibility for most **Decision-Making** tasks - from choosing service providers to making budget allocations. This decision-making load can be mentally taxing but ensures household needs are met.`);
+    }
+
+    // Shared categories insight
+    const sharedCategories = Object.entries(categoryAnalysis)
+      .filter(([_, data]) => Math.abs(data.myPercentage - 50) < 20 && data.taskCount > 0)
+      .map(([category, _]) => category);
+
+    if (sharedCategories.length > 0) {
+      advice.push(`🤝 **Good Collaboration**: You're sharing responsibilities well in **${sharedCategories.join(', ')}**. This balanced approach helps prevent one person from becoming overwhelmed in these areas.`);
+    }
+
+    // Recommendations based on patterns
+    if (myDominantCategories.length > 2) {
+      advice.push(`💡 **Recommendation**: Consider discussing task redistribution. You're dominant in multiple mental load categories, which could lead to burnout. Try delegating some ${myDominantCategories.slice(-1)[0]} tasks to create better balance.`);
+    }
+
+    if (partnerDominantCategories.length === 0 && isTwoAdults) {
+      advice.push(`🔄 **Consider Rebalancing**: Your partner isn't leading in any mental load category. This might be an opportunity to have them take ownership of specific areas like ${Object.keys(categoryAnalysis)[0]} or ${Object.keys(categoryAnalysis)[1]} to create better balance.`);
+    }
+
+    return advice;
+  }, [categoryAnalysis, results, state.householdSetup.adults]);
 
   const steps = [
     { title: "Setup", description: "Household info" },
@@ -449,9 +591,103 @@ const Results: React.FC = () => {
                         Consider discussing task redistribution with your partner.
                       </p>
                     </div>
-                  )}
-                </div>
-              )}
+            )}
+          </div>
+        )}
+
+        {/* Category Breakdown and Personalized Advice */}
+        <div className="grid gap-6 mb-8">
+          {/* Category Analysis */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-accent/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-6 w-6 text-accent" />
+                Mental Load by Category
+              </CardTitle>
+              <CardDescription>
+                How responsibilities are distributed across different types of mental work
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {Object.entries(categoryAnalysis).map(([category, data]) => {
+                  if (data.taskCount === 0) return null;
+                  
+                  const categoryIcons = {
+                    [TASK_CATEGORIES.ANTICIPATION]: <Calendar className="h-5 w-5" />,
+                    [TASK_CATEGORIES.IDENTIFICATION]: <Eye className="h-5 w-5" />,
+                    [TASK_CATEGORIES.DECISION_MAKING]: <Lightbulb className="h-5 w-5" />,
+                    [TASK_CATEGORIES.MONITORING]: <Monitor className="h-5 w-5" />,
+                    [TASK_CATEGORIES.EMOTIONAL_LABOUR]: <HeartHandshake className="h-5 w-5" />
+                  };
+
+                  return (
+                    <div key={category} className="space-y-3">
+                      <div className="flex items-center gap-2 font-medium">
+                        {categoryIcons[category]}
+                        <span>{category}</span>
+                        <span className="text-sm text-muted-foreground">({data.taskCount} tasks)</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-1">
+                          <div className="text-muted-foreground">You:</div>
+                          <div className="font-medium text-primary">
+                            {data.myMentalLoad} points ({data.myPercentage}%)
+                          </div>
+                        </div>
+                        {!isSingleAdult && (
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground">Partner:</div>
+                            <div className="font-medium text-secondary">
+                              {data.partnerMentalLoad} points ({data.partnerPercentage}%)
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Visual bar */}
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary rounded-full transition-all duration-500"
+                          style={{ width: `${data.myPercentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Personalized Advice */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-6 w-6 text-primary" />
+                Personalized Insights & Recommendations
+              </CardTitle>
+              <CardDescription>
+                Based on your mental load patterns, here's what we've learned about your household dynamics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {personalizedAdvice.map((advice, index) => (
+                  <div key={index} className="p-4 rounded-lg bg-background/50 border">
+                    <p className="text-sm leading-relaxed">{advice}</p>
+                  </div>
+                ))}
+                
+                {personalizedAdvice.length === 0 && (
+                  <div className="text-center text-muted-foreground py-4">
+                    Complete more tasks to receive personalized insights about your household mental load patterns.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
             </CardContent>
           </Card>
         ) : null}
