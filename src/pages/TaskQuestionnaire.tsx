@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks } from '@/data/tasks';
 import { TaskResponse } from '@/types/assessment';
-import { Clock, Brain, Users, Info, X } from 'lucide-react';
+import { Clock, Brain, Users, Info, X, UserCheck, Heart } from 'lucide-react';
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +25,13 @@ const TaskQuestionnaire: React.FC = () => {
       return acc;
     }, {} as Record<string, TaskResponse>)
   );
+
+  // Scroll to top when switching to partner's turn
+  useEffect(() => {
+    if (isTogetherMode && currentResponder === 'partner') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentResponder, isTogetherMode]);
 
   const relevantTasks = useMemo(() => {
     const { householdSetup } = state;
@@ -90,6 +97,31 @@ const TaskQuestionnaire: React.FC = () => {
     navigate('/results');
   };
 
+  // Dynamic styling based on current responder
+  const getResponderTheme = () => {
+    if (!isTogetherMode) return {};
+    
+    if (currentResponder === 'partner') {
+      return {
+        gradientClass: 'from-background via-background to-secondary/5',
+        cardGradient: 'from-card to-secondary/5',
+        headerIcon: <Heart className="h-6 w-6 text-secondary" />,
+        accentColor: 'text-secondary',
+        progressColor: 'secondary'
+      };
+    }
+    
+    return {
+      gradientClass: 'from-background via-background to-primary/5',
+      cardGradient: 'from-card to-primary/5', 
+      headerIcon: <UserCheck className="h-6 w-6 text-primary" />,
+      accentColor: 'text-primary',
+      progressColor: 'primary'
+    };
+  };
+
+  const theme = getResponderTheme();
+
   const isSingleAdult = state.householdSetup.adults === 1;
   const applicableTasks = relevantTasks.filter(task => !responses[task.id]?.notApplicable);
   const isComplete = applicableTasks.every(task => 
@@ -117,7 +149,7 @@ const TaskQuestionnaire: React.FC = () => {
   const labels = getAssignmentLabels();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
+    <div className={`min-h-screen bg-gradient-to-br ${theme.gradientClass || 'from-background via-background to-primary/5'} py-8 px-4`}>
       <div className="max-w-4xl mx-auto">
         <ProgressSteps currentStep={2} totalSteps={4} steps={steps} />
         
@@ -125,9 +157,12 @@ const TaskQuestionnaire: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground mb-4">
             Task Responsibility Assessment
             {isTogetherMode && (
-              <span className="block text-lg font-normal text-primary mt-2">
-                {currentResponder === 'me' ? "Your Turn" : "Partner's Turn"}
-              </span>
+              <div className="flex items-center justify-center gap-3 text-lg font-normal mt-3">
+                {theme.headerIcon}
+                <span className={theme.accentColor}>
+                  {currentResponder === 'me' ? "Your Turn" : "Partner's Turn"}
+                </span>
+              </div>
             )}
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -139,8 +174,12 @@ const TaskQuestionnaire: React.FC = () => {
             </p>
           )}
           {isTogetherMode && (
-            <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <p className="text-sm text-primary">
+            <div className={`mt-4 p-4 rounded-lg border ${
+              currentResponder === 'partner' 
+                ? 'bg-secondary/10 border-secondary/20' 
+                : 'bg-primary/10 border-primary/20'
+            }`}>
+              <p className={`text-sm ${theme.accentColor}`}>
                 {currentResponder === 'me' 
                   ? "Answer based on your perspective. Your partner will answer next." 
                   : "Now let your partner answer the same questions from their perspective."}
@@ -162,7 +201,7 @@ const TaskQuestionnaire: React.FC = () => {
               <Card key={task.id} className={`shadow-md border-0 transition-all ${
                 isNotApplicable 
                   ? 'opacity-50 bg-muted/50' 
-                  : 'bg-gradient-to-br from-card to-card/80'
+                  : `${theme.cardGradient ? `bg-gradient-to-br ${theme.cardGradient}` : 'bg-gradient-to-br from-card to-card/80'}`
               }`}>
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
