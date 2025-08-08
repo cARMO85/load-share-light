@@ -12,9 +12,11 @@ import {
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
   Legend,
   Tooltip
 } from 'recharts';
@@ -104,16 +106,38 @@ const Dashboard: React.FC = () => {
       });
     }
 
-    // Pie chart data for categories
-    const pieData = Object.entries(categoryBreakdown)
-      .filter(([_, data]) => data.mental > 0)
-      .map(([category, data]) => ({
-        name: category,
-        value: Math.round(data.mental),
-        visible: Math.round(data.visible)
-      }));
+    // Radar chart data for categories
+    const radarData = Object.entries(TASK_CATEGORIES).map(([_, category]) => {
+      const data = categoryBreakdown[category] || { mental: 0 };
+      const result: any = {
+        category: category,
+        'My Load': Math.round(data.mental),
+      };
+      
+      if (state.householdSetup.adults === 2) {
+        // Calculate partner's mental load for this category
+        let partnerCategoryMental = 0;
+        applicableResponses.forEach(response => {
+          const task = taskLookup[response.taskId];
+          if (!task || task.category !== category) return;
+          
+          const minutes = response.estimatedMinutes;
+          const mentalWeight = task.mental_load_weight;
+          
+          if (response.assignment === 'partner') {
+            partnerCategoryMental += minutes * mentalWeight;
+          } else if (response.assignment === 'shared') {
+            const partnerShare = 1 - ((response.mySharePercentage || 50) / 100);
+            partnerCategoryMental += minutes * mentalWeight * partnerShare;
+          }
+        });
+        result['Partner Load'] = Math.round(partnerCategoryMental);
+      }
+      
+      return result;
+    });
 
-    return { barData, pieData };
+    return { barData, radarData };
   }, [state.taskResponses, state.householdSetup]);
 
   const steps = [
@@ -189,31 +213,46 @@ const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Pie Chart */}
+          {/* Radar Chart */}
           <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
             <CardHeader>
-              <CardTitle>Mental Load by Category</CardTitle>
+              <CardTitle>Mental Load Profile</CardTitle>
               <CardDescription>
-                Breakdown of cognitive burden by task type
+                Cognitive burden distribution across task categories
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={chartData.pieData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                  >
-                    {chartData.pieData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
+                <RadarChart data={chartData.radarData} margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
+                  <PolarGrid stroke="hsl(var(--border))" />
+                  <PolarAngleAxis 
+                    dataKey="category" 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                  />
+                  <PolarRadiusAxis 
+                    angle={90} 
+                    domain={[0, 'dataMax']}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                  />
+                  <Radar
+                    name="My Load"
+                    dataKey="My Load"
+                    stroke="hsl(var(--primary))"
+                    fill="hsl(var(--primary))"
+                    fillOpacity={0.3}
+                    strokeWidth={2}
+                  />
+                  {state.householdSetup.adults === 2 && (
+                    <Radar
+                      name="Partner Load"
+                      dataKey="Partner Load"
+                      stroke="hsl(var(--secondary))"
+                      fill="hsl(var(--secondary))"
+                      fillOpacity={0.3}
+                      strokeWidth={2}
+                    />
+                  )}
+                  <Legend />
                   <Tooltip 
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
@@ -221,7 +260,7 @@ const Dashboard: React.FC = () => {
                       borderRadius: '8px'
                     }}
                   />
-                </PieChart>
+                </RadarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
