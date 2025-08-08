@@ -13,11 +13,14 @@ export interface HouseholdSetup {
   partnerEmployed?: boolean;
 }
 
+export type TaskFrequency = 'weekly' | 'bi-weekly' | 'monthly' | 'yearly';
+
 export interface TaskResponse {
   taskId: string;
   assignment: 'me' | 'shared' | 'partner';
   mySharePercentage?: number; // 0-100 percentage when 'shared' selected
   estimatedMinutes: number; // user can edit the baseline
+  frequency: TaskFrequency; // how often this task occurs
   notApplicable?: boolean; // task not relevant to household
 }
 

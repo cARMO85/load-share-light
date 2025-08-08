@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
-import { TaskResponse } from '@/types/assessment';
+import { TaskResponse, TaskFrequency } from '@/types/assessment';
+import { formatTimeDisplay, getFrequencyDisplayText, convertToWeeklyMinutes } from '@/lib/timeUtils';
 import { Clock, Brain, Users, Info, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake } from 'lucide-react';
 
 const TaskQuestionnaire: React.FC = () => {
@@ -113,6 +115,7 @@ const TaskQuestionnaire: React.FC = () => {
       taskId,
       assignment: responses[taskId]?.assignment || 'me',
       estimatedMinutes: responses[taskId]?.estimatedMinutes || task.baseline_minutes_week,
+      frequency: responses[taskId]?.frequency || task.default_frequency,
       notApplicable: false,
       ...updates
     } as TaskResponse;
@@ -386,26 +389,57 @@ const TaskQuestionnaire: React.FC = () => {
                         </div>
                       )}
 
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <Label className="text-sm font-medium">Estimated minutes per week:</Label>
-                          <Input
-                            type="number"
-                            value={response?.estimatedMinutes || task.baseline_minutes_week}
-                            onChange={(e) => updateResponse(task.id, { 
-                              estimatedMinutes: parseInt(e.target.value) || task.baseline_minutes_week 
-                            })}
-                            className="w-20"
-                            min="0"
-                          />
-                        </div>
-                        <div className="flex items-start gap-2 text-xs text-muted-foreground pl-7">
-                          <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <div>Typical range: {task.time_range}</div>
-                            <div>Source: {task.source_details}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <Label className="text-sm font-medium">Time per occurrence:</Label>
+                            <Input
+                              type="number"
+                              value={response?.estimatedMinutes || task.baseline_minutes_week}
+                              onChange={(e) => updateResponse(task.id, { 
+                                estimatedMinutes: parseInt(e.target.value) || task.baseline_minutes_week 
+                              })}
+                              className="w-20"
+                              min="0"
+                            />
+                            <span className="text-xs text-muted-foreground">minutes</span>
                           </div>
+                          <div className="text-xs text-muted-foreground pl-7">
+                            = {formatTimeDisplay(response?.estimatedMinutes || task.baseline_minutes_week)}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">How often:</Label>
+                          <Select
+                            value={response?.frequency || task.default_frequency}
+                            onValueChange={(value: TaskFrequency) => updateResponse(task.id, { frequency: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="bi-weekly">Bi-weekly (every 2 weeks)</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                              <SelectItem value="yearly">Yearly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <div className="text-xs text-muted-foreground">
+                            Average per week: {formatTimeDisplay(convertToWeeklyMinutes(
+                              response?.estimatedMinutes || task.baseline_minutes_week,
+                              response?.frequency || task.default_frequency
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div>Suggested range: {task.time_range}</div>
+                          <div>Research source: {task.source_details}</div>
                         </div>
                       </div>
                     </>
