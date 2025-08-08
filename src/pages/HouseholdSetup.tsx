@@ -24,6 +24,8 @@ const HouseholdSetup: React.FC = () => {
   const steps = [
     { title: "Setup", description: "Household info" },
     { title: "Tasks", description: "Assign responsibilities" },
+    { title: "Perspectives", description: "Share your views" },
+    { title: "Impact", description: "Emotional insights" },
     { title: "Results", description: "View calculations" },
     { title: "Visualize", description: "Charts & insights" }
   ];
@@ -50,7 +52,7 @@ const HouseholdSetup: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <ProgressSteps currentStep={1} totalSteps={4} steps={steps} />
+        <ProgressSteps currentStep={1} totalSteps={6} steps={steps} />
         
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">

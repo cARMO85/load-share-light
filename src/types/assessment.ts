@@ -21,10 +21,28 @@ export interface TaskResponse {
   notApplicable?: boolean; // task not relevant to household
 }
 
+export interface PerceptionGapResponse {
+  workPercentageSelf: number; // 0-100: what % of total household work do you think you do?
+  workPercentagePartner: number; // 0-100: what % of total household work do you think your partner does?
+  mentalLoadPercentageSelf: number; // 0-100: how much of the mental planning/organisation do you think you do?
+  emotionalSupportPercentageSelf: number; // 0-100: how much of the emotional support work do you think you do?
+}
+
+export interface EmotionalImpactResponse {
+  stressLevel: number; // 1-5: How often do you feel stressed about household responsibilities?
+  fairnessLevel: number; // 1-5: How often do you feel there is an unfair division of work?
+  satisfactionLevel: number; // 1-5: How satisfied are you with the way household work is shared?
+  conversationFrequency: number; // 1-5: How often do you have conversations with your partner about redistributing tasks?
+}
+
 export interface AssessmentData {
   householdSetup: HouseholdSetup;
   taskResponses: TaskResponse[];
   partnerTaskResponses?: TaskResponse[]; // For together mode
+  perceptionGapResponses?: PerceptionGapResponse; // Only for together mode
+  partnerPerceptionGapResponses?: PerceptionGapResponse; // Only for together mode
+  emotionalImpactResponses?: EmotionalImpactResponse; // Optional additional insights
+  partnerEmotionalImpactResponses?: EmotionalImpactResponse; // Optional for together mode
   currentStep: number;
   currentResponder?: 'me' | 'partner'; // Track who is currently answering
 }

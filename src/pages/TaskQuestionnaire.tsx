@@ -73,7 +73,9 @@ const TaskQuestionnaire: React.FC = () => {
 
   const steps = [
     { title: "Setup", description: "Household info" },
-    { title: "Mental Load Assessment", description: "Task responsibilities" },
+    { title: "Tasks", description: "Assign responsibilities" },
+    { title: "Perspectives", description: "Share your views" },
+    { title: "Impact", description: "Emotional insights" },
     { title: "Results", description: "View calculations" },
     { title: "Visualize", description: "Charts & insights" }
   ];
@@ -140,8 +142,14 @@ const TaskQuestionnaire: React.FC = () => {
       return;
     }
     
-    setCurrentStep(3);
-    navigate('/results');
+    // Check if together mode - go to perception gap, otherwise skip to emotional impact or results
+    if (isTogetherMode) {
+      setCurrentStep(3);
+      navigate('/perception-gap');
+    } else {
+      setCurrentStep(4);
+      navigate('/emotional-impact');
+    }
   };
 
   const handlePrevious = () => {
@@ -216,7 +224,7 @@ const TaskQuestionnaire: React.FC = () => {
   return (
     <div className={`min-h-screen bg-gradient-to-br ${theme.gradientClass || 'from-background via-background to-primary/5'} py-8 px-4`}>
       <div className="max-w-4xl mx-auto">
-        <ProgressSteps currentStep={2} totalSteps={4} steps={steps} />
+        <ProgressSteps currentStep={2} totalSteps={6} steps={steps} />
         
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-4">

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AssessmentData, HouseholdSetup, TaskResponse } from '@/types/assessment';
+import { AssessmentData, HouseholdSetup, TaskResponse, PerceptionGapResponse, EmotionalImpactResponse } from '@/types/assessment';
 
 interface AssessmentState extends AssessmentData {}
 
@@ -7,6 +7,10 @@ type AssessmentAction =
   | { type: 'SET_HOUSEHOLD_SETUP'; payload: HouseholdSetup }
   | { type: 'SET_TASK_RESPONSE'; payload: TaskResponse }
   | { type: 'SET_PARTNER_TASK_RESPONSE'; payload: TaskResponse }
+  | { type: 'SET_PERCEPTION_GAP_RESPONSES'; payload: PerceptionGapResponse }
+  | { type: 'SET_PARTNER_PERCEPTION_GAP_RESPONSES'; payload: PerceptionGapResponse }
+  | { type: 'SET_EMOTIONAL_IMPACT_RESPONSES'; payload: EmotionalImpactResponse }
+  | { type: 'SET_PARTNER_EMOTIONAL_IMPACT_RESPONSES'; payload: EmotionalImpactResponse }
   | { type: 'SET_CURRENT_STEP'; payload: number }
   | { type: 'SET_CURRENT_RESPONDER'; payload: 'me' | 'partner' }
   | { type: 'RESET_ASSESSMENT' };
@@ -24,6 +28,10 @@ const initialState: AssessmentState = {
   },
   taskResponses: [],
   partnerTaskResponses: [],
+  perceptionGapResponses: undefined,
+  partnerPerceptionGapResponses: undefined,
+  emotionalImpactResponses: undefined,
+  partnerEmotionalImpactResponses: undefined,
   currentStep: 1,
   currentResponder: 'me'
 };
@@ -50,6 +58,14 @@ const assessmentReducer = (state: AssessmentState, action: AssessmentAction): As
         newPartnerResponses.push(action.payload);
       }
       return { ...state, partnerTaskResponses: newPartnerResponses };
+    case 'SET_PERCEPTION_GAP_RESPONSES':
+      return { ...state, perceptionGapResponses: action.payload };
+    case 'SET_PARTNER_PERCEPTION_GAP_RESPONSES':
+      return { ...state, partnerPerceptionGapResponses: action.payload };
+    case 'SET_EMOTIONAL_IMPACT_RESPONSES':
+      return { ...state, emotionalImpactResponses: action.payload };
+    case 'SET_PARTNER_EMOTIONAL_IMPACT_RESPONSES':
+      return { ...state, partnerEmotionalImpactResponses: action.payload };
     case 'SET_CURRENT_STEP':
       return { ...state, currentStep: action.payload };
     case 'SET_CURRENT_RESPONDER':
@@ -67,6 +83,10 @@ interface AssessmentContextType {
   setHouseholdSetup: (setup: HouseholdSetup) => void;
   setTaskResponse: (response: TaskResponse) => void;
   setPartnerTaskResponse: (response: TaskResponse) => void;
+  setPerceptionGapResponses: (responses: PerceptionGapResponse) => void;
+  setPartnerPerceptionGapResponses: (responses: PerceptionGapResponse) => void;
+  setEmotionalImpactResponses: (responses: EmotionalImpactResponse) => void;
+  setPartnerEmotionalImpactResponses: (responses: EmotionalImpactResponse) => void;
   setCurrentStep: (step: number) => void;
   setCurrentResponder: (responder: 'me' | 'partner') => void;
   resetAssessment: () => void;
@@ -89,6 +109,22 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     dispatch({ type: 'SET_PARTNER_TASK_RESPONSE', payload: response });
   };
 
+  const setPerceptionGapResponses = (responses: PerceptionGapResponse) => {
+    dispatch({ type: 'SET_PERCEPTION_GAP_RESPONSES', payload: responses });
+  };
+
+  const setPartnerPerceptionGapResponses = (responses: PerceptionGapResponse) => {
+    dispatch({ type: 'SET_PARTNER_PERCEPTION_GAP_RESPONSES', payload: responses });
+  };
+
+  const setEmotionalImpactResponses = (responses: EmotionalImpactResponse) => {
+    dispatch({ type: 'SET_EMOTIONAL_IMPACT_RESPONSES', payload: responses });
+  };
+
+  const setPartnerEmotionalImpactResponses = (responses: EmotionalImpactResponse) => {
+    dispatch({ type: 'SET_PARTNER_EMOTIONAL_IMPACT_RESPONSES', payload: responses });
+  };
+
   const setCurrentStep = (step: number) => {
     dispatch({ type: 'SET_CURRENT_STEP', payload: step });
   };
@@ -108,6 +144,10 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       setHouseholdSetup,
       setTaskResponse,
       setPartnerTaskResponse,
+      setPerceptionGapResponses,
+      setPartnerPerceptionGapResponses,
+      setEmotionalImpactResponses,
+      setPartnerEmotionalImpactResponses,
       setCurrentStep,
       setCurrentResponder,
       resetAssessment
