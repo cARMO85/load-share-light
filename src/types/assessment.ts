@@ -24,7 +24,9 @@ export interface TaskResponse {
 export interface AssessmentData {
   householdSetup: HouseholdSetup;
   taskResponses: TaskResponse[];
+  partnerTaskResponses?: TaskResponse[]; // For together mode
   currentStep: number;
+  currentResponder?: 'me' | 'partner'; // Track who is currently answering
 }
 
 export interface CalculatedResults {

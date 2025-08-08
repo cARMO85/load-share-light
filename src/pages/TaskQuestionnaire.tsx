@@ -13,10 +13,14 @@ import { Clock, Brain, Users, Info, X } from 'lucide-react';
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
-  const { state, setTaskResponse, setCurrentStep } = useAssessment();
+  const { state, setTaskResponse, setPartnerTaskResponse, setCurrentStep, setCurrentResponder } = useAssessment();
+  
+  const isTogetherMode = state.householdSetup.assessmentMode === 'together';
+  const currentResponder = state.currentResponder || 'me';
+  const currentResponses = currentResponder === 'me' ? state.taskResponses : (state.partnerTaskResponses || []);
   
   const [responses, setResponses] = useState<Record<string, TaskResponse>>(
-    state.taskResponses.reduce((acc, response) => {
+    currentResponses.reduce((acc, response) => {
       acc[response.taskId] = response;
       return acc;
     }, {} as Record<string, TaskResponse>)
@@ -67,10 +71,21 @@ const TaskQuestionnaire: React.FC = () => {
     } as TaskResponse;
 
     setResponses(prev => ({ ...prev, [taskId]: newResponse }));
-    setTaskResponse(newResponse);
+    if (currentResponder === 'me') {
+      setTaskResponse(newResponse);
+    } else {
+      setPartnerTaskResponse(newResponse);
+    }
   };
 
   const handleNext = () => {
+    if (isTogetherMode && currentResponder === 'me') {
+      // Switch to partner
+      setCurrentResponder('partner');
+      setResponses({});
+      return;
+    }
+    
     setCurrentStep(3);
     navigate('/results');
   };
@@ -109,6 +124,11 @@ const TaskQuestionnaire: React.FC = () => {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-4">
             Task Responsibility Assessment
+            {isTogetherMode && (
+              <span className="block text-lg font-normal text-primary mt-2">
+                {currentResponder === 'me' ? "Your Turn" : "Partner's Turn"}
+              </span>
+            )}
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             For each task, indicate who primarily handles it and estimate the time involved.
@@ -117,6 +137,15 @@ const TaskQuestionnaire: React.FC = () => {
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl mx-auto">
               Even if your partner isn't taking this assessment, you can still indicate their responsibilities.
             </p>
+          )}
+          {isTogetherMode && (
+            <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-sm text-primary">
+                {currentResponder === 'me' 
+                  ? "Answer based on your perspective. Your partner will answer next." 
+                  : "Now let your partner answer the same questions from their perspective."}
+              </p>
+            </div>
           )}
           <div className="mt-4 text-sm text-muted-foreground">
             Progress: {completedTasks} of {applicableTasks.length} tasks completed
@@ -269,7 +298,13 @@ const TaskQuestionnaire: React.FC = () => {
             disabled={!isComplete}
             className="px-8"
           >
-            {isComplete ? 'View Results' : `Complete ${applicableTasks.length - completedTasks} more tasks`}
+            {isComplete ? 
+              (isTogetherMode && currentResponder === 'me' ? 
+                "Continue to Partner's Turn" : 
+                'View Results'
+              ) : 
+              `Complete ${applicableTasks.length - completedTasks} more tasks`
+            }
           </Button>
         </div>
       </div>

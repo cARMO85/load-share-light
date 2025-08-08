@@ -6,7 +6,9 @@ interface AssessmentState extends AssessmentData {}
 type AssessmentAction = 
   | { type: 'SET_HOUSEHOLD_SETUP'; payload: HouseholdSetup }
   | { type: 'SET_TASK_RESPONSE'; payload: TaskResponse }
+  | { type: 'SET_PARTNER_TASK_RESPONSE'; payload: TaskResponse }
   | { type: 'SET_CURRENT_STEP'; payload: number }
+  | { type: 'SET_CURRENT_RESPONDER'; payload: 'me' | 'partner' }
   | { type: 'RESET_ASSESSMENT' };
 
 const initialState: AssessmentState = {
@@ -21,7 +23,9 @@ const initialState: AssessmentState = {
     isEmployed: false
   },
   taskResponses: [],
-  currentStep: 1
+  partnerTaskResponses: [],
+  currentStep: 1,
+  currentResponder: 'me'
 };
 
 const assessmentReducer = (state: AssessmentState, action: AssessmentAction): AssessmentState => {
@@ -37,8 +41,19 @@ const assessmentReducer = (state: AssessmentState, action: AssessmentAction): As
         newResponses.push(action.payload);
       }
       return { ...state, taskResponses: newResponses };
+    case 'SET_PARTNER_TASK_RESPONSE':
+      const existingPartnerIndex = (state.partnerTaskResponses || []).findIndex(r => r.taskId === action.payload.taskId);
+      const newPartnerResponses = [...(state.partnerTaskResponses || [])];
+      if (existingPartnerIndex >= 0) {
+        newPartnerResponses[existingPartnerIndex] = action.payload;
+      } else {
+        newPartnerResponses.push(action.payload);
+      }
+      return { ...state, partnerTaskResponses: newPartnerResponses };
     case 'SET_CURRENT_STEP':
       return { ...state, currentStep: action.payload };
+    case 'SET_CURRENT_RESPONDER':
+      return { ...state, currentResponder: action.payload };
     case 'RESET_ASSESSMENT':
       return initialState;
     default:
@@ -51,7 +66,9 @@ interface AssessmentContextType {
   dispatch: React.Dispatch<AssessmentAction>;
   setHouseholdSetup: (setup: HouseholdSetup) => void;
   setTaskResponse: (response: TaskResponse) => void;
+  setPartnerTaskResponse: (response: TaskResponse) => void;
   setCurrentStep: (step: number) => void;
+  setCurrentResponder: (responder: 'me' | 'partner') => void;
   resetAssessment: () => void;
 }
 
@@ -68,8 +85,16 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     dispatch({ type: 'SET_TASK_RESPONSE', payload: response });
   };
 
+  const setPartnerTaskResponse = (response: TaskResponse) => {
+    dispatch({ type: 'SET_PARTNER_TASK_RESPONSE', payload: response });
+  };
+
   const setCurrentStep = (step: number) => {
     dispatch({ type: 'SET_CURRENT_STEP', payload: step });
+  };
+
+  const setCurrentResponder = (responder: 'me' | 'partner') => {
+    dispatch({ type: 'SET_CURRENT_RESPONDER', payload: responder });
   };
 
   const resetAssessment = () => {
@@ -82,7 +107,9 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       dispatch,
       setHouseholdSetup,
       setTaskResponse,
+      setPartnerTaskResponse,
       setCurrentStep,
+      setCurrentResponder,
       resetAssessment
     }}>
       {children}

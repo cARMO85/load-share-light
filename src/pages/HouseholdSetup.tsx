@@ -240,25 +240,28 @@ const HouseholdSetup: React.FC = () => {
                       variant={setup.gardenSize === 'small' ? "default" : "outline"}
                       size="sm"
                       onClick={() => updateSetup({ gardenSize: 'small' })}
-                      className="text-xs"
+                      className="text-xs flex flex-col h-auto py-2"
                     >
-                      Small
+                      <span>Small</span>
+                      <span className="text-xs opacity-70">~50m²</span>
                     </Button>
                     <Button
                       variant={setup.gardenSize === 'medium' ? "default" : "outline"}
                       size="sm"
                       onClick={() => updateSetup({ gardenSize: 'medium' })}
-                      className="text-xs"
+                      className="text-xs flex flex-col h-auto py-2"
                     >
-                      Medium
+                      <span>Medium</span>
+                      <span className="text-xs opacity-70">~200m²</span>
                     </Button>
                     <Button
                       variant={setup.gardenSize === 'large' ? "default" : "outline"}
                       size="sm"
                       onClick={() => updateSetup({ gardenSize: 'large' })}
-                      className="text-xs"
+                      className="text-xs flex flex-col h-auto py-2"
                     >
-                      Large
+                      <span>Large</span>
+                      <span className="text-xs opacity-70">~500m²</span>
                     </Button>
                   </div>
                 </div>
