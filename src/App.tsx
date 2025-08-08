@@ -9,6 +9,7 @@ import HouseholdSetup from "./pages/HouseholdSetup";
 import TaskQuestionnaire from "./pages/TaskQuestionnaire";
 import Results from "./pages/Results";
 import Dashboard from "./pages/Dashboard";
+import LearnMore from "./pages/LearnMore";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/learn-more" element={<LearnMore />} />
             <Route path="/setup" element={<HouseholdSetup />} />
             <Route path="/questionnaire" element={<TaskQuestionnaire />} />
             <Route path="/results" element={<Results />} />
