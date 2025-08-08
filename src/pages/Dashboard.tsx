@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
+import { CalculatedResults, TaskResponse } from '@/types/assessment';
 import {
   BarChart,
   Bar,
@@ -20,11 +21,267 @@ import {
   Legend,
   Tooltip
 } from 'recharts';
-import { RotateCcw, Download, Share2 } from 'lucide-react';
+import { RotateCcw, Download, Share2, Lightbulb, Calendar, Eye, Monitor, HeartHandshake, BarChart3 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { state, resetAssessment } = useAssessment();
+
+  // Helper function to calculate loads using exact formula
+  const calculateLoadFromResponses = (responses: typeof state.taskResponses, taskLookup: Record<string, typeof mentalLoadTasks[0]>, hasTwoAdults: boolean) => {
+    let myVisibleTime = 0;
+    let myMentalLoad = 0;
+    let partnerVisibleTime = 0;
+    let partnerMentalLoad = 0;
+
+    const applicableResponses = responses.filter(response => !response.notApplicable);
+
+    applicableResponses.forEach(response => {
+      const task = taskLookup[response.taskId];
+      if (!task) return;
+
+      const timeInMinutes = response.estimatedMinutes;
+      const mentalLoadWeight = task.mental_load_weight;
+
+      if (response.assignment === 'me') {
+        const sharePercent = (response.mySharePercentage || 100) / 100;
+        myVisibleTime += timeInMinutes * sharePercent;
+        myMentalLoad += timeInMinutes * mentalLoadWeight * sharePercent;
+        
+        const partnerSharePercent = 1 - sharePercent;
+        if (hasTwoAdults && partnerSharePercent > 0) {
+          partnerVisibleTime += timeInMinutes * partnerSharePercent;
+          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
+        }
+      } else if (response.assignment === 'partner') {
+        const sharePercent = (response.mySharePercentage || 0) / 100;
+        myVisibleTime += timeInMinutes * sharePercent;
+        myMentalLoad += timeInMinutes * mentalLoadWeight * sharePercent;
+        
+        const partnerSharePercent = 1 - sharePercent;
+        if (hasTwoAdults) {
+          partnerVisibleTime += timeInMinutes * partnerSharePercent;
+          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
+        }
+      } else if (response.assignment === 'shared') {
+        const mySharePercent = 50 / 100;
+        const partnerSharePercent = 1 - mySharePercent;
+        
+        myVisibleTime += timeInMinutes * mySharePercent;
+        myMentalLoad += timeInMinutes * mentalLoadWeight * mySharePercent;
+        
+        if (hasTwoAdults) {
+          partnerVisibleTime += timeInMinutes * partnerSharePercent;
+          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
+        }
+      }
+    });
+
+    const totalVisibleTime = myVisibleTime + partnerVisibleTime;
+    const totalMentalLoad = myMentalLoad + partnerMentalLoad;
+
+    return {
+      myVisibleTime: Math.round(myVisibleTime),
+      myMentalLoad: Math.round(myMentalLoad),
+      partnerVisibleTime: hasTwoAdults ? Math.round(partnerVisibleTime) : undefined,
+      partnerMentalLoad: hasTwoAdults ? Math.round(partnerMentalLoad) : undefined,
+      totalVisibleTime: Math.round(totalVisibleTime),
+      totalMentalLoad: Math.round(totalMentalLoad),
+      myVisiblePercentage: totalVisibleTime > 0 ? Math.round((myVisibleTime / totalVisibleTime) * 100) : 0,
+      myMentalPercentage: totalMentalLoad > 0 ? Math.round((myMentalLoad / totalMentalLoad) * 100) : 0,
+      partnerVisiblePercentage: hasTwoAdults && totalVisibleTime > 0 
+        ? Math.round((partnerVisibleTime / totalVisibleTime) * 100) : undefined,
+      partnerMentalPercentage: hasTwoAdults && totalMentalLoad > 0 
+        ? Math.round((partnerMentalLoad / totalMentalLoad) * 100) : undefined,
+    };
+  };
+
+  // Calculate results
+  const results = useMemo((): CalculatedResults => {
+    const taskLookup = mentalLoadTasks.reduce((acc, task) => {
+      acc[task.id] = task;
+      return acc;
+    }, {} as Record<string, typeof mentalLoadTasks[0]>);
+
+    const myCalculations = calculateLoadFromResponses(state.taskResponses, taskLookup, state.householdSetup.adults === 2);
+    
+    return {
+      ...myCalculations
+    };
+  }, [state.taskResponses, state.householdSetup]);
+
+  // Category analysis for detailed insights
+  const categoryAnalysis = useMemo(() => {
+    const taskLookup = mentalLoadTasks.reduce((acc, task) => {
+      acc[task.id] = task;
+      return acc;
+    }, {} as Record<string, typeof mentalLoadTasks[0]>);
+
+    const categories = Object.values(TASK_CATEGORIES);
+    const analysis: Record<string, {
+      myMentalLoad: number;
+      partnerMentalLoad: number;
+      myPercentage: number;
+      partnerPercentage: number;
+      taskCount: number;
+    }> = {};
+
+    categories.forEach(category => {
+      let myLoad = 0;
+      let partnerLoad = 0;
+      let taskCount = 0;
+
+      state.taskResponses.forEach(response => {
+        const task = taskLookup[response.taskId];
+        if (!task || task.category !== category || response.notApplicable) return;
+
+        taskCount++;
+        const timeInMinutes = response.estimatedMinutes;
+        const mentalLoadWeight = task.mental_load_weight;
+
+        if (response.assignment === 'me') {
+          const sharePercent = (response.mySharePercentage || 100) / 100;
+          myLoad += timeInMinutes * mentalLoadWeight * sharePercent;
+          if (state.householdSetup.adults === 2) {
+            partnerLoad += timeInMinutes * mentalLoadWeight * (1 - sharePercent);
+          }
+        } else if (response.assignment === 'partner') {
+          const sharePercent = (response.mySharePercentage || 0) / 100;
+          myLoad += timeInMinutes * mentalLoadWeight * sharePercent;
+          if (state.householdSetup.adults === 2) {
+            partnerLoad += timeInMinutes * mentalLoadWeight * (1 - sharePercent);
+          }
+        } else if (response.assignment === 'shared') {
+          const mySharePercent = 0.5;
+          myLoad += timeInMinutes * mentalLoadWeight * mySharePercent;
+          if (state.householdSetup.adults === 2) {
+            partnerLoad += timeInMinutes * mentalLoadWeight * (1 - mySharePercent);
+          }
+        }
+      });
+
+      const totalLoad = myLoad + partnerLoad;
+      analysis[category] = {
+        myMentalLoad: Math.round(myLoad),
+        partnerMentalLoad: Math.round(partnerLoad),
+        myPercentage: totalLoad > 0 ? Math.round((myLoad / totalLoad) * 100) : 0,
+        partnerPercentage: totalLoad > 0 ? Math.round((partnerLoad / totalLoad) * 100) : 0,
+        taskCount
+      };
+    });
+
+    return analysis;
+  }, [state.taskResponses, state.householdSetup]);
+
+  // Generate comprehensive personalized advice
+  const personalizedAdvice = useMemo(() => {
+    const advice: string[] = [];
+    const isTwoAdults = state.householdSetup.adults === 2;
+    
+    if (!isTwoAdults) {
+      advice.push("🏠 **Single Household Management**: You're managing all mental load responsibilities. This is completely normal for a single-adult household, but consider strategies for reducing overall burden through simplification, automation, and external support when possible.");
+      advice.push("💡 **Self-Care Priority**: Since you're handling everything, prioritize efficiency and self-care. Consider which tasks can be simplified, automated, or delegated to services when budget allows.");
+      return advice;
+    }
+
+    // Find dominant categories for each person
+    const myDominantCategories = Object.entries(categoryAnalysis)
+      .filter(([_, data]) => data.myPercentage > 70 && data.taskCount > 0)
+      .map(([category, _]) => category);
+
+    const partnerDominantCategories = Object.entries(categoryAnalysis)
+      .filter(([_, data]) => data.partnerPercentage > 70 && data.taskCount > 0)
+      .map(([category, _]) => category);
+
+    // Overall mental load balance analysis
+    const myTotalPercentage = results.myMentalPercentage;
+    const partnerTotalPercentage = results.partnerMentalPercentage || 0;
+
+    if (Math.abs(myTotalPercentage - 50) > 20) {
+      if (myTotalPercentage > 70) {
+        advice.push(`⚖️ **Significant Workload Imbalance**: You're carrying ${myTotalPercentage}% of the mental load, which is substantially higher than your partner's ${partnerTotalPercentage}%. Research by Daminger (2019) shows this level of imbalance can lead to chronic stress, relationship tension, and burnout over time.`);
+        advice.push(`🔄 **Rebalancing Recommendation**: Consider having a conversation about redistributing some responsibilities. This isn't about blame - it's about creating a more sustainable household dynamic that supports both partners' well-being.`);
+      } else if (myTotalPercentage < 30) {
+        advice.push(`⚖️ **Partner Carries Heavier Load**: Your partner is handling ${partnerTotalPercentage}% of the mental load. While this distribution might work for your relationship dynamics, it's worth periodically checking if this feels fair and sustainable for both of you.`);
+        advice.push(`🤝 **Consider Offering Support**: Look for opportunities to take on additional mental load responsibilities, especially in areas where you have capacity or interest.`);
+      }
+    } else {
+      advice.push(`✅ **Healthy Distribution**: You have a well-balanced mental load distribution (${myTotalPercentage}% vs ${partnerTotalPercentage}%). This suggests strong collaboration in household management and is associated with better relationship satisfaction according to research by Dean et al. (2022).`);
+    }
+
+    // Detailed category-specific insights with actionable advice
+    if (myDominantCategories.includes(TASK_CATEGORIES.ANTICIPATION)) {
+      advice.push(`📅 **Chief Household Planner**: You're handling most **Anticipation** tasks, making you the primary forward-thinker for your household. This invisible cognitive work includes meal planning, scheduling, and thinking ahead about family needs. While crucial, this constant mental planning can be exhausting.`);
+      advice.push(`💡 **Planning Tips**: Consider sharing the planning load by having your partner take ownership of specific areas (e.g., they handle all vacation planning while you handle meal planning). Digital tools like shared calendars and meal planning apps can also reduce the cognitive burden.`);
+    }
+
+    if (myDominantCategories.includes(TASK_CATEGORIES.EMOTIONAL_LABOUR)) {
+      advice.push(`💕 **Emotional Manager**: You're carrying most of the **Emotional Labour** - managing family conflicts, providing emotional support, and maintaining relationships. This type of work requires constant emotional availability and can be particularly draining, as noted in Hochschild's seminal research on emotional labor.`);
+      advice.push(`🗣️ **Communication Strategy**: Consider discussing emotional labor explicitly with your partner. Many people don't realize how much emotional work goes into relationship maintenance. Setting boundaries and asking for support in this area is completely valid.`);
+    }
+
+    if (myDominantCategories.includes(TASK_CATEGORIES.MONITORING)) {
+      advice.push(`👀 **The Family Memory Bank**: You're responsible for most **Monitoring** tasks - tracking appointments, following up on delegated work, and ensuring quality standards. This makes you the household's memory and quality controller, but can create a sense that you're constantly "nagging."`)
+      advice.push(`📋 **Delegation Strategy**: Consider creating systems that transfer monitoring responsibility to your partner for specific areas. For example, they could own all pet-related appointments and follow-ups, reducing your mental tracking load.`);
+    }
+
+    if (myDominantCategories.includes(TASK_CATEGORIES.IDENTIFICATION)) {
+      advice.push(`🔍 **The Household Scanner**: You're the primary person **Identifying** what needs attention - noticing when things are dirty, broken, or running low. This constant environmental scanning is mentally taxing because it never switches off.`);
+      advice.push(`👁️ **Awareness Building**: Help your partner develop their "noticing" skills by explicitly pointing out what you're seeing. Over time, this can help redistribute the identification load more evenly.`);
+    }
+
+    if (myDominantCategories.includes(TASK_CATEGORIES.DECISION_MAKING)) {
+      advice.push(`🎯 **Chief Decision Maker**: You're handling most **Decision-Making** tasks - from choosing service providers to making daily priority calls. This decision fatigue can be cognitively exhausting and may impact your energy for other life decisions.`);
+      advice.push(`⚖️ **Decision Distribution**: Consider creating "decision ownership" areas where your partner has full authority. This reduces your decision load and can actually improve efficiency by eliminating back-and-forth discussions.`);
+    }
+
+    // Partner strengths recognition
+    if (partnerDominantCategories.length > 0) {
+      const partnerStrengths = partnerDominantCategories.map(cat => {
+        switch(cat) {
+          case TASK_CATEGORIES.ANTICIPATION: return "future planning";
+          case TASK_CATEGORIES.EMOTIONAL_LABOUR: return "emotional support";
+          case TASK_CATEGORIES.MONITORING: return "progress tracking";
+          case TASK_CATEGORIES.IDENTIFICATION: return "need identification";
+          case TASK_CATEGORIES.DECISION_MAKING: return "decision making";
+          default: return cat.toLowerCase();
+        }
+      }).join(" and ");
+      
+      advice.push(`🌟 **Partner's Strengths**: Your partner excels in ${partnerStrengths}. This contribution is valuable and helps maintain household balance. Acknowledging these strengths can improve relationship dynamics and encourage continued engagement.`);
+    }
+
+    // Shared responsibilities insight
+    const sharedCategories = Object.entries(categoryAnalysis)
+      .filter(([_, data]) => Math.abs(data.myPercentage - 50) < 20 && data.taskCount > 0)
+      .map(([category, _]) => category);
+
+    if (sharedCategories.length > 0) {
+      advice.push(`🤝 **Collaborative Success**: You're effectively sharing responsibilities in **${sharedCategories.join(', ')}**. This balanced approach helps prevent individual overwhelm and models healthy partnership dynamics.`);
+    }
+
+    // Specific recommendations based on household composition
+    if (state.householdSetup.children > 0 && myDominantCategories.includes(TASK_CATEGORIES.EMOTIONAL_LABOUR)) {
+      advice.push(`👨‍👩‍👧‍👦 **Parenting Load**: With children in the household, emotional labor becomes even more complex. Consider explicitly discussing how to share the emotional support, school communication, and social coordination that children require.`);
+    }
+
+    if (state.householdSetup.isEmployed && state.householdSetup.partnerEmployed) {
+      advice.push(`💼 **Dual Career Considerations**: Both partners being employed adds complexity to mental load management. Consider how work schedules and stress levels impact household responsibilities, and adjust mental load distribution accordingly.`);
+    }
+
+    // Future-focused advice
+    if (myDominantCategories.length > 2) {
+      advice.push(`⚠️ **Overwhelm Risk**: You're dominant in multiple mental load categories (${myDominantCategories.join(', ')}), which puts you at risk for burnout. Research shows that carrying multiple types of mental load simultaneously is particularly stressful.`);
+      advice.push(`🎯 **Strategic Redistribution**: Consider prioritizing one category to redistribute first. Start with the category that feels most burdensome or time-consuming, and work with your partner to transfer ownership gradually.`);
+    }
+
+    if (partnerDominantCategories.length === 0 && isTwoAdults) {
+      advice.push(`🔄 **Growth Opportunity**: Your partner isn't leading in any mental load category yet. This represents an opportunity for them to take ownership of a specific area that aligns with their interests or schedule.`);
+      advice.push(`💬 **Conversation Starter**: Frame this as an opportunity for your partner to contribute more meaningfully, rather than as criticism. For example: "Would you be interested in taking full ownership of [specific category] so I can focus more energy on other areas?"`);
+    }
+
+    return advice;
+  }, [categoryAnalysis, results, state.householdSetup]);
 
   const chartData = useMemo(() => {
     const taskLookup = mentalLoadTasks.reduce((acc, task) => {
