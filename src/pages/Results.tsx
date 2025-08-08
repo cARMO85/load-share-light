@@ -18,42 +18,89 @@ const Results: React.FC = () => {
       return acc;
     }, {} as Record<string, typeof mentalLoadTasks[0]>);
 
+    const isTogetherMode = state.householdSetup.assessmentMode === 'together';
+    
+    // Calculate from my perspective
+    const myCalculations = calculateLoadFromResponses(state.taskResponses, taskLookup, state.householdSetup.adults === 2);
+    
+    // Calculate from partner's perspective (if together mode)
+    let partnerCalculations = null;
+    let perceptionGaps = null;
+    
+    if (isTogetherMode && state.partnerTaskResponses && state.partnerTaskResponses.length > 0) {
+      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses, taskLookup, true);
+      
+      // Calculate perception gaps
+      perceptionGaps = {
+        myVisibleTimeGap: partnerCalculations.myVisibleTime - myCalculations.myVisibleTime,
+        myMentalLoadGap: partnerCalculations.myMentalLoad - myCalculations.myMentalLoad,
+        partnerVisibleTimeGap: partnerCalculations.partnerVisibleTime! - myCalculations.partnerVisibleTime!,
+        partnerMentalLoadGap: partnerCalculations.partnerMentalLoad! - myCalculations.partnerMentalLoad!,
+      };
+    }
+
+    return {
+      ...myCalculations,
+      partnerPerspectiveMyVisibleTime: partnerCalculations?.myVisibleTime,
+      partnerPerspectiveMyMentalLoad: partnerCalculations?.myMentalLoad,
+      partnerPerspectivePartnerVisibleTime: partnerCalculations?.partnerVisibleTime,
+      partnerPerspectivePartnerMentalLoad: partnerCalculations?.partnerMentalLoad,
+      perceptionGaps
+    };
+  }, [state.taskResponses, state.partnerTaskResponses, state.householdSetup]);
+
+  // Helper function to calculate loads using exact formula: Mental Load Score = (Time × Weight × Share%)
+  const calculateLoadFromResponses = (responses: typeof state.taskResponses, taskLookup: Record<string, typeof mentalLoadTasks[0]>, hasTwoAdults: boolean) => {
     let myVisibleTime = 0;
     let myMentalLoad = 0;
     let partnerVisibleTime = 0;
     let partnerMentalLoad = 0;
 
     // Filter out not applicable tasks
-    const applicableResponses = state.taskResponses.filter(response => !response.notApplicable);
+    const applicableResponses = responses.filter(response => !response.notApplicable);
 
     applicableResponses.forEach(response => {
       const task = taskLookup[response.taskId];
       if (!task) return;
 
-      const minutes = response.estimatedMinutes;
-      const mentalWeight = task.mental_load_weight;
+      const timeInMinutes = response.estimatedMinutes;
+      const mentalLoadWeight = task.mental_load_weight;
 
       if (response.assignment === 'me') {
-        // Me: 100% to me, 0% to partner
-        myVisibleTime += minutes;
-        myMentalLoad += minutes * mentalWeight;
+        // Me: 100% share
+        const sharePercent = (response.mySharePercentage || 100) / 100;
+        myVisibleTime += timeInMinutes * sharePercent;
+        myMentalLoad += timeInMinutes * mentalLoadWeight * sharePercent;
+        
+        // Partner gets remainder
+        const partnerSharePercent = 1 - sharePercent;
+        if (hasTwoAdults && partnerSharePercent > 0) {
+          partnerVisibleTime += timeInMinutes * partnerSharePercent;
+          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
+        }
       } else if (response.assignment === 'partner') {
-        // Partner: 0% to me, 100% to partner
-        if (state.householdSetup.adults === 2) {
-          partnerVisibleTime += minutes;
-          partnerMentalLoad += minutes * mentalWeight;
+        // Partner: 100% share  
+        const sharePercent = (response.mySharePercentage || 0) / 100;
+        myVisibleTime += timeInMinutes * sharePercent;
+        myMentalLoad += timeInMinutes * mentalLoadWeight * sharePercent;
+        
+        // Partner gets remainder
+        const partnerSharePercent = 1 - sharePercent;
+        if (hasTwoAdults) {
+          partnerVisibleTime += timeInMinutes * partnerSharePercent;
+          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
         }
       } else if (response.assignment === 'shared') {
-        // Shared: use mySharePercentage (default 50%)
-        const myShare = (response.mySharePercentage || 50) / 100;
-        const partnerShare = 1 - myShare;
+        // Shared: 50/50 by default
+        const mySharePercent = 50 / 100; // Always 50/50 for shared
+        const partnerSharePercent = 1 - mySharePercent;
         
-        myVisibleTime += minutes * myShare;
-        myMentalLoad += minutes * mentalWeight * myShare;
+        myVisibleTime += timeInMinutes * mySharePercent;
+        myMentalLoad += timeInMinutes * mentalLoadWeight * mySharePercent;
         
-        if (state.householdSetup.adults === 2) {
-          partnerVisibleTime += minutes * partnerShare;
-          partnerMentalLoad += minutes * mentalWeight * partnerShare;
+        if (hasTwoAdults) {
+          partnerVisibleTime += timeInMinutes * partnerSharePercent;
+          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
         }
       }
     });
@@ -64,18 +111,18 @@ const Results: React.FC = () => {
     return {
       myVisibleTime: Math.round(myVisibleTime),
       myMentalLoad: Math.round(myMentalLoad),
-      partnerVisibleTime: state.householdSetup.adults === 2 ? Math.round(partnerVisibleTime) : undefined,
-      partnerMentalLoad: state.householdSetup.adults === 2 ? Math.round(partnerMentalLoad) : undefined,
+      partnerVisibleTime: hasTwoAdults ? Math.round(partnerVisibleTime) : undefined,
+      partnerMentalLoad: hasTwoAdults ? Math.round(partnerMentalLoad) : undefined,
       totalVisibleTime: Math.round(totalVisibleTime),
       totalMentalLoad: Math.round(totalMentalLoad),
       myVisiblePercentage: totalVisibleTime > 0 ? Math.round((myVisibleTime / totalVisibleTime) * 100) : 0,
       myMentalPercentage: totalMentalLoad > 0 ? Math.round((myMentalLoad / totalMentalLoad) * 100) : 0,
-      partnerVisiblePercentage: state.householdSetup.adults === 2 && totalVisibleTime > 0 
+      partnerVisiblePercentage: hasTwoAdults && totalVisibleTime > 0 
         ? Math.round((partnerVisibleTime / totalVisibleTime) * 100) : undefined,
-      partnerMentalPercentage: state.householdSetup.adults === 2 && totalMentalLoad > 0 
+      partnerMentalPercentage: hasTwoAdults && totalMentalLoad > 0 
         ? Math.round((partnerMentalLoad / totalMentalLoad) * 100) : undefined,
     };
-  }, [state.taskResponses, state.householdSetup]);
+  };
 
   const steps = [
     { title: "Setup", description: "Household info" },
@@ -90,6 +137,8 @@ const Results: React.FC = () => {
   };
 
   const isSingleAdult = state.householdSetup.adults === 1;
+  const isTogetherMode = state.householdSetup.assessmentMode === 'together';
+  const hasPerceptionGaps = results.perceptionGaps && state.partnerTaskResponses?.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
@@ -204,6 +253,60 @@ const Results: React.FC = () => {
                     <p className="text-sm text-secondary-foreground">
                       You're carrying a significant portion of the household's mental load. 
                       Consider discussing task redistribution with your partner.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Perception Gaps for Together Mode */}
+            {hasPerceptionGaps && (
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">Perception Comparison</h3>
+                <p className="text-sm text-muted-foreground">
+                  Comparing how each of you sees the workload distribution:
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                    <h4 className="font-medium text-primary mb-2">Your Workload (from both perspectives)</h4>
+                    <div className="space-y-1 text-sm">
+                      <div>Your view: {results.myVisibleTime} min visible, {results.myMentalLoad} mental load</div>
+                      <div>Partner's view: {results.partnerPerspectiveMyVisibleTime} min visible, {results.partnerPerspectiveMyMentalLoad} mental load</div>
+                      {results.perceptionGaps && (
+                        <div className="text-xs text-muted-foreground mt-2">
+                          Gap: {results.perceptionGaps.myVisibleTimeGap > 0 ? '+' : ''}{results.perceptionGaps.myVisibleTimeGap} min visible, 
+                          {results.perceptionGaps.myMentalLoadGap > 0 ? '+' : ''}{results.perceptionGaps.myMentalLoadGap} mental load
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-secondary/10 border border-secondary/20">
+                    <h4 className="font-medium text-secondary mb-2">Partner's Workload (from both perspectives)</h4>
+                    <div className="space-y-1 text-sm">
+                      <div>Your view: {results.partnerVisibleTime} min visible, {results.partnerMentalLoad} mental load</div>
+                      <div>Partner's view: {results.partnerPerspectivePartnerVisibleTime} min visible, {results.partnerPerspectivePartnerMentalLoad} mental load</div>
+                      {results.perceptionGaps && (
+                        <div className="text-xs text-muted-foreground mt-2">
+                          Gap: {results.perceptionGaps.partnerVisibleTimeGap > 0 ? '+' : ''}{results.perceptionGaps.partnerVisibleTimeGap} min visible, 
+                          {results.perceptionGaps.partnerMentalLoadGap > 0 ? '+' : ''}{results.perceptionGaps.partnerMentalLoadGap} mental load
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {results.perceptionGaps && (
+                  Math.abs(results.perceptionGaps.myVisibleTimeGap) > 30 || 
+                  Math.abs(results.perceptionGaps.partnerVisibleTimeGap) > 30 ||
+                  Math.abs(results.perceptionGaps.myMentalLoadGap) > 50 ||
+                  Math.abs(results.perceptionGaps.partnerMentalLoadGap) > 50
+                ) && (
+                  <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+                    <p className="text-sm text-accent-foreground">
+                      <strong>Significant perception gaps detected!</strong> These differences in how you each view the workload 
+                      distribution can be valuable discussion points for better household balance.
                     </p>
                   </div>
                 )}

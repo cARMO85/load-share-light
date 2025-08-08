@@ -40,4 +40,15 @@ export interface CalculatedResults {
   myMentalPercentage: number;
   partnerVisiblePercentage?: number;
   partnerMentalPercentage?: number;
+  // For together mode comparison
+  partnerPerspectiveMyVisibleTime?: number;
+  partnerPerspectiveMyMentalLoad?: number;
+  partnerPerspectivePartnerVisibleTime?: number;
+  partnerPerspectivePartnerMentalLoad?: number;
+  perceptionGaps?: {
+    myVisibleTimeGap: number;
+    myMentalLoadGap: number;
+    partnerVisibleTimeGap: number;
+    partnerMentalLoadGap: number;
+  };
 }
