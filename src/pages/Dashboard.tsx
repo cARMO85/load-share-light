@@ -21,7 +21,7 @@ import {
   Legend,
   Tooltip
 } from 'recharts';
-import { RotateCcw, Download, Share2, Lightbulb, Calendar, Eye, Monitor, HeartHandshake, BarChart3 } from 'lucide-react';
+import { RotateCcw, Download, Share2, Lightbulb, Calendar, Eye, Monitor, HeartHandshake, BarChart3, Heart, Brain, TrendingUp, MessageCircle } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -282,6 +282,98 @@ const Dashboard: React.FC = () => {
 
     return advice;
   }, [categoryAnalysis, results, state.householdSetup]);
+
+  // Emotional Impact Analysis
+  const emotionalInsights = useMemo(() => {
+    const insights = [];
+    const isTwoAdults = state.householdSetup.adults === 2;
+    const { emotionalImpactResponses, partnerEmotionalImpactResponses } = state;
+
+    if (!emotionalImpactResponses) return insights;
+
+    // Stress analysis
+    if (emotionalImpactResponses.stressLevel >= 4) {
+      insights.push({
+        type: 'stress',
+        level: 'high',
+        message: 'You report high stress levels about household responsibilities. This suggests your current mental load may be unsustainable.',
+        recommendation: 'Consider identifying 2-3 specific tasks to delegate or redistribute immediately.'
+      });
+    } else if (emotionalImpactResponses.stressLevel >= 3) {
+      insights.push({
+        type: 'stress',
+        level: 'moderate',
+        message: 'You experience moderate stress about household responsibilities.',
+        recommendation: 'Proactive redistribution could help prevent stress escalation.'
+      });
+    }
+
+    // Fairness perception
+    if (emotionalImpactResponses.fairnessLevel >= 4) {
+      insights.push({
+        type: 'fairness',
+        level: 'unfair',
+        message: 'You frequently feel there\'s an unfair division of work.',
+        recommendation: 'This perception gap is a key conversation starter with your partner about workload redistribution.'
+      });
+    }
+
+    // Satisfaction analysis
+    if (emotionalImpactResponses.satisfactionLevel <= 2) {
+      insights.push({
+        type: 'satisfaction',
+        level: 'low',
+        message: 'Low satisfaction with current work sharing arrangements.',
+        recommendation: 'Focus on creating clear agreements about task ownership and expectations.'
+      });
+    }
+
+    // Communication frequency
+    if (emotionalImpactResponses.conversationFrequency <= 2) {
+      insights.push({
+        type: 'communication',
+        level: 'low',
+        message: 'Infrequent conversations about task redistribution.',
+        recommendation: 'Regular check-ins (monthly) about household responsibilities can prevent issues from building up.'
+      });
+    }
+
+    // Partner comparison insights (for couple mode)
+    if (isTwoAdults && partnerEmotionalImpactResponses) {
+      const stressDiff = Math.abs(emotionalImpactResponses.stressLevel - partnerEmotionalImpactResponses.stressLevel);
+      const fairnessDiff = Math.abs(emotionalImpactResponses.fairnessLevel - partnerEmotionalImpactResponses.fairnessLevel);
+      const satisfactionDiff = Math.abs(emotionalImpactResponses.satisfactionLevel - partnerEmotionalImpactResponses.satisfactionLevel);
+
+      if (stressDiff >= 2) {
+        insights.push({
+          type: 'partner-stress',
+          level: 'gap',
+          message: `You and your partner have different stress levels about household work (${emotionalImpactResponses.stressLevel}/5 vs ${partnerEmotionalImpactResponses.stressLevel}/5).`,
+          recommendation: 'Discuss how stress manifests differently for each of you and what support looks like.'
+        });
+      }
+
+      if (fairnessDiff >= 2) {
+        insights.push({
+          type: 'partner-fairness',
+          level: 'gap',
+          message: `You have different perceptions of fairness in work division (${emotionalImpactResponses.fairnessLevel}/5 vs ${partnerEmotionalImpactResponses.fairnessLevel}/5).`,
+          recommendation: 'This is a common disconnect. Share your specific examples of what feels unfair.'
+        });
+      }
+
+      if (satisfactionDiff >= 2) {
+        insights.push({
+          type: 'partner-satisfaction',
+          level: 'gap',
+          message: `Different satisfaction levels with current arrangements (${emotionalImpactResponses.satisfactionLevel}/5 vs ${partnerEmotionalImpactResponses.satisfactionLevel}/5).`,
+          recommendation: 'Explore what would increase satisfaction for both partners.'
+        });
+      }
+    }
+
+    return insights;
+  }, [state.emotionalImpactResponses, state.partnerEmotionalImpactResponses, state.householdSetup.adults]);
 
   const chartData = useMemo(() => {
     const taskLookup = mentalLoadTasks.reduce((acc, task) => {
@@ -729,6 +821,235 @@ const Dashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Emotional Impact & Interpretation */}
+        {state.emotionalImpactResponses && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-primary" />
+                Emotional Impact Analysis
+              </CardTitle>
+              <CardDescription>
+                How the mental load is affecting your well-being and relationship dynamics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Current Impact Scores */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground mb-3">Your Well-being Indicators</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                      <span className="text-sm font-medium">Stress Level</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <div
+                              key={i}
+                              className={`w-3 h-3 rounded-full ${
+                                i <= state.emotionalImpactResponses.stressLevel
+                                  ? 'bg-destructive'
+                                  : 'bg-muted'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {state.emotionalImpactResponses.stressLevel}/5
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                      <span className="text-sm font-medium">Fairness Perception</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <div
+                              key={i}
+                              className={`w-3 h-3 rounded-full ${
+                                i <= state.emotionalImpactResponses.fairnessLevel
+                                  ? 'bg-warning'
+                                  : 'bg-muted'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {state.emotionalImpactResponses.fairnessLevel}/5
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                      <span className="text-sm font-medium">Satisfaction Level</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <div
+                              key={i}
+                              className={`w-3 h-3 rounded-full ${
+                                i <= state.emotionalImpactResponses.satisfactionLevel
+                                  ? 'bg-primary'
+                                  : 'bg-muted'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {state.emotionalImpactResponses.satisfactionLevel}/5
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                      <span className="text-sm font-medium">Communication Frequency</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <div
+                              key={i}
+                              className={`w-3 h-3 rounded-full ${
+                                i <= state.emotionalImpactResponses.conversationFrequency
+                                  ? 'bg-accent'
+                                  : 'bg-muted'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {state.emotionalImpactResponses.conversationFrequency}/5
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Partner Comparison (if available) */}
+                {state.householdSetup.adults === 2 && state.partnerEmotionalImpactResponses && (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-foreground mb-3">Partner Comparison</h4>
+                    <div className="space-y-3">
+                      <div className="p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Stress Levels</span>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span>You: {state.emotionalImpactResponses.stressLevel}/5</span>
+                            <span>Partner: {state.partnerEmotionalImpactResponses.stressLevel}/5</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 h-2">
+                          <div 
+                            className="bg-primary rounded-l" 
+                            style={{ width: `${(state.emotionalImpactResponses.stressLevel / 5) * 50}%` }}
+                          />
+                          <div 
+                            className="bg-accent rounded-r" 
+                            style={{ width: `${(state.partnerEmotionalImpactResponses.stressLevel / 5) * 50}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Fairness Perception</span>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span>You: {state.emotionalImpactResponses.fairnessLevel}/5</span>
+                            <span>Partner: {state.partnerEmotionalImpactResponses.fairnessLevel}/5</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 h-2">
+                          <div 
+                            className="bg-primary rounded-l" 
+                            style={{ width: `${(state.emotionalImpactResponses.fairnessLevel / 5) * 50}%` }}
+                          />
+                          <div 
+                            className="bg-accent rounded-r" 
+                            style={{ width: `${(state.partnerEmotionalImpactResponses.fairnessLevel / 5) * 50}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Satisfaction Levels</span>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span>You: {state.emotionalImpactResponses.satisfactionLevel}/5</span>
+                            <span>Partner: {state.partnerEmotionalImpactResponses.satisfactionLevel}/5</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 h-2">
+                          <div 
+                            className="bg-primary rounded-l" 
+                            style={{ width: `${(state.emotionalImpactResponses.satisfactionLevel / 5) * 50}%` }}
+                          />
+                          <div 
+                            className="bg-accent rounded-r" 
+                            style={{ width: `${(state.partnerEmotionalImpactResponses.satisfactionLevel / 5) * 50}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Emotional Insights */}
+              {emotionalInsights.length > 0 && (
+                <div className="mt-6 space-y-4">
+                  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Brain className="h-4 w-4" />
+                    Emotional Impact Insights
+                  </h4>
+                  <div className="grid gap-3">
+                    {emotionalInsights.map((insight, index) => (
+                      <div key={index} className={`p-4 rounded-lg border ${
+                        insight.level === 'high' || insight.level === 'unfair' || insight.level === 'low' 
+                          ? 'bg-destructive/5 border-destructive/20' 
+                          : insight.level === 'gap'
+                          ? 'bg-warning/5 border-warning/20'
+                          : 'bg-secondary/5 border-secondary/20'
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
+                            insight.level === 'high' || insight.level === 'unfair' || insight.level === 'low' 
+                              ? 'bg-destructive' 
+                              : insight.level === 'gap'
+                              ? 'bg-warning'
+                              : 'bg-secondary'
+                          }`} />
+                          <div className="space-y-2 flex-1">
+                            <p className="text-sm font-medium text-foreground">{insight.message}</p>
+                            <p className="text-xs text-muted-foreground">{insight.recommendation}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Conversation Starters */}
+              {state.householdSetup.adults === 2 && (
+                <div className="mt-6 p-4 rounded-lg bg-accent/5 border border-accent/20">
+                  <h4 className="font-semibold text-accent mb-3 flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    Conversation Starters for Your Partner
+                  </h4>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p>"I've been thinking about how we share household responsibilities. Could we look at this assessment together?"</p>
+                    <p>"I'd love to understand how you're feeling about our current setup. What's working well for you?"</p>
+                    <p>"Let's talk about what support looks like for each of us when we're feeling overwhelmed."</p>
+                    {state.emotionalImpactResponses.conversationFrequency <= 2 && (
+                      <p className="font-medium text-accent">"Could we schedule monthly check-ins about household tasks and how we're both feeling?"</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 justify-center">
