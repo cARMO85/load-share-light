@@ -296,10 +296,144 @@ const Dashboard: React.FC = () => {
           </Card>
         </div>
 
+        {/* What This Means Section */}
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 mb-8">
+          <CardHeader>
+            <CardTitle>What This Means: Understanding Your Results</CardTitle>
+            <CardDescription>
+              Mental load research and the importance of balance in household responsibilities
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Category Explanations */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground mb-3">Mental Load Categories Explained</h4>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <h5 className="font-medium text-primary mb-2">Anticipation</h5>
+                  <p className="text-sm text-muted-foreground">
+                    Thinking ahead about what needs to be done - remembering upcoming deadlines, 
+                    planning for future needs, and keeping track of household requirements before they become urgent.
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
+                  <h5 className="font-medium text-secondary mb-2">Identification</h5>
+                  <p className="text-sm text-muted-foreground">
+                    Noticing what needs to be done - seeing when something is dirty, broken, or running low, 
+                    and recognizing when household standards aren't being met.
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
+                  <h5 className="font-medium text-accent mb-2">Decision-making</h5>
+                  <p className="text-sm text-muted-foreground">
+                    Choosing how, when, and what to do - making decisions about priorities, methods, 
+                    standards, and resource allocation for household tasks.
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-lg bg-success/5 border border-success/20">
+                  <h5 className="font-medium text-success mb-2">Monitoring</h5>
+                  <p className="text-sm text-muted-foreground">
+                    Keeping track of progress and quality - ensuring tasks are completed properly, 
+                    following up on delegated work, and maintaining household standards.
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-lg bg-warning/5 border border-warning/20 md:col-span-2">
+                  <h5 className="font-medium text-warning mb-2">Emotional Labour</h5>
+                  <p className="text-sm text-muted-foreground">
+                    Managing feelings and relationships - providing emotional support, managing family conflicts, 
+                    maintaining relationships with extended family, and ensuring everyone's emotional well-being.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Research-Based Insights */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground mb-3">Why Balance Matters: Research Insights</h4>
+              
+              <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/20">
+                <h5 className="font-medium text-destructive mb-2">Health Impact</h5>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Research shows that excessive mental load can lead to chronic stress, anxiety, and burnout. 
+                  <span className="font-medium"> Daminger (2019)</span> found that the cognitive demands of household management 
+                  create a "second shift" of invisible work that can be mentally exhausting.
+                </p>
+                <p className="text-xs text-muted-foreground italic">
+                  "The mental work of running a household... requires sustained attention and creates cognitive fatigue" - Daminger, 2019
+                </p>
+              </div>
+              
+              <div className="p-4 rounded-lg bg-warning/5 border border-warning/20">
+                <h5 className="font-medium text-warning mb-2">Relationship Impact</h5>
+                <p className="text-sm text-muted-foreground mb-2">
+                  <span className="font-medium">Dean, Churchill, & Ruppanner (2022)</span> found that unequal distribution 
+                  of mental load can create relationship tension and feelings of resentment. When one partner carries 
+                  the majority of cognitive burden, it can affect relationship satisfaction and intimacy.
+                </p>
+                <p className="text-xs text-muted-foreground italic">
+                  "Invisible work imbalances contribute to relationship strain and reduced partnership satisfaction"
+                </p>
+              </div>
+              
+              <div className="p-4 rounded-lg bg-info/5 border border-info/20">
+                <h5 className="font-medium text-info mb-2">Economic Impact</h5>
+                <p className="text-sm text-muted-foreground mb-2">
+                  <span className="font-medium">Holten (2025)</span> calculated that unpaid care work represents a significant 
+                  economic burden, with the mental load component often undervalued but crucial for household functioning. 
+                  The <span className="font-medium">International Labour Organization (2024)</span> estimates care work at 24% of global GDP.
+                </p>
+              </div>
+            </div>
+
+            {/* Personalized Insights based on results */}
+            {(() => {
+              if (state.householdSetup.adults !== 2) return null;
+              
+              const myHighestCategory = chartData.radarData.reduce((max, cat) => 
+                cat['My Load'] > max['My Load'] ? cat : max, chartData.radarData[0]);
+              const partnerHighestCategory = chartData.radarData.reduce((max, cat) => 
+                cat['Partner Load'] > max['Partner Load'] ? cat : max, chartData.radarData[0]);
+              
+              return (
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground mb-3">Your Results in Context</h4>
+                  
+                  {myHighestCategory['My Load'] > partnerHighestCategory['Partner Load'] && (
+                    <div className="p-4 rounded-lg bg-orange/5 border border-orange/20">
+                      <h5 className="font-medium text-orange mb-2">Mental Load Imbalance Detected</h5>
+                      <p className="text-sm text-muted-foreground">
+                        You appear to carry a higher mental load than your partner, particularly in <span className="font-medium">{myHighestCategory.category}</span>. 
+                        Research suggests this imbalance can lead to cognitive fatigue and relationship strain over time. 
+                        Consider discussing task redistribution, especially the invisible planning and monitoring aspects.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {myHighestCategory.category === 'Emotional Labour' && myHighestCategory['My Load'] > 50 && (
+                    <div className="p-4 rounded-lg bg-purple/5 border border-purple/20">
+                      <h5 className="font-medium text-purple mb-2">High Emotional Labour Load</h5>
+                      <p className="text-sm text-muted-foreground">
+                        You're carrying significant emotional labour responsibilities. This type of work is often undervalued 
+                        but essential for family well-being. Consider sharing emotional support tasks and ensuring you have 
+                        adequate support systems for your own well-being.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
         {/* Key Insights */}
         <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 mb-8">
           <CardHeader>
-            <CardTitle>Key Insights & Recommendations</CardTitle>
+            <CardTitle>Next Steps & Recommendations</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {state.householdSetup.adults === 2 ? (
