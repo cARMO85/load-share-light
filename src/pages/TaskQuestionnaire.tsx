@@ -7,9 +7,9 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
-import { mentalLoadTasks } from '@/data/tasks';
+import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { TaskResponse } from '@/types/assessment';
-import { Clock, Brain, Users, Info, X, UserCheck, Heart } from 'lucide-react';
+import { Clock, Brain, Users, Info, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake } from 'lucide-react';
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +26,8 @@ const TaskQuestionnaire: React.FC = () => {
     }, {} as Record<string, TaskResponse>)
   );
 
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
+
   // Scroll to top when switching to partner's turn
   useEffect(() => {
     if (isTogetherMode && currentResponder === 'partner') {
@@ -33,10 +35,11 @@ const TaskQuestionnaire: React.FC = () => {
     }
   }, [currentResponder, isTogetherMode]);
 
-  const relevantTasks = useMemo(() => {
+  // Organize tasks by category
+  const categorizedTasks = useMemo(() => {
     const { householdSetup } = state;
     
-    return mentalLoadTasks.filter(task => {
+    const relevantTasks = mentalLoadTasks.filter(task => {
       return task.condition_trigger.some(condition => {
         switch (condition) {
           case 'all':
@@ -56,17 +59,52 @@ const TaskQuestionnaire: React.FC = () => {
         }
       });
     });
+
+    // Group tasks by category
+    const categories = Object.values(TASK_CATEGORIES);
+    return categories.map(category => ({
+      name: category,
+      tasks: relevantTasks.filter(task => task.category === category)
+    })).filter(category => category.tasks.length > 0);
   }, [state.householdSetup]);
+
+  const currentCategory = categorizedTasks[currentCategoryIndex];
+  const currentCategoryTasks = currentCategory?.tasks || [];
 
   const steps = [
     { title: "Setup", description: "Household info" },
-    { title: "Tasks", description: "Assign responsibilities" },
+    { title: "Mental Load Assessment", description: "Task responsibilities" },
     { title: "Results", description: "View calculations" },
     { title: "Visualize", description: "Charts & insights" }
   ];
 
+  // Category information with icons and descriptions
+  const categoryInfo = {
+    [TASK_CATEGORIES.ANTICIPATION]: {
+      icon: <Calendar className="h-6 w-6" />,
+      description: "Planning ahead and thinking about future needs"
+    },
+    [TASK_CATEGORIES.IDENTIFICATION]: {
+      icon: <Eye className="h-6 w-6" />,
+      description: "Noticing what needs attention and when"
+    },
+    [TASK_CATEGORIES.DECISION_MAKING]: {
+      icon: <Lightbulb className="h-6 w-6" />,
+      description: "Making choices and evaluating options"
+    },
+    [TASK_CATEGORIES.MONITORING]: {
+      icon: <BarChart3 className="h-6 w-6" />,
+      description: "Keeping track of progress and ensuring completion"
+    },
+    [TASK_CATEGORIES.EMOTIONAL_LABOUR]: {
+      icon: <HeartHandshake className="h-6 w-6" />,
+      description: "Managing emotions and relationships"
+    }
+  };
+
   const updateResponse = (taskId: string, updates: Partial<TaskResponse>) => {
-    const task = relevantTasks.find(t => t.id === taskId);
+    const allTasks = categorizedTasks.flatMap(cat => cat.tasks);
+    const task = allTasks.find(t => t.id === taskId);
     if (!task) return;
 
     const newResponse = {
@@ -86,15 +124,30 @@ const TaskQuestionnaire: React.FC = () => {
   };
 
   const handleNext = () => {
+    const isLastCategory = currentCategoryIndex >= categorizedTasks.length - 1;
+    
+    if (!isLastCategory) {
+      // Move to next category
+      setCurrentCategoryIndex(prev => prev + 1);
+      return;
+    }
+    
     if (isTogetherMode && currentResponder === 'me') {
-      // Switch to partner
+      // Switch to partner and reset category
       setCurrentResponder('partner');
+      setCurrentCategoryIndex(0);
       setResponses({});
       return;
     }
     
     setCurrentStep(3);
     navigate('/results');
+  };
+
+  const handlePrevious = () => {
+    if (currentCategoryIndex > 0) {
+      setCurrentCategoryIndex(prev => prev - 1);
+    }
   };
 
   // Dynamic styling based on current responder
@@ -123,11 +176,18 @@ const TaskQuestionnaire: React.FC = () => {
   const theme = getResponderTheme();
 
   const isSingleAdult = state.householdSetup.adults === 1;
-  const applicableTasks = relevantTasks.filter(task => !responses[task.id]?.notApplicable);
-  const isComplete = applicableTasks.every(task => 
+  const applicableTasks = currentCategoryTasks.filter(task => !responses[task.id]?.notApplicable);
+  const isCategoryComplete = applicableTasks.every(task => 
     responses[task.id]?.assignment || responses[task.id]?.notApplicable
   );
   const completedTasks = applicableTasks.filter(task => 
+    responses[task.id]?.assignment && !responses[task.id]?.notApplicable
+  ).length;
+
+  // Overall progress across all categories
+  const allTasks = categorizedTasks.flatMap(cat => cat.tasks);
+  const allApplicableTasks = allTasks.filter(task => !responses[task.id]?.notApplicable);
+  const totalCompletedTasks = allApplicableTasks.filter(task => 
     responses[task.id]?.assignment && !responses[task.id]?.notApplicable
   ).length;
 
@@ -155,7 +215,7 @@ const TaskQuestionnaire: React.FC = () => {
         
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-4">
-            Task Responsibility Assessment
+            Mental Load Assessment
             {isTogetherMode && (
               <div className="flex items-center justify-center gap-3 text-lg font-normal mt-3">
                 {theme.headerIcon}
@@ -165,6 +225,28 @@ const TaskQuestionnaire: React.FC = () => {
               </div>
             )}
           </h1>
+          
+          {/* Category Header */}
+          {currentCategory && (
+            <div className="mb-6">
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <div className={theme.accentColor}>
+                  {categoryInfo[currentCategory.name]?.icon}
+                </div>
+                <h2 className="text-2xl font-semibold text-foreground">
+                  {currentCategory.name}
+                </h2>
+              </div>
+              <p className="text-muted-foreground text-lg mb-2">
+                {categoryInfo[currentCategory.name]?.description}
+              </p>
+              <div className="text-sm text-muted-foreground">
+                Category {currentCategoryIndex + 1} of {categorizedTasks.length} 
+                • {completedTasks} of {applicableTasks.length} tasks completed
+              </div>
+            </div>
+          )}
+
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             For each task, indicate who primarily handles it and estimate the time involved.
           </p>
@@ -186,13 +268,15 @@ const TaskQuestionnaire: React.FC = () => {
               </p>
             </div>
           )}
+          
+          {/* Overall Progress Indicator */}
           <div className="mt-4 text-sm text-muted-foreground">
-            Progress: {completedTasks} of {applicableTasks.length} tasks completed
+            Overall Progress: {totalCompletedTasks} of {allApplicableTasks.length} total tasks completed
           </div>
         </div>
 
         <div className="space-y-6 mb-8">
-          {relevantTasks.map((task) => {
+          {currentCategoryTasks.map((task) => {
             const response = responses[task.id];
             const showSlider = (response?.assignment === 'me' || response?.assignment === 'partner') && !response?.notApplicable;
             const isNotApplicable = response?.notApplicable;
@@ -329,20 +413,32 @@ const TaskQuestionnaire: React.FC = () => {
           })}
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-4">
+          {currentCategoryIndex > 0 && (
+            <Button 
+              onClick={handlePrevious} 
+              variant="outline" 
+              size="lg"
+              className="px-8"
+            >
+              Previous Category
+            </Button>
+          )}
           <Button 
             onClick={handleNext} 
             variant="hero" 
             size="lg"
-            disabled={!isComplete}
+            disabled={!isCategoryComplete}
             className="px-8"
           >
-            {isComplete ? 
-              (isTogetherMode && currentResponder === 'me' ? 
-                "Continue to Partner's Turn" : 
-                'View Results'
-              ) : 
-              `Complete ${applicableTasks.length - completedTasks} more tasks`
+            {!isCategoryComplete ? 
+              `Complete ${applicableTasks.length - completedTasks} more tasks` :
+              currentCategoryIndex >= categorizedTasks.length - 1 ? 
+                (isTogetherMode && currentResponder === 'me' ? 
+                  "Continue to Partner's Turn" : 
+                  'View Results'
+                ) : 
+                `Next: ${categorizedTasks[currentCategoryIndex + 1]?.name}`
             }
           </Button>
         </div>
