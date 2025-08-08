@@ -126,7 +126,7 @@ const TaskQuestionnaire: React.FC = () => {
         <div className="space-y-6 mb-8">
           {relevantTasks.map((task) => {
             const response = responses[task.id];
-            const showSlider = response?.assignment === 'shared' && !response?.notApplicable;
+            const showSlider = (response?.assignment === 'me' || response?.assignment === 'partner') && !response?.notApplicable;
             const isNotApplicable = response?.notApplicable;
             
             return (
@@ -159,7 +159,7 @@ const TaskQuestionnaire: React.FC = () => {
                           <Button
                             variant={response?.assignment === 'me' ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => updateResponse(task.id, { assignment: 'me', mySharePercentage: undefined })}
+                            onClick={() => updateResponse(task.id, { assignment: 'me', mySharePercentage: 100 })}
                             className="flex-1"
                           >
                             {labels.me}
@@ -171,12 +171,12 @@ const TaskQuestionnaire: React.FC = () => {
                             className="flex-1"
                           >
                             <Users className="h-4 w-4 mr-1" />
-                            {labels.shared}
+                            {labels.shared} (50/50)
                           </Button>
                           <Button
                             variant={response?.assignment === 'partner' ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => updateResponse(task.id, { assignment: 'partner', mySharePercentage: undefined })}
+                            onClick={() => updateResponse(task.id, { assignment: 'partner', mySharePercentage: 0 })}
                             className="flex-1"
                           >
                             {labels.partner}
@@ -196,11 +196,11 @@ const TaskQuestionnaire: React.FC = () => {
                       {showSlider && (
                         <div className="space-y-3">
                           <Label className="text-sm font-medium">
-                            What percentage do you handle? ({response?.mySharePercentage || 50}%)
+                            How much do you handle this task? ({response?.mySharePercentage || (response?.assignment === 'me' ? 100 : 0)}%)
                           </Label>
                           <div className="px-3">
                             <Slider
-                              value={[response?.mySharePercentage || 50]}
+                              value={[response?.mySharePercentage || (response?.assignment === 'me' ? 100 : 0)]}
                               onValueChange={([value]) => updateResponse(task.id, { mySharePercentage: value })}
                               min={0}
                               max={100}
@@ -208,9 +208,9 @@ const TaskQuestionnaire: React.FC = () => {
                               className="w-full"
                             />
                             <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                              <span>Partner does it all</span>
-                              <span>50/50</span>
-                              <span>I do it all</span>
+                              <span>Partner does it all (0%)</span>
+                              <span>Equal (50%)</span>
+                              <span>I do it all (100%)</span>
                             </div>
                           </div>
                         </div>
