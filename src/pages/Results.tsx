@@ -12,43 +12,6 @@ const Results: React.FC = () => {
   const navigate = useNavigate();
   const { state, setCurrentStep } = useAssessment();
 
-  const results = useMemo((): CalculatedResults => {
-    const taskLookup = mentalLoadTasks.reduce((acc, task) => {
-      acc[task.id] = task;
-      return acc;
-    }, {} as Record<string, typeof mentalLoadTasks[0]>);
-
-    const isTogetherMode = state.householdSetup.assessmentMode === 'together';
-    
-    // Calculate from my perspective
-    const myCalculations = calculateLoadFromResponses(state.taskResponses, taskLookup, state.householdSetup.adults === 2);
-    
-    // Calculate from partner's perspective (if together mode)
-    let partnerCalculations = null;
-    let perceptionGaps = null;
-    
-    if (isTogetherMode && state.partnerTaskResponses && state.partnerTaskResponses.length > 0) {
-      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses, taskLookup, true);
-      
-      // Calculate perception gaps
-      perceptionGaps = {
-        myVisibleTimeGap: partnerCalculations.myVisibleTime - myCalculations.myVisibleTime,
-        myMentalLoadGap: partnerCalculations.myMentalLoad - myCalculations.myMentalLoad,
-        partnerVisibleTimeGap: partnerCalculations.partnerVisibleTime! - myCalculations.partnerVisibleTime!,
-        partnerMentalLoadGap: partnerCalculations.partnerMentalLoad! - myCalculations.partnerMentalLoad!,
-      };
-    }
-
-    return {
-      ...myCalculations,
-      partnerPerspectiveMyVisibleTime: partnerCalculations?.myVisibleTime,
-      partnerPerspectiveMyMentalLoad: partnerCalculations?.myMentalLoad,
-      partnerPerspectivePartnerVisibleTime: partnerCalculations?.partnerVisibleTime,
-      partnerPerspectivePartnerMentalLoad: partnerCalculations?.partnerMentalLoad,
-      perceptionGaps
-    };
-  }, [state.taskResponses, state.partnerTaskResponses, state.householdSetup]);
-
   // Helper function to calculate loads using exact formula: Mental Load Score = (Time × Weight × Share%)
   const calculateLoadFromResponses = (responses: typeof state.taskResponses, taskLookup: Record<string, typeof mentalLoadTasks[0]>, hasTwoAdults: boolean) => {
     let myVisibleTime = 0;
@@ -123,6 +86,43 @@ const Results: React.FC = () => {
         ? Math.round((partnerMentalLoad / totalMentalLoad) * 100) : undefined,
     };
   };
+
+  const results = useMemo((): CalculatedResults => {
+    const taskLookup = mentalLoadTasks.reduce((acc, task) => {
+      acc[task.id] = task;
+      return acc;
+    }, {} as Record<string, typeof mentalLoadTasks[0]>);
+
+    const isTogetherMode = state.householdSetup.assessmentMode === 'together';
+    
+    // Calculate from my perspective
+    const myCalculations = calculateLoadFromResponses(state.taskResponses, taskLookup, state.householdSetup.adults === 2);
+    
+    // Calculate from partner's perspective (if together mode)
+    let partnerCalculations = null;
+    let perceptionGaps = null;
+    
+    if (isTogetherMode && state.partnerTaskResponses && state.partnerTaskResponses.length > 0) {
+      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses, taskLookup, true);
+      
+      // Calculate perception gaps
+      perceptionGaps = {
+        myVisibleTimeGap: partnerCalculations.myVisibleTime - myCalculations.myVisibleTime,
+        myMentalLoadGap: partnerCalculations.myMentalLoad - myCalculations.myMentalLoad,
+        partnerVisibleTimeGap: partnerCalculations.partnerVisibleTime! - myCalculations.partnerVisibleTime!,
+        partnerMentalLoadGap: partnerCalculations.partnerMentalLoad! - myCalculations.partnerMentalLoad!,
+      };
+    }
+
+    return {
+      ...myCalculations,
+      partnerPerspectiveMyVisibleTime: partnerCalculations?.myVisibleTime,
+      partnerPerspectiveMyMentalLoad: partnerCalculations?.myMentalLoad,
+      partnerPerspectivePartnerVisibleTime: partnerCalculations?.partnerVisibleTime,
+      partnerPerspectivePartnerMentalLoad: partnerCalculations?.partnerMentalLoad,
+      perceptionGaps
+    };
+  }, [state.taskResponses, state.partnerTaskResponses, state.householdSetup]);
 
   const steps = [
     { title: "Setup", description: "Household info" },
