@@ -146,6 +146,11 @@ const TaskQuestionnaire: React.FC = () => {
                       <CardDescription className="mt-1">
                         Category: {task.category} • Mental load weight: {task.mental_load_weight}x
                       </CardDescription>
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                          {task.description}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
