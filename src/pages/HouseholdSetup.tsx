@@ -84,10 +84,10 @@ const HouseholdSetup: React.FC = () => {
                   className="h-auto p-4 flex flex-col items-center gap-2"
                 >
                   <UserCheck className="h-6 w-6" />
-                  <div className="text-center">
-                    <div className="font-medium">Single Person</div>
-                    <div className="text-xs text-muted-foreground">Living alone</div>
-                  </div>
+                   <div className="text-center">
+                     <div className="font-medium">Single Person</div>
+                     <div className="text-xs text-muted-foreground">Track your mental load & optimize your time</div>
+                   </div>
                 </Button>
                 
                 <Button
@@ -213,18 +213,56 @@ const HouseholdSetup: React.FC = () => {
             </div>
 
             {/* Garden */}
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-3">
-                <TreePine className="h-6 w-6 text-primary" />
-                <div>
-                  <Label className="text-base font-medium">Do you have a garden?</Label>
-                  <p className="text-sm text-muted-foreground">Yard, garden, or outdoor space requiring maintenance</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <TreePine className="h-6 w-6 text-primary" />
+                  <div>
+                    <Label className="text-base font-medium">Do you have a garden?</Label>
+                    <p className="text-sm text-muted-foreground">Yard, garden, or outdoor space requiring maintenance</p>
+                  </div>
                 </div>
+                <Switch
+                  checked={setup.hasGarden}
+                  onCheckedChange={(checked) => updateSetup({ hasGarden: checked, gardenSize: checked ? 'medium' : undefined })}
+                />
               </div>
-              <Switch
-                checked={setup.hasGarden}
-                onCheckedChange={(checked) => updateSetup({ hasGarden: checked })}
-              />
+
+              {setup.hasGarden && (
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="text-center mb-3">
+                    <Label className="text-base font-medium text-primary">What size is your garden?</Label>
+                    <p className="text-sm text-muted-foreground">This helps us estimate maintenance time</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant={setup.gardenSize === 'small' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateSetup({ gardenSize: 'small' })}
+                      className="text-xs"
+                    >
+                      Small
+                    </Button>
+                    <Button
+                      variant={setup.gardenSize === 'medium' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateSetup({ gardenSize: 'medium' })}
+                      className="text-xs"
+                    >
+                      Medium
+                    </Button>
+                    <Button
+                      variant={setup.gardenSize === 'large' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => updateSetup({ gardenSize: 'large' })}
+                      className="text-xs"
+                    >
+                      Large
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Employment */}

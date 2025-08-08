@@ -8,6 +8,7 @@ export interface HouseholdSetup {
   children: number;
   hasPets: boolean;
   hasGarden: boolean;
+  gardenSize?: 'small' | 'medium' | 'large';
   isEmployed: boolean;
   partnerEmployed?: boolean;
 }

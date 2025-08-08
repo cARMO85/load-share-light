@@ -17,6 +17,7 @@ const initialState: AssessmentState = {
     children: 0,
     hasPets: false,
     hasGarden: false,
+    gardenSize: undefined,
     isEmployed: false
   },
   taskResponses: [],
