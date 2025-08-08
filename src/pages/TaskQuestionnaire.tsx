@@ -129,6 +129,7 @@ const TaskQuestionnaire: React.FC = () => {
     if (!isLastCategory) {
       // Move to next category
       setCurrentCategoryIndex(prev => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     
@@ -137,6 +138,7 @@ const TaskQuestionnaire: React.FC = () => {
       setCurrentResponder('partner');
       setCurrentCategoryIndex(0);
       setResponses({});
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     
@@ -147,6 +149,7 @@ const TaskQuestionnaire: React.FC = () => {
   const handlePrevious = () => {
     if (currentCategoryIndex > 0) {
       setCurrentCategoryIndex(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
