@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { EmotionalImpactResponse } from '@/types/assessment';
-import { Zap, Scale, Smile, MessageCircle, Users, Heart } from 'lucide-react';
+import { Zap, Scale, Smile, MessageCircle, Users, Heart, Lightbulb, AlertTriangle } from 'lucide-react';
 
 const EmotionalImpact: React.FC = () => {
   const navigate = useNavigate();
-  const { state, setEmotionalImpactResponses, setPartnerEmotionalImpactResponses, setCurrentStep, setCurrentResponder } = useAssessment();
+  const { state, setEmotionalImpactResponses, setPartnerEmotionalImpactResponses, setCurrentStep, setCurrentResponder, addInsight } = useAssessment();
   
   const [responses, setResponses] = useState<EmotionalImpactResponse>({
     stressLevel: 3,
@@ -19,6 +20,9 @@ const EmotionalImpact: React.FC = () => {
     satisfactionLevel: 3,
     conversationFrequency: 3
   });
+
+  const [insights, setInsights] = useState<string>('');
+  const [showPerceptionGaps, setShowPerceptionGaps] = useState(false);
 
   const isPartnerTurn = state.currentResponder === 'partner';
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
@@ -39,14 +43,81 @@ const EmotionalImpact: React.FC = () => {
     { title: "Visualize", description: "Charts & insights" }
   ];
 
+  // Check for perception gaps when both responses are available
+  useEffect(() => {
+    if (isTogetherMode && state.emotionalImpactResponses && isPartnerTurn) {
+      setShowPerceptionGaps(true);
+    }
+  }, [isTogetherMode, state.emotionalImpactResponses, isPartnerTurn]);
+
+  const getPerceptionGaps = () => {
+    if (!state.emotionalImpactResponses || !isPartnerTurn) return [];
+    
+    const gaps = [];
+    const myResponses = state.emotionalImpactResponses;
+    const partnerResponses = responses;
+
+    questions.forEach(q => {
+      const myScore = myResponses[q.id as keyof EmotionalImpactResponse];
+      const partnerScore = partnerResponses[q.id as keyof EmotionalImpactResponse];
+      const difference = Math.abs(myScore - partnerScore);
+      
+      if (difference >= 2) {
+        gaps.push({
+          question: q.title,
+          myScore,
+          partnerScore,
+          difference,
+          icon: q.icon,
+          color: q.color
+        });
+      }
+    });
+    
+    return gaps;
+  };
+
+  const saveInsight = () => {
+    if (insights.trim()) {
+      addInsight({
+        id: `emotional-${Date.now()}`,
+        type: 'breakthrough',
+        description: insights.trim(),
+        timestamp: new Date()
+      });
+      setInsights('');
+    }
+  };
+
   const handleNext = () => {
+    // Save any pending insights
+    if (insights.trim()) {
+      saveInsight();
+    }
+
     if (isPartnerTurn) {
       setPartnerEmotionalImpactResponses(responses);
+      
+      // In together mode, check for perception gaps and generate insights
+      if (isTogetherMode && state.emotionalImpactResponses) {
+        const gaps = getPerceptionGaps();
+        gaps.forEach(gap => {
+          const gapType = gap.myScore > gap.partnerScore ? 'more stressed' : 'less stressed';
+          addInsight({
+            id: `gap-${gap.question.toLowerCase()}-${Date.now()}`,
+            type: 'disagreement',
+            description: `Perception gap in ${gap.question}: You rated ${gap.myScore}/5, partner rated ${gap.partnerScore}/5. You feel ${gapType} about this area.`,
+            timestamp: new Date()
+          });
+        });
+      }
+      
       setCurrentStep(5);
       navigate('/results');
     } else if (isTogetherMode) {
       setEmotionalImpactResponses(responses);
       setCurrentResponder('partner');
+      setShowPerceptionGaps(false);
       // Reset responses for partner
       setResponses({
         stressLevel: 3,
@@ -185,6 +256,65 @@ const EmotionalImpact: React.FC = () => {
                 </div>
               );
             })}
+
+            {/* Perception Gaps Display */}
+            {showPerceptionGaps && getPerceptionGaps().length > 0 && (
+              <div className="space-y-4 p-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  <h3 className="font-semibold text-amber-800">Perception Gaps Detected</h3>
+                </div>
+                <p className="text-sm text-amber-700 mb-4">
+                  You and your partner have different stress levels about these areas - perfect conversation starters!
+                </p>
+                
+                {getPerceptionGaps().map((gap, idx) => {
+                  const GapIcon = gap.icon;
+                  return (
+                    <div key={idx} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
+                      <GapIcon className={`h-4 w-4 ${gap.color}`} />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-800">{gap.question}</p>
+                        <p className="text-xs text-gray-600">
+                          You: {gap.myScore}/5 • Partner: {gap.partnerScore}/5 • Difference: {gap.difference}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Insights & Comments Section */}
+            {isTogetherMode && (
+              <div className="space-y-4 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-semibold text-blue-800">Discussion Insights</h3>
+                </div>
+                <p className="text-sm text-blue-700 mb-3">
+                  As you discuss these questions together, capture any insights, agreements, or important realizations:
+                </p>
+                
+                <Textarea
+                  value={insights}
+                  onChange={(e) => setInsights(e.target.value)}
+                  placeholder="What did you discover in your discussion? Any surprises or important agreements?"
+                  className="min-h-20 bg-white/70 border-blue-200 focus:border-blue-400"
+                />
+                
+                {insights.trim() && (
+                  <Button 
+                    onClick={saveInsight}
+                    variant="outline" 
+                    size="sm"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    Save Insight
+                  </Button>
+                )}
+              </div>
+            )}
 
             <div className="pt-6 space-y-3">
               <Button 
