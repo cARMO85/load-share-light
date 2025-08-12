@@ -4,15 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Input } from '@/components/ui/input';
-
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
-import { TaskResponse, TaskFrequency, TimeAdjustment } from '@/types/assessment';
+import { TaskResponse, TimeAdjustment } from '@/types/assessment';
 import { formatTimeDisplay, getFrequencyDisplayText } from '@/lib/timeUtils';
 import { calculateAdjustedTime, getTimeAdjustmentLabel, getTimeAdjustmentShortLabel, getTimeVariationExplanation } from '@/lib/timeAdjustmentUtils';
-import { Clock, Brain, Users, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { CoupleInsightCapture } from '@/components/CoupleInsightCapture';
+import { Clock, Brain, Users, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus, Info, MessageCircle } from 'lucide-react';
+
+interface InsightEntry {
+  id: string;
+  type: 'breakthrough' | 'disagreement' | 'surprise';
+  taskId?: string;
+  taskName?: string;
+  description: string;
+  timestamp: Date;
+}
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +38,9 @@ const TaskQuestionnaire: React.FC = () => {
   );
 
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
+  const [showInsightCapture, setShowInsightCapture] = useState(false);
+  const [insights, setInsights] = useState<InsightEntry[]>([]);
+  const [currentDiscussionTask, setCurrentDiscussionTask] = useState<{id: string; name: string} | null>(null);
 
   // Scroll to top when switching to partner's turn
   useEffect(() => {
@@ -150,7 +161,29 @@ const TaskQuestionnaire: React.FC = () => {
       return;
     }
     
-    // Check if together mode - go to perception gap, otherwise skip to emotional impact or results
+    // In together mode, show insight capture phase before continuing
+    if (isTogetherMode && !showInsightCapture) {
+      setShowInsightCapture(true);
+      return;
+    }
+    
+    // Continue to next phase
+    if (isTogetherMode) {
+      setCurrentStep(3);
+      navigate('/perception-gap');
+    } else {
+      setCurrentStep(4);
+      navigate('/emotional-impact');
+    }
+  };
+
+  const handleInsightAdded = (insight: InsightEntry) => {
+    setInsights(prev => [...prev, insight]);
+  };
+
+  const handleInsightContinue = () => {
+    // Store insights in context for later use in results
+    // For now, continue to next phase
     if (isTogetherMode) {
       setCurrentStep(3);
       navigate('/perception-gap');
@@ -228,6 +261,71 @@ const TaskQuestionnaire: React.FC = () => {
   };
 
   const labels = getAssignmentLabels();
+
+  // Show insight capture phase if in together mode and both partners completed tasks
+  if (isTogetherMode && showInsightCapture) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <ProgressSteps currentStep={2} totalSteps={6} steps={steps} />
+          
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-4">
+              Compare & Discuss
+              <div className="flex items-center justify-center gap-3 text-lg font-normal mt-3">
+                <MessageCircle className="h-6 w-6 text-primary" />
+                <span className="text-primary">Capture Your Insights</span>
+              </div>
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              Now that you've both completed the assessment, discuss your responses together. 
+              This is where the real mental load conversation begins - capture breakthrough moments and disagreements.
+            </p>
+          </div>
+
+          <CoupleInsightCapture
+            onInsightAdded={handleInsightAdded}
+            onContinue={handleInsightContinue}
+            insights={insights}
+            currentTask={currentDiscussionTask}
+          />
+
+          {/* Optional: Quick task reference for discussion */}
+          <div className="mt-8">
+            <Card className="border-muted">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  Task Reference for Discussion
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Click on any task to set context for your insight capture
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {categorizedTasks.flatMap(cat => cat.tasks).map(task => (
+                    <Button
+                      key={task.id}
+                      variant={currentDiscussionTask?.id === task.id ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setCurrentDiscussionTask({id: task.id, name: task.task_name})}
+                      className="justify-start text-left h-auto py-2 px-3"
+                    >
+                      <div className="truncate">
+                        <div className="font-medium text-sm">{task.task_name}</div>
+                        <div className="text-xs text-muted-foreground">{task.category}</div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${theme.gradientClass || 'from-background via-background to-primary/5'} py-8 px-4`}>
@@ -511,67 +609,40 @@ const TaskQuestionnaire: React.FC = () => {
           })}
         </div>
 
-        <div className="flex justify-center gap-4">
-          {currentCategoryIndex > 0 && (
-            <Button 
-              onClick={handlePrevious} 
-              variant="outline" 
-              size="lg"
-              className="px-8"
+          <div className="flex justify-between items-center mt-8">
+            <Button
+              onClick={handlePrevious}
+              variant="outline"
+              disabled={currentCategoryIndex === 0}
+              className="flex items-center gap-2"
             >
               Previous Category
             </Button>
-          )}
-          {currentCategoryIndex >= categorizedTasks.length - 1 && isCategoryComplete && !(isTogetherMode && currentResponder === 'me') ? (
-            <div className="flex flex-col gap-3 items-center">
-              <p className="text-sm text-muted-foreground text-center">
-                Your task assignment is complete! Choose your next step:
-              </p>
-              <div className="flex gap-3">
-                <Button 
-                  onClick={() => {
-                    setCurrentStep(5);
-                    navigate('/results');
-                  }}
-                  variant="hero" 
-                  size="lg"
-                  className="px-8"
-                >
-                  View Results Now
-                </Button>
-                <Button 
-                  onClick={handleNext}
-                  variant="outline" 
-                  size="lg"
-                  className="px-8"
-                >
-                  Add Optional Insights
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground text-center max-w-md">
-                Optional insights include perception comparison and emotional impact assessment for more detailed analysis
+            
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                {isCategoryComplete ? (
+                  <>✓ Category Complete ({completedTasks}/{applicableTasks.length} tasks)</>
+                ) : (
+                  <>{completedTasks}/{applicableTasks.length} tasks completed</>
+                )}
               </p>
             </div>
-          ) : (
-            <Button 
-              onClick={handleNext} 
-              variant="hero" 
-              size="lg"
+            
+            <Button
+              onClick={handleNext}
               disabled={!isCategoryComplete}
-              className="px-8"
+              className="flex items-center gap-2"
             >
-              {!isCategoryComplete ? 
-                `Complete ${applicableTasks.length - completedTasks} more tasks` :
-                currentCategoryIndex >= categorizedTasks.length - 1 ? 
-                  (isTogetherMode && currentResponder === 'me' ? 
-                    "Continue to Partner's Turn" : 
-                    'View Results'
-                  ) : 
-                  `Next: ${categorizedTasks[currentCategoryIndex + 1]?.name}`
-              }
+              {currentCategoryIndex >= categorizedTasks.length - 1 ? (
+                isTogetherMode && currentResponder === 'me' ? 
+                  "Partner's Turn" : 
+                  isTogetherMode ? "Compare & Discuss" : "Continue"
+              ) : (
+                "Next Category"
+              )}
             </Button>
-          )}
-        </div>
+          </div>
       </div>
     </div>
   );

@@ -1185,6 +1185,28 @@ const Dashboard: React.FC = () => {
           </Card>
         )}
 
+        {/* Couple Mode Insights Display */}
+        {state.householdSetup.assessmentMode === 'together' && (
+          <Card className="mb-8 border-primary/20 bg-gradient-to-br from-card to-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                Your Discussion Insights
+              </CardTitle>
+              <CardDescription>
+                Key breakthroughs and areas of disagreement captured during your assessment
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Insight capture feature will be available after completing the enhanced questionnaire.</p>
+                <p className="text-sm mt-2">This space will show your breakthrough moments and discussion points.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 justify-center">
           <Button variant="outline" onClick={() => navigate('/results')}>
@@ -1198,7 +1220,7 @@ const Dashboard: React.FC = () => {
             <Download className="h-4 w-4 mr-2" />
             Export Data
           </Button>
-          <Button variant="outline" onClick={handleStartOver}>
+          <Button variant="outline" onClick={resetAssessment}>
             <RotateCcw className="h-4 w-4 mr-2" />
             Start New Assessment
           </Button>
