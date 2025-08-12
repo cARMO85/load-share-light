@@ -9,9 +9,9 @@ import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { TaskResponse, TimeAdjustment } from '@/types/assessment';
 import { formatTimeDisplay, getFrequencyDisplayText } from '@/lib/timeUtils';
-import { calculateAdjustedTime, getTimeAdjustmentLabel, getTimeAdjustmentShortLabel, getTimeVariationExplanation } from '@/lib/timeAdjustmentUtils';
+import { calculateAdjustedTime, getTimeAdjustmentShortLabel } from '@/lib/timeAdjustmentUtils';
 import { CoupleInsightCapture } from '@/components/CoupleInsightCapture';
-import { Clock, Brain, Users, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus, Info, MessageCircle } from 'lucide-react';
+import { Clock, Brain, Users, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus, MessageCircle, AlertTriangle } from 'lucide-react';
 
 interface InsightEntry {
   id: string;
@@ -24,7 +24,7 @@ interface InsightEntry {
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
-  const { state, setTaskResponse, setPartnerTaskResponse, setCurrentStep, setCurrentResponder } = useAssessment();
+  const { state, setTaskResponse, setPartnerTaskResponse, setCurrentStep, setCurrentResponder, addInsight } = useAssessment();
   
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
   const currentResponder = state.currentResponder || 'me';
@@ -97,23 +97,23 @@ const TaskQuestionnaire: React.FC = () => {
   // Category information with icons and descriptions
   const categoryInfo = {
     [TASK_CATEGORIES.ANTICIPATION]: {
-      icon: <Calendar className="h-6 w-6" />,
+      icon: <Calendar className="h-5 w-5" />,
       description: "Planning ahead and thinking about future needs"
     },
     [TASK_CATEGORIES.IDENTIFICATION]: {
-      icon: <Eye className="h-6 w-6" />,
+      icon: <Eye className="h-5 w-5" />,
       description: "Noticing what needs attention and when"
     },
     [TASK_CATEGORIES.DECISION_MAKING]: {
-      icon: <Lightbulb className="h-6 w-6" />,
+      icon: <Lightbulb className="h-5 w-5" />,
       description: "Making choices and evaluating options"
     },
     [TASK_CATEGORIES.MONITORING]: {
-      icon: <BarChart3 className="h-6 w-6" />,
+      icon: <BarChart3 className="h-5 w-5" />,
       description: "Keeping track of progress and ensuring completion"
     },
     [TASK_CATEGORIES.EMOTIONAL_LABOUR]: {
-      icon: <HeartHandshake className="h-6 w-6" />,
+      icon: <HeartHandshake className="h-5 w-5" />,
       description: "Managing emotions and relationships"
     }
   };
@@ -177,25 +177,38 @@ const TaskQuestionnaire: React.FC = () => {
     }
   };
 
+  const handlePrevious = () => {
+    if (currentCategoryIndex > 0) {
+      setCurrentCategoryIndex(prev => prev - 1);
+    }
+  };
+
   const handleInsightAdded = (insight: InsightEntry) => {
-    setInsights(prev => [...prev, insight]);
+    // If insight has no description, prompt for it
+    if (!insight.description) {
+      const description = prompt(`Add a note about this ${insight.type}:`);
+      if (description && description.trim()) {
+        insight.description = description.trim();
+        setInsights(prev => [...prev, insight]);
+        addInsight(insight);
+      }
+    } else {
+      setInsights(prev => [...prev, insight]);
+      addInsight(insight);
+    }
   };
 
   const handleInsightContinue = () => {
     // Store insights in context for later use in results
-    // For now, continue to next phase
+    insights.forEach(insight => addInsight(insight));
+    
+    // Continue to next phase
     if (isTogetherMode) {
       setCurrentStep(3);
       navigate('/perception-gap');
     } else {
       setCurrentStep(4);
       navigate('/emotional-impact');
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentCategoryIndex > 0) {
-      setCurrentCategoryIndex(prev => prev - 1);
     }
   };
 
@@ -394,31 +407,32 @@ const TaskQuestionnaire: React.FC = () => {
           </div>
         </div>
 
-        <div className="space-y-6 mb-8">
+        <div className="space-y-4 mb-8">
           {currentCategoryTasks.map((task) => {
             const response = responses[task.id];
             const showSlider = (response?.assignment === 'me' || response?.assignment === 'partner') && !response?.notApplicable;
             const isNotApplicable = response?.notApplicable;
+            const taskInsights = insights.filter(insight => insight.taskId === task.id);
             
             return (
-              <Card key={task.id} className={`shadow-md border-0 transition-all ${
+              <Card key={task.id} className={`transition-all border-0 ${
                 isNotApplicable 
-                  ? 'opacity-50 bg-muted/50' 
-                  : `${theme.cardGradient ? `bg-gradient-to-br ${theme.cardGradient}` : 'bg-gradient-to-br from-card to-card/80'}`
+                  ? 'opacity-60 bg-muted/30' 
+                  : 'shadow-md hover:shadow-lg bg-gradient-to-br from-card/95 to-card/80'
               }`}>
-                <CardHeader className="pb-4">
+                <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                        <Brain className="h-5 w-5 text-primary" />
-                        {task.task_name}
-                        {isNotApplicable && <span className="text-muted-foreground">(Not Applicable)</span>}
+                      <CardTitle className="text-lg text-foreground flex items-center gap-2 mb-2">
+                        <Brain className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="leading-tight">{task.task_name}</span>
+                        {isNotApplicable && <span className="text-muted-foreground text-sm">(Skipped)</span>}
                       </CardTitle>
-                      <CardDescription className="mt-1">
-                        Category: {task.category} • Mental load weight: {task.mental_load_weight}x
-                      </CardDescription>
+                      <div className="text-xs text-muted-foreground mb-1">
+                        {task.category} • Mental load: {task.mental_load_weight}x • {formatTimeDisplay(task.baseline_minutes_week)} per {getFrequencyDisplayText(task.default_frequency).toLowerCase()}
+                      </div>
                       {task.description && (
-                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
                           {task.description}
                         </p>
                       )}
@@ -426,17 +440,18 @@ const TaskQuestionnaire: React.FC = () => {
                   </div>
                 </CardHeader>
                 
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-0">
                   {!isNotApplicable ? (
                     <>
-                      <div>
-                        <Label className="text-sm font-medium mb-3 block">Who primarily handles this?</Label>
-                        <div className="flex gap-2 mb-2">
+                      {/* Assignment Selection */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Who handles this?</Label>
+                        <div className="grid grid-cols-3 gap-1">
                           <Button
                             variant={response?.assignment === 'me' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => updateResponse(task.id, { assignment: 'me', mySharePercentage: 100 })}
-                            className="flex-1"
+                            className="text-sm"
                           >
                             {labels.me}
                           </Button>
@@ -444,16 +459,16 @@ const TaskQuestionnaire: React.FC = () => {
                             variant={response?.assignment === 'shared' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => updateResponse(task.id, { assignment: 'shared', mySharePercentage: 50 })}
-                            className="flex-1"
+                            className="text-sm"
                           >
-                            <Users className="h-4 w-4 mr-1" />
-                            {labels.shared} (50/50)
+                            <Users className="h-3 w-3 mr-1" />
+                            Shared
                           </Button>
                           <Button
                             variant={response?.assignment === 'partner' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => updateResponse(task.id, { assignment: 'partner', mySharePercentage: 0 })}
-                            className="flex-1"
+                            className="text-sm"
                           >
                             {labels.partner}
                           </Button>
@@ -462,145 +477,169 @@ const TaskQuestionnaire: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => updateResponse(task.id, { notApplicable: true })}
-                          className="w-full text-muted-foreground hover:text-foreground"
+                          className="w-full text-xs text-muted-foreground hover:text-foreground"
                         >
-                          <X className="h-4 w-4 mr-1" />
-                          Not applicable to my household
+                          <X className="h-3 w-3 mr-1" />
+                          Not applicable
                         </Button>
                       </div>
 
-                      {showSlider && (
-                        <div className="space-y-3">
+                      {/* Share Percentage - Only for individual assignments */}
+                      {showSlider && response?.assignment !== 'shared' && (
+                        <div className="space-y-2">
                           <Label className="text-sm font-medium">
-                            How much do you handle this task? ({response?.mySharePercentage || (response?.assignment === 'me' ? 100 : 0)}%)
+                            Your share: {response?.mySharePercentage || (response?.assignment === 'me' ? 100 : 0)}%
                           </Label>
-                          <div className="px-3">
-                            <Slider
-                              value={[response?.mySharePercentage || (response?.assignment === 'me' ? 100 : 0)]}
-                              onValueChange={([value]) => updateResponse(task.id, { mySharePercentage: value })}
-                              min={0}
-                              max={100}
-                              step={5}
-                              className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                              <span>Partner does it all (0%)</span>
-                              <span>Equal (50%)</span>
-                              <span>I do it all (100%)</span>
-                            </div>
+                          <Slider
+                            value={[response?.mySharePercentage || (response?.assignment === 'me' ? 100 : 0)]}
+                            onValueChange={([value]) => updateResponse(task.id, { mySharePercentage: value })}
+                            min={0}
+                            max={100}
+                            step={10}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Partner (0%)</span>
+                            <span>Equal (50%)</span>
+                            <span>Me (100%)</span>
                           </div>
                         </div>
                       )}
 
-                      <div className="space-y-4">
-                        <div className="space-y-3">
-                          <Label className="text-sm font-medium flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            Time compared to research baseline:
-                          </Label>
+                      {/* Time Adjustment */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Time vs research baseline
+                        </Label>
+                        
+                        <div className="grid grid-cols-5 gap-1">
+                          {(['much_less', 'less', 'about_right', 'more', 'much_more'] as TimeAdjustment[]).map((adjustment) => (
+                            <Button
+                              key={adjustment}
+                              variant={response?.timeAdjustment === adjustment ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => updateResponse(task.id, { timeAdjustment: adjustment })}
+                              className="text-xs px-1 py-1 h-auto flex flex-col gap-0.5"
+                            >
+                              {adjustment === 'much_less' && <TrendingDown className="h-3 w-3" />}
+                              {adjustment === 'less' && <Minus className="h-3 w-3" />}
+                              {adjustment === 'about_right' && <span className="h-3 w-3 rounded-full bg-current" />}
+                              {adjustment === 'more' && <TrendingUp className="h-3 w-3" />}
+                              {adjustment === 'much_more' && <TrendingUp className="h-3 w-3" />}
+                              <span>{getTimeAdjustmentShortLabel(adjustment)}</span>
+                            </Button>
+                          ))}
+                        </div>
+                        
+                        {response?.timeAdjustment && response.timeAdjustment !== 'about_right' && (
+                          <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                            <strong>Adjusted time:</strong> {formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))} per {getFrequencyDisplayText(task.default_frequency).toLowerCase()}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Per-task Insight Capture for Couples */}
+                      {isTogetherMode && response?.assignment && (
+                        <div className="border-t pt-3 mt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-sm font-medium flex items-center gap-1">
+                              <MessageCircle className="h-3 w-3" />
+                              Discussion notes
+                            </Label>
+                            {taskInsights.length > 0 && (
+                              <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded">
+                                {taskInsights.length} note{taskInsights.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
                           
-                          {/* Baseline Time Display */}
-                          <div className="bg-muted/30 p-3 rounded-md">
-                            <div className="text-xs text-muted-foreground mb-1">Research baseline:</div>
-                            <div className="font-medium">{formatTimeDisplay(task.baseline_minutes_week)}</div>
-                            <div className="text-xs text-muted-foreground">per {task.default_frequency === 'weekly' ? 'week' : task.default_frequency === 'monthly' ? 'month' : task.default_frequency === 'bi-weekly' ? '2 weeks' : 'year'}</div>
+                          <div className="grid grid-cols-3 gap-1 mb-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setCurrentDiscussionTask({id: task.id, name: task.task_name});
+                                // Add a quick breakthrough
+                                const insight: InsightEntry = {
+                                  id: `${Date.now()}-breakthrough`,
+                                  type: 'breakthrough',
+                                  taskId: task.id,
+                                  taskName: task.task_name,
+                                  description: '', // Will be filled by user
+                                  timestamp: new Date()
+                                };
+                                handleInsightAdded(insight);
+                              }}
+                              className="text-xs h-7 flex items-center gap-1"
+                            >
+                              <Lightbulb className="h-3 w-3" />
+                              Aha!
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setCurrentDiscussionTask({id: task.id, name: task.task_name});
+                                const insight: InsightEntry = {
+                                  id: `${Date.now()}-disagreement`,
+                                  type: 'disagreement',
+                                  taskId: task.id,
+                                  taskName: task.task_name,
+                                  description: '', // Will be filled by user
+                                  timestamp: new Date()
+                                };
+                                handleInsightAdded(insight);
+                              }}
+                              className="text-xs h-7 flex items-center gap-1"
+                            >
+                              <AlertTriangle className="h-3 w-3" />
+                              Disagree
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setCurrentDiscussionTask({id: task.id, name: task.task_name});
+                                const insight: InsightEntry = {
+                                  id: `${Date.now()}-surprise`,
+                                  type: 'surprise',
+                                  taskId: task.id,
+                                  taskName: task.task_name,
+                                  description: '', // Will be filled by user
+                                  timestamp: new Date()
+                                };
+                                handleInsightAdded(insight);
+                              }}
+                              className="text-xs h-7 flex items-center gap-1"
+                            >
+                              <Heart className="h-3 w-3" />
+                              Surprise
+                            </Button>
                           </div>
 
-                          {/* Time Adjustment Buttons */}
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-3 gap-1">
-                              <Button
-                                variant={response?.timeAdjustment === 'much_less' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => updateResponse(task.id, { timeAdjustment: 'much_less' })}
-                                className="h-8 text-xs flex items-center gap-1"
-                              >
-                                <TrendingDown className="h-3 w-3" />
-                                Much Less
-                              </Button>
-                              <Button
-                                variant={response?.timeAdjustment === 'less' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => updateResponse(task.id, { timeAdjustment: 'less' })}
-                                className="h-8 text-xs flex items-center gap-1"
-                              >
-                                <TrendingDown className="h-3 w-3" />
-                                Less
-                              </Button>
-                              <Button
-                                variant={response?.timeAdjustment === 'about_right' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => updateResponse(task.id, { timeAdjustment: 'about_right' })}
-                                className="h-8 text-xs flex items-center gap-1"
-                              >
-                                <Minus className="h-3 w-3" />
-                                About Right
-                              </Button>
-                            </div>
-                            <div className="grid grid-cols-2 gap-1">
-                              <Button
-                                variant={response?.timeAdjustment === 'more' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => updateResponse(task.id, { timeAdjustment: 'more' })}
-                                className="h-8 text-xs flex items-center gap-1"
-                              >
-                                <TrendingUp className="h-3 w-3" />
-                                More
-                              </Button>
-                              <Button
-                                variant={response?.timeAdjustment === 'much_more' ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => updateResponse(task.id, { timeAdjustment: 'much_more' })}
-                                className="h-8 text-xs flex items-center gap-1"
-                              >
-                                <TrendingUp className="h-3 w-3" />
-                                Much More
-                              </Button>
-                            </div>
-                            <div className="text-xs text-muted-foreground text-center">
-                              {getTimeAdjustmentShortLabel(response?.timeAdjustment || 'about_right')}
-                            </div>
-                          </div>
-
-                          {/* Show adjusted time */}
-                          {response?.timeAdjustment && response.timeAdjustment !== 'about_right' && (
-                            <div className="bg-accent/10 p-2 rounded-md">
-                              <div className="text-xs text-muted-foreground">Your estimate:</div>
-                              <div className="font-medium">
-                                {formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))}
-                              </div>
-                              <div className="text-xs text-muted-foreground">per week</div>
+                          {/* Show existing insights for this task */}
+                          {taskInsights.length > 0 && (
+                            <div className="space-y-1">
+                              {taskInsights.map((insight) => (
+                                <div key={insight.id} className="text-xs bg-muted/50 p-2 rounded flex items-start gap-2">
+                                  <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-0.5 ${
+                                    insight.type === 'breakthrough' ? 'bg-primary' :
+                                    insight.type === 'disagreement' ? 'bg-destructive' :
+                                    'bg-secondary'
+                                  }`} />
+                                  <span className="flex-1 text-foreground">{insight.description || `${insight.type} noted`}</span>
+                                </div>
+                              ))}
                             </div>
                           )}
-                          
-                          {/* Frequency locked to research baseline */}
-                          <div className="bg-muted/20 p-3 rounded-md">
-                            <div className="text-xs text-muted-foreground mb-1">Research-based frequency:</div>
-                            <div className="font-medium">{getFrequencyDisplayText(task.default_frequency)}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Frequency is based on research averages. Time adjustments capture your household's variations.
-                            </div>
-                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                        <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div>Suggested range: {task.time_range}</div>
-                          <div>Research source: {task.source_details}</div>
-                        </div>
-                      </div>
+                      )}
                     </>
                   ) : (
-                    <div className="flex justify-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateResponse(task.id, { notApplicable: false })}
-                      >
-                        Mark as applicable
-                      </Button>
+                    <div className="text-center py-4 text-muted-foreground">
+                      <X className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Not applicable to your household</p>
                     </div>
                   )}
                 </CardContent>
@@ -609,40 +648,40 @@ const TaskQuestionnaire: React.FC = () => {
           })}
         </div>
 
-          <div className="flex justify-between items-center mt-8">
-            <Button
-              onClick={handlePrevious}
-              variant="outline"
-              disabled={currentCategoryIndex === 0}
-              className="flex items-center gap-2"
-            >
-              Previous Category
-            </Button>
-            
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                {isCategoryComplete ? (
-                  <>✓ Category Complete ({completedTasks}/{applicableTasks.length} tasks)</>
-                ) : (
-                  <>{completedTasks}/{applicableTasks.length} tasks completed</>
-                )}
-              </p>
-            </div>
-            
-            <Button
-              onClick={handleNext}
-              disabled={!isCategoryComplete}
-              className="flex items-center gap-2"
-            >
-              {currentCategoryIndex >= categorizedTasks.length - 1 ? (
-                isTogetherMode && currentResponder === 'me' ? 
-                  "Partner's Turn" : 
-                  isTogetherMode ? "Compare & Discuss" : "Continue"
+        <div className="flex justify-between items-center mt-8">
+          <Button
+            onClick={handlePrevious}
+            variant="outline"
+            disabled={currentCategoryIndex === 0}
+            className="flex items-center gap-2"
+          >
+            Previous Category
+          </Button>
+          
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              {isCategoryComplete ? (
+                <>✓ Category Complete ({completedTasks}/{applicableTasks.length} tasks)</>
               ) : (
-                "Next Category"
+                <>{completedTasks}/{applicableTasks.length} tasks completed</>
               )}
-            </Button>
+            </p>
           </div>
+          
+          <Button
+            onClick={handleNext}
+            disabled={!isCategoryComplete}
+            className="flex items-center gap-2"
+          >
+            {currentCategoryIndex >= categorizedTasks.length - 1 ? (
+              isTogetherMode && currentResponder === 'me' ? 
+                "Partner's Turn" : 
+                isTogetherMode ? "Compare & Discuss" : "Continue"
+            ) : (
+              "Next Category"
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

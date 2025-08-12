@@ -1186,22 +1186,45 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* Couple Mode Insights Display */}
-        {state.householdSetup.assessmentMode === 'together' && (
+        {state.householdSetup.assessmentMode === 'together' && state.insights && state.insights.length > 0 && (
           <Card className="mb-8 border-primary/20 bg-gradient-to-br from-card to-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5 text-primary" />
-                Your Discussion Insights
+                Your Discussion Insights ({state.insights.length})
               </CardTitle>
               <CardDescription>
                 Key breakthroughs and areas of disagreement captured during your assessment
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Insight capture feature will be available after completing the enhanced questionnaire.</p>
-                <p className="text-sm mt-2">This space will show your breakthrough moments and discussion points.</p>
+              <div className="space-y-3">
+                {state.insights.map((insight) => (
+                  <div key={insight.id} className={`p-3 rounded-lg border ${
+                    insight.type === 'breakthrough' ? 'bg-primary/5 border-primary/20' :
+                    insight.type === 'disagreement' ? 'bg-destructive/5 border-destructive/20' :
+                    'bg-secondary/5 border-secondary/20'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
+                        insight.type === 'breakthrough' ? 'bg-primary' :
+                        insight.type === 'disagreement' ? 'bg-destructive' :
+                        'bg-secondary'
+                      }`} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium capitalize">{insight.type}</span>
+                          {insight.taskName && (
+                            <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                              {insight.taskName}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-foreground">{insight.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

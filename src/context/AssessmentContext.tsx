@@ -1,7 +1,18 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { AssessmentData, HouseholdSetup, TaskResponse, PerceptionGapResponse, EmotionalImpactResponse } from '@/types/assessment';
 
-interface AssessmentState extends AssessmentData {}
+interface InsightEntry {
+  id: string;
+  type: 'breakthrough' | 'disagreement' | 'surprise';
+  taskId?: string;
+  taskName?: string;
+  description: string;
+  timestamp: Date;
+}
+
+interface AssessmentState extends AssessmentData {
+  insights: InsightEntry[];
+}
 
 type AssessmentAction = 
   | { type: 'SET_HOUSEHOLD_SETUP'; payload: HouseholdSetup }
@@ -13,6 +24,7 @@ type AssessmentAction =
   | { type: 'SET_PARTNER_EMOTIONAL_IMPACT_RESPONSES'; payload: EmotionalImpactResponse }
   | { type: 'SET_CURRENT_STEP'; payload: number }
   | { type: 'SET_CURRENT_RESPONDER'; payload: 'me' | 'partner' }
+  | { type: 'ADD_INSIGHT'; payload: InsightEntry }
   | { type: 'RESET_ASSESSMENT' };
 
 const initialState: AssessmentState = {
@@ -33,7 +45,8 @@ const initialState: AssessmentState = {
   emotionalImpactResponses: undefined,
   partnerEmotionalImpactResponses: undefined,
   currentStep: 1,
-  currentResponder: 'me'
+  currentResponder: 'me',
+  insights: []
 };
 
 const assessmentReducer = (state: AssessmentState, action: AssessmentAction): AssessmentState => {
@@ -70,6 +83,8 @@ const assessmentReducer = (state: AssessmentState, action: AssessmentAction): As
       return { ...state, currentStep: action.payload };
     case 'SET_CURRENT_RESPONDER':
       return { ...state, currentResponder: action.payload };
+    case 'ADD_INSIGHT':
+      return { ...state, insights: [...state.insights, action.payload] };
     case 'RESET_ASSESSMENT':
       return initialState;
     default:
@@ -89,6 +104,7 @@ interface AssessmentContextType {
   setPartnerEmotionalImpactResponses: (responses: EmotionalImpactResponse) => void;
   setCurrentStep: (step: number) => void;
   setCurrentResponder: (responder: 'me' | 'partner') => void;
+  addInsight: (insight: InsightEntry) => void;
   resetAssessment: () => void;
 }
 
@@ -133,6 +149,10 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     dispatch({ type: 'SET_CURRENT_RESPONDER', payload: responder });
   };
 
+  const addInsight = (insight: InsightEntry) => {
+    dispatch({ type: 'ADD_INSIGHT', payload: insight });
+  };
+
   const resetAssessment = () => {
     dispatch({ type: 'RESET_ASSESSMENT' });
   };
@@ -150,6 +170,7 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       setPartnerEmotionalImpactResponses,
       setCurrentStep,
       setCurrentResponder,
+      addInsight,
       resetAssessment
     }}>
       {children}
