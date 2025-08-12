@@ -5,14 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { TaskResponse, TaskFrequency, TimeAdjustment } from '@/types/assessment';
-import { formatTimeDisplay, getFrequencyDisplayText, convertToWeeklyMinutes } from '@/lib/timeUtils';
+import { formatTimeDisplay, getFrequencyDisplayText } from '@/lib/timeUtils';
 import { calculateAdjustedTime, getTimeAdjustmentLabel, getTimeAdjustmentShortLabel, getTimeVariationExplanation } from '@/lib/timeAdjustmentUtils';
-import { Clock, Brain, Users, Info, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Clock, Brain, Users, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
@@ -120,7 +120,7 @@ const TaskQuestionnaire: React.FC = () => {
       assignment: currentResponse?.assignment || 'me',
       timeAdjustment,
       estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, timeAdjustment),
-      frequency: currentResponse?.frequency || task.default_frequency,
+      frequency: task.default_frequency,
       notApplicable: false,
       ...updates
     } as TaskResponse;
@@ -394,7 +394,7 @@ const TaskQuestionnaire: React.FC = () => {
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
                         <div className="space-y-3">
                           <Label className="text-sm font-medium flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -415,31 +415,28 @@ const TaskQuestionnaire: React.FC = () => {
                                 variant={response?.timeAdjustment === 'much_less' ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => updateResponse(task.id, { timeAdjustment: 'much_less' })}
-                                className="flex flex-col gap-1 h-auto p-2"
+                                className="h-8 text-xs flex items-center gap-1"
                               >
                                 <TrendingDown className="h-3 w-3" />
-                                <span className="text-xs">Much Less</span>
-                                <span className="text-xs text-muted-foreground">-50%</span>
+                                Much Less
                               </Button>
                               <Button
                                 variant={response?.timeAdjustment === 'less' ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => updateResponse(task.id, { timeAdjustment: 'less' })}
-                                className="flex flex-col gap-1 h-auto p-2"
+                                className="h-8 text-xs flex items-center gap-1"
                               >
-                                <TrendingDown className="h-3 w-3 opacity-60" />
-                                <span className="text-xs">Less</span>
-                                <span className="text-xs text-muted-foreground">-25%</span>
+                                <TrendingDown className="h-3 w-3" />
+                                Less
                               </Button>
                               <Button
-                                variant={response?.timeAdjustment === 'about_right' || !response?.timeAdjustment ? 'default' : 'outline'}
+                                variant={response?.timeAdjustment === 'about_right' ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => updateResponse(task.id, { timeAdjustment: 'about_right' })}
-                                className="flex flex-col gap-1 h-auto p-2"
+                                className="h-8 text-xs flex items-center gap-1"
                               >
                                 <Minus className="h-3 w-3" />
-                                <span className="text-xs">About Right</span>
-                                <span className="text-xs text-muted-foreground">0%</span>
+                                About Right
                               </Button>
                             </div>
                             <div className="grid grid-cols-2 gap-1">
@@ -447,62 +444,45 @@ const TaskQuestionnaire: React.FC = () => {
                                 variant={response?.timeAdjustment === 'more' ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => updateResponse(task.id, { timeAdjustment: 'more' })}
-                                className="flex flex-col gap-1 h-auto p-2"
+                                className="h-8 text-xs flex items-center gap-1"
                               >
-                                <TrendingUp className="h-3 w-3 opacity-60" />
-                                <span className="text-xs">More</span>
-                                <span className="text-xs text-muted-foreground">+25%</span>
+                                <TrendingUp className="h-3 w-3" />
+                                More
                               </Button>
                               <Button
                                 variant={response?.timeAdjustment === 'much_more' ? 'default' : 'outline'}
                                 size="sm"
                                 onClick={() => updateResponse(task.id, { timeAdjustment: 'much_more' })}
-                                className="flex flex-col gap-1 h-auto p-2"
+                                className="h-8 text-xs flex items-center gap-1"
                               >
                                 <TrendingUp className="h-3 w-3" />
-                                <span className="text-xs">Much More</span>
-                                <span className="text-xs text-muted-foreground">+50%</span>
+                                Much More
                               </Button>
                             </div>
-                          </div>
-
-                          {/* Adjusted Time Display */}
-                          <div className="bg-primary/5 border border-primary/20 p-3 rounded-md">
-                            <div className="text-xs text-muted-foreground mb-1">Your household estimate:</div>
-                            <div className="font-medium text-primary">
-                              {formatTimeDisplay(calculateAdjustedTime(
-                                task.baseline_minutes_week, 
-                                response?.timeAdjustment || 'about_right'
-                              ))}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {getTimeVariationExplanation(response?.timeAdjustment || 'about_right')}
+                            <div className="text-xs text-muted-foreground text-center">
+                              {getTimeAdjustmentShortLabel(response?.timeAdjustment || 'about_right')}
                             </div>
                           </div>
-                        </div>
 
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">How often:</Label>
-                          <Select
-                            value={response?.frequency || task.default_frequency}
-                            onValueChange={(value: TaskFrequency) => updateResponse(task.id, { frequency: value })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="weekly">Weekly</SelectItem>
-                              <SelectItem value="bi-weekly">Bi-weekly (every 2 weeks)</SelectItem>
-                              <SelectItem value="monthly">Monthly</SelectItem>
-                              <SelectItem value="yearly">Yearly</SelectItem>
-                            </SelectContent>
-                          </Select>
-                           <div className="text-xs text-muted-foreground">
-                             Average per week: {formatTimeDisplay(convertToWeeklyMinutes(
-                               calculateAdjustedTime(task.baseline_minutes_week, response?.timeAdjustment || 'about_right'),
-                               response?.frequency || task.default_frequency
-                             ))}
-                           </div>
+                          {/* Show adjusted time */}
+                          {response?.timeAdjustment && response.timeAdjustment !== 'about_right' && (
+                            <div className="bg-accent/10 p-2 rounded-md">
+                              <div className="text-xs text-muted-foreground">Your estimate:</div>
+                              <div className="font-medium">
+                                {formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))}
+                              </div>
+                              <div className="text-xs text-muted-foreground">per week</div>
+                            </div>
+                          )}
+                          
+                          {/* Frequency locked to research baseline */}
+                          <div className="bg-muted/20 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">Research-based frequency:</div>
+                            <div className="font-medium">{getFrequencyDisplayText(task.default_frequency)}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Frequency is based on research averages. Time adjustments capture your household's variations.
+                            </div>
+                          </div>
                         </div>
                       </div>
                       
