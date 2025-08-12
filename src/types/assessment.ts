@@ -15,11 +15,14 @@ export interface HouseholdSetup {
 
 export type TaskFrequency = 'weekly' | 'bi-weekly' | 'monthly' | 'yearly';
 
+export type TimeAdjustment = 'much_less' | 'less' | 'about_right' | 'more' | 'much_more';
+
 export interface TaskResponse {
   taskId: string;
   assignment: 'me' | 'shared' | 'partner';
   mySharePercentage?: number; // 0-100 percentage when 'shared' selected
-  estimatedMinutes: number; // user can edit the baseline
+  timeAdjustment: TimeAdjustment; // adjustment from research baseline
+  estimatedMinutes?: number; // calculated from baseline + adjustment (for backward compatibility)
   frequency: TaskFrequency; // how often this task occurs
   notApplicable?: boolean; // task not relevant to household
 }

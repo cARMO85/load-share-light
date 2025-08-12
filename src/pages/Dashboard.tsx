@@ -7,6 +7,7 @@ import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
 import { formatTimeDisplay } from '@/lib/timeUtils';
+import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
 import {
   BarChart,
   Bar,
@@ -41,7 +42,7 @@ const Dashboard: React.FC = () => {
       const task = taskLookup[response.taskId];
       if (!task) return;
 
-      const timeInMinutes = response.estimatedMinutes;
+      const timeInMinutes = getEffectiveTaskTime(response, task.baseline_minutes_week);
       const mentalLoadWeight = task.mental_load_weight;
 
       if (response.assignment === 'me') {
@@ -137,7 +138,7 @@ const Dashboard: React.FC = () => {
         if (!task || task.category !== category || response.notApplicable) return;
 
         taskCount++;
-        const timeInMinutes = response.estimatedMinutes;
+        const timeInMinutes = getEffectiveTaskTime(response, task.baseline_minutes_week);
         const mentalLoadWeight = task.mental_load_weight;
 
         if (response.assignment === 'me') {
@@ -401,7 +402,7 @@ const Dashboard: React.FC = () => {
       const task = taskLookup[response.taskId];
       if (!task) return;
 
-      const minutes = response.estimatedMinutes;
+      const minutes = getEffectiveTaskTime(response, task.baseline_minutes_week);
       const mentalWeight = task.mental_load_weight;
 
       if (response.assignment === 'me') {
@@ -471,7 +472,7 @@ const Dashboard: React.FC = () => {
           const task = taskLookup[response.taskId];
           if (!task || task.category !== category) return;
           
-          const minutes = response.estimatedMinutes;
+          const minutes = getEffectiveTaskTime(response, task.baseline_minutes_week);
           const mentalWeight = task.mental_load_weight;
           
           if (response.assignment === 'partner') {

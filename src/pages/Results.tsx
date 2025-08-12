@@ -6,6 +6,7 @@ import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
+import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
 import { Clock, Brain, BarChart3, Users, UserCheck, Heart } from 'lucide-react';
 
 const Results: React.FC = () => {
@@ -26,7 +27,7 @@ const Results: React.FC = () => {
       const task = taskLookup[response.taskId];
       if (!task) return;
 
-      const timeInMinutes = response.estimatedMinutes;
+      const timeInMinutes = getEffectiveTaskTime(response, task.baseline_minutes_week);
       const mentalLoadWeight = task.mental_load_weight;
 
       if (response.assignment === 'me') {

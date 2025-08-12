@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
-import { TaskResponse, TaskFrequency } from '@/types/assessment';
+import { TaskResponse, TaskFrequency, TimeAdjustment } from '@/types/assessment';
 import { formatTimeDisplay, getFrequencyDisplayText, convertToWeeklyMinutes } from '@/lib/timeUtils';
-import { Clock, Brain, Users, Info, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake } from 'lucide-react';
+import { calculateAdjustedTime, getTimeAdjustmentLabel, getTimeAdjustmentShortLabel, getTimeVariationExplanation } from '@/lib/timeAdjustmentUtils';
+import { Clock, Brain, Users, Info, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
@@ -111,11 +112,15 @@ const TaskQuestionnaire: React.FC = () => {
     const task = allTasks.find(t => t.id === taskId);
     if (!task) return;
 
+    const currentResponse = responses[taskId];
+    const timeAdjustment = updates.timeAdjustment || currentResponse?.timeAdjustment || 'about_right';
+    
     const newResponse = {
       taskId,
-      assignment: responses[taskId]?.assignment || 'me',
-      estimatedMinutes: responses[taskId]?.estimatedMinutes || task.baseline_minutes_week,
-      frequency: responses[taskId]?.frequency || task.default_frequency,
+      assignment: currentResponse?.assignment || 'me',
+      timeAdjustment,
+      estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, timeAdjustment),
+      frequency: currentResponse?.frequency || task.default_frequency,
       notApplicable: false,
       ...updates
     } as TaskResponse;
@@ -264,7 +269,7 @@ const TaskQuestionnaire: React.FC = () => {
           )}
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            For each task, indicate who primarily handles it and estimate the time involved.
+            For each task, indicate who primarily handles it and how it compares to research-based time estimates.
           </p>
           {isSingleAdult && (
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl mx-auto">
@@ -390,23 +395,89 @@ const TaskQuestionnaire: React.FC = () => {
                       )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3">
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            <Label className="text-sm font-medium">Time per occurrence:</Label>
-                            <Input
-                              type="number"
-                              value={response?.estimatedMinutes || task.baseline_minutes_week}
-                              onChange={(e) => updateResponse(task.id, { 
-                                estimatedMinutes: parseInt(e.target.value) || task.baseline_minutes_week 
-                              })}
-                              className="w-20"
-                              min="0"
-                            />
-                            <span className="text-xs text-muted-foreground">minutes</span>
+                            Time compared to research baseline:
+                          </Label>
+                          
+                          {/* Baseline Time Display */}
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">Research baseline:</div>
+                            <div className="font-medium">{formatTimeDisplay(task.baseline_minutes_week)}</div>
+                            <div className="text-xs text-muted-foreground">per {task.default_frequency === 'weekly' ? 'week' : task.default_frequency === 'monthly' ? 'month' : task.default_frequency === 'bi-weekly' ? '2 weeks' : 'year'}</div>
                           </div>
-                          <div className="text-xs text-muted-foreground pl-7">
-                            = {formatTimeDisplay(response?.estimatedMinutes || task.baseline_minutes_week)}
+
+                          {/* Time Adjustment Buttons */}
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-3 gap-1">
+                              <Button
+                                variant={response?.timeAdjustment === 'much_less' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => updateResponse(task.id, { timeAdjustment: 'much_less' })}
+                                className="flex flex-col gap-1 h-auto p-2"
+                              >
+                                <TrendingDown className="h-3 w-3" />
+                                <span className="text-xs">Much Less</span>
+                                <span className="text-xs text-muted-foreground">-50%</span>
+                              </Button>
+                              <Button
+                                variant={response?.timeAdjustment === 'less' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => updateResponse(task.id, { timeAdjustment: 'less' })}
+                                className="flex flex-col gap-1 h-auto p-2"
+                              >
+                                <TrendingDown className="h-3 w-3 opacity-60" />
+                                <span className="text-xs">Less</span>
+                                <span className="text-xs text-muted-foreground">-25%</span>
+                              </Button>
+                              <Button
+                                variant={response?.timeAdjustment === 'about_right' || !response?.timeAdjustment ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => updateResponse(task.id, { timeAdjustment: 'about_right' })}
+                                className="flex flex-col gap-1 h-auto p-2"
+                              >
+                                <Minus className="h-3 w-3" />
+                                <span className="text-xs">About Right</span>
+                                <span className="text-xs text-muted-foreground">0%</span>
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1">
+                              <Button
+                                variant={response?.timeAdjustment === 'more' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => updateResponse(task.id, { timeAdjustment: 'more' })}
+                                className="flex flex-col gap-1 h-auto p-2"
+                              >
+                                <TrendingUp className="h-3 w-3 opacity-60" />
+                                <span className="text-xs">More</span>
+                                <span className="text-xs text-muted-foreground">+25%</span>
+                              </Button>
+                              <Button
+                                variant={response?.timeAdjustment === 'much_more' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => updateResponse(task.id, { timeAdjustment: 'much_more' })}
+                                className="flex flex-col gap-1 h-auto p-2"
+                              >
+                                <TrendingUp className="h-3 w-3" />
+                                <span className="text-xs">Much More</span>
+                                <span className="text-xs text-muted-foreground">+50%</span>
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Adjusted Time Display */}
+                          <div className="bg-primary/5 border border-primary/20 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">Your household estimate:</div>
+                            <div className="font-medium text-primary">
+                              {formatTimeDisplay(calculateAdjustedTime(
+                                task.baseline_minutes_week, 
+                                response?.timeAdjustment || 'about_right'
+                              ))}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {getTimeVariationExplanation(response?.timeAdjustment || 'about_right')}
+                            </div>
                           </div>
                         </div>
 
@@ -426,12 +497,12 @@ const TaskQuestionnaire: React.FC = () => {
                               <SelectItem value="yearly">Yearly</SelectItem>
                             </SelectContent>
                           </Select>
-                          <div className="text-xs text-muted-foreground">
-                            Average per week: {formatTimeDisplay(convertToWeeklyMinutes(
-                              response?.estimatedMinutes || task.baseline_minutes_week,
-                              response?.frequency || task.default_frequency
-                            ))}
-                          </div>
+                           <div className="text-xs text-muted-foreground">
+                             Average per week: {formatTimeDisplay(convertToWeeklyMinutes(
+                               calculateAdjustedTime(task.baseline_minutes_week, response?.timeAdjustment || 'about_right'),
+                               response?.frequency || task.default_frequency
+                             ))}
+                           </div>
                         </div>
                       </div>
                       
