@@ -471,23 +471,55 @@ const TaskQuestionnaire: React.FC = () => {
               Previous Category
             </Button>
           )}
-          <Button 
-            onClick={handleNext} 
-            variant="hero" 
-            size="lg"
-            disabled={!isCategoryComplete}
-            className="px-8"
-          >
-            {!isCategoryComplete ? 
-              `Complete ${applicableTasks.length - completedTasks} more tasks` :
-              currentCategoryIndex >= categorizedTasks.length - 1 ? 
-                (isTogetherMode && currentResponder === 'me' ? 
-                  "Continue to Partner's Turn" : 
-                  'View Results'
-                ) : 
-                `Next: ${categorizedTasks[currentCategoryIndex + 1]?.name}`
-            }
-          </Button>
+          {currentCategoryIndex >= categorizedTasks.length - 1 && isCategoryComplete && !(isTogetherMode && currentResponder === 'me') ? (
+            <div className="flex flex-col gap-3 items-center">
+              <p className="text-sm text-muted-foreground text-center">
+                Your task assignment is complete! Choose your next step:
+              </p>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={() => {
+                    setCurrentStep(5);
+                    navigate('/results');
+                  }}
+                  variant="hero" 
+                  size="lg"
+                  className="px-8"
+                >
+                  View Results Now
+                </Button>
+                <Button 
+                  onClick={handleNext}
+                  variant="outline" 
+                  size="lg"
+                  className="px-8"
+                >
+                  Add Optional Insights
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground text-center max-w-md">
+                Optional insights include perception comparison and emotional impact assessment for more detailed analysis
+              </p>
+            </div>
+          ) : (
+            <Button 
+              onClick={handleNext} 
+              variant="hero" 
+              size="lg"
+              disabled={!isCategoryComplete}
+              className="px-8"
+            >
+              {!isCategoryComplete ? 
+                `Complete ${applicableTasks.length - completedTasks} more tasks` :
+                currentCategoryIndex >= categorizedTasks.length - 1 ? 
+                  (isTogetherMode && currentResponder === 'me' ? 
+                    "Continue to Partner's Turn" : 
+                    'View Results'
+                  ) : 
+                  `Next: ${categorizedTasks[currentCategoryIndex + 1]?.name}`
+              }
+            </Button>
+          )}
         </div>
       </div>
     </div>
