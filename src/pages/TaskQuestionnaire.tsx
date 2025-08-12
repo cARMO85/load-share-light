@@ -11,6 +11,8 @@ import { TaskResponse, TimeAdjustment } from '@/types/assessment';
 import { formatTimeDisplay, getFrequencyDisplayText } from '@/lib/timeUtils';
 import { calculateAdjustedTime, getTimeAdjustmentShortLabel } from '@/lib/timeAdjustmentUtils';
 import { CoupleInsightCapture } from '@/components/CoupleInsightCapture';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { Clock, Brain, Users, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus, MessageCircle, AlertTriangle } from 'lucide-react';
 
 interface InsightEntry {
@@ -27,11 +29,9 @@ const TaskQuestionnaire: React.FC = () => {
   const { state, setTaskResponse, setPartnerTaskResponse, setCurrentStep, setCurrentResponder, addInsight } = useAssessment();
   
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
-  const currentResponder = state.currentResponder || 'me';
-  const currentResponses = currentResponder === 'me' ? state.taskResponses : (state.partnerTaskResponses || []);
   
   const [responses, setResponses] = useState<Record<string, TaskResponse>>(
-    currentResponses.reduce((acc, response) => {
+    state.taskResponses.reduce((acc, response) => {
       acc[response.taskId] = response;
       return acc;
     }, {} as Record<string, TaskResponse>)
@@ -42,12 +42,7 @@ const TaskQuestionnaire: React.FC = () => {
   const [insights, setInsights] = useState<InsightEntry[]>([]);
   const [currentDiscussionTask, setCurrentDiscussionTask] = useState<{id: string; name: string} | null>(null);
 
-  // Scroll to top when switching to partner's turn
-  useEffect(() => {
-    if (isTogetherMode && currentResponder === 'partner') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [currentResponder, isTogetherMode]);
+  // Remove scroll to top effect since no turn-taking
 
   // Organize tasks by category
   const categorizedTasks = useMemo(() => {
@@ -137,11 +132,7 @@ const TaskQuestionnaire: React.FC = () => {
     } as TaskResponse;
 
     setResponses(prev => ({ ...prev, [taskId]: newResponse }));
-    if (currentResponder === 'me') {
-      setTaskResponse(newResponse);
-    } else {
-      setPartnerTaskResponse(newResponse);
-    }
+    setTaskResponse(newResponse);
   };
 
   const handleNext = () => {
@@ -150,14 +141,6 @@ const TaskQuestionnaire: React.FC = () => {
     if (!isLastCategory) {
       // Move to next category
       setCurrentCategoryIndex(prev => prev + 1);
-      return;
-    }
-    
-    if (isTogetherMode && currentResponder === 'me') {
-      // Switch to partner and reset category
-      setCurrentResponder('partner');
-      setCurrentCategoryIndex(0);
-      setResponses({});
       return;
     }
     
@@ -183,19 +166,37 @@ const TaskQuestionnaire: React.FC = () => {
     }
   };
 
+  const [showInsightModal, setShowInsightModal] = useState(false);
+  const [pendingInsightType, setPendingInsightType] = useState<'breakthrough' | 'disagreement' | 'surprise' | null>(null);
+  const [insightDescription, setInsightDescription] = useState('');
+  
   const handleInsightAdded = (insight: InsightEntry) => {
-    // If insight has no description, prompt for it
-    if (!insight.description) {
-      const description = prompt(`Add a note about this ${insight.type}:`);
-      if (description && description.trim()) {
-        insight.description = description.trim();
-        setInsights(prev => [...prev, insight]);
-        addInsight(insight);
-      }
-    } else {
-      setInsights(prev => [...prev, insight]);
-      addInsight(insight);
-    }
+    setInsights(prev => [...prev, insight]);
+    addInsight(insight);
+    setShowInsightModal(false);
+    setPendingInsightType(null);
+    setInsightDescription('');
+  };
+
+  const handleQuickInsight = (type: 'breakthrough' | 'disagreement' | 'surprise', taskId: string, taskName: string) => {
+    setPendingInsightType(type);
+    setCurrentDiscussionTask({id: taskId, name: taskName});
+    setShowInsightModal(true);
+  };
+
+  const handleInsightSave = () => {
+    if (!insightDescription.trim() || !pendingInsightType || !currentDiscussionTask) return;
+    
+    const insight: InsightEntry = {
+      id: `${Date.now()}-${pendingInsightType}`,
+      type: pendingInsightType,
+      taskId: currentDiscussionTask.id,
+      taskName: currentDiscussionTask.name,
+      description: insightDescription.trim(),
+      timestamp: new Date()
+    };
+    
+    handleInsightAdded(insight);
   };
 
   const handleInsightContinue = () => {
@@ -215,32 +216,16 @@ const TaskQuestionnaire: React.FC = () => {
   // Scroll to top when category changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentCategoryIndex, currentResponder]);
+  }, [currentCategoryIndex]);
 
-  // Dynamic styling based on current responder
-  const getResponderTheme = () => {
-    if (!isTogetherMode) return {};
-    
-    if (currentResponder === 'partner') {
-      return {
-        gradientClass: 'from-background via-background to-secondary/5',
-        cardGradient: 'from-card to-secondary/5',
-        headerIcon: <Heart className="h-6 w-6 text-secondary" />,
-        accentColor: 'text-secondary',
-        progressColor: 'secondary'
-      };
-    }
-    
-    return {
-      gradientClass: 'from-background via-background to-primary/5',
-      cardGradient: 'from-card to-primary/5', 
-      headerIcon: <UserCheck className="h-6 w-6 text-primary" />,
-      accentColor: 'text-primary',
-      progressColor: 'primary'
-    };
+  // Simplified theme - no more responder switching
+  const theme = {
+    gradientClass: 'from-background via-background to-primary/5',
+    cardGradient: 'from-card to-primary/5', 
+    headerIcon: <UserCheck className="h-6 w-6 text-primary" />,
+    accentColor: 'text-primary',
+    progressColor: 'primary'
   };
-
-  const theme = getResponderTheme();
 
   const isSingleAdult = state.householdSetup.adults === 1;
   const applicableTasks = currentCategoryTasks.filter(task => !responses[task.id]?.notApplicable);
@@ -350,10 +335,8 @@ const TaskQuestionnaire: React.FC = () => {
             Mental Load Assessment
             {isTogetherMode && (
               <div className="flex items-center justify-center gap-3 text-lg font-normal mt-3">
-                {theme.headerIcon}
-                <span className={theme.accentColor}>
-                  {currentResponder === 'me' ? "Your Turn" : "Partner's Turn"}
-                </span>
+                <Users className="h-6 w-6 text-primary" />
+                <span className="text-primary">Working Together</span>
               </div>
             )}
           </h1>
@@ -388,15 +371,10 @@ const TaskQuestionnaire: React.FC = () => {
             </p>
           )}
           {isTogetherMode && (
-            <div className={`mt-4 p-4 rounded-lg border ${
-              currentResponder === 'partner' 
-                ? 'bg-secondary/10 border-secondary/20' 
-                : 'bg-primary/10 border-primary/20'
-            }`}>
-              <p className={`text-sm ${theme.accentColor}`}>
-                {currentResponder === 'me' 
-                  ? "Answer based on your perspective. Your partner will answer next." 
-                  : "Now let your partner answer the same questions from their perspective."}
+            <div className="mt-4 p-4 rounded-lg border bg-primary/10 border-primary/20">
+              <p className="text-sm text-primary">
+                <strong>Discuss each task together</strong> and agree on who handles it and how long it takes. 
+                Use the insight buttons to capture key moments from your conversation.
               </p>
             </div>
           )}
@@ -568,69 +546,38 @@ const TaskQuestionnaire: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          
-                          <div className="grid grid-cols-3 gap-1 mb-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setCurrentDiscussionTask({id: task.id, name: task.task_name});
-                                // Add a quick breakthrough
-                                const insight: InsightEntry = {
-                                  id: `${Date.now()}-breakthrough`,
-                                  type: 'breakthrough',
-                                  taskId: task.id,
-                                  taskName: task.task_name,
-                                  description: '', // Will be filled by user
-                                  timestamp: new Date()
-                                };
-                                handleInsightAdded(insight);
-                              }}
-                              className="text-xs h-7 flex items-center gap-1"
-                            >
-                              <Lightbulb className="h-3 w-3" />
-                              Aha!
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setCurrentDiscussionTask({id: task.id, name: task.task_name});
-                                const insight: InsightEntry = {
-                                  id: `${Date.now()}-disagreement`,
-                                  type: 'disagreement',
-                                  taskId: task.id,
-                                  taskName: task.task_name,
-                                  description: '', // Will be filled by user
-                                  timestamp: new Date()
-                                };
-                                handleInsightAdded(insight);
-                              }}
-                              className="text-xs h-7 flex items-center gap-1"
-                            >
-                              <AlertTriangle className="h-3 w-3" />
-                              Disagree
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setCurrentDiscussionTask({id: task.id, name: task.task_name});
-                                const insight: InsightEntry = {
-                                  id: `${Date.now()}-surprise`,
-                                  type: 'surprise',
-                                  taskId: task.id,
-                                  taskName: task.task_name,
-                                  description: '', // Will be filled by user
-                                  timestamp: new Date()
-                                };
-                                handleInsightAdded(insight);
-                              }}
-                              className="text-xs h-7 flex items-center gap-1"
-                            >
-                              <Heart className="h-3 w-3" />
-                              Surprise
-                            </Button>
+                           <div className="text-xs text-muted-foreground mb-2">
+                             While discussing this task, did you have any key insights? Click to capture them:
+                           </div>
+                           
+                           <div className="grid grid-cols-3 gap-1 mb-2">
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleQuickInsight('breakthrough', task.id, task.task_name)}
+                               className="text-xs h-7 flex items-center gap-1 hover:bg-primary/10"
+                             >
+                               <Lightbulb className="h-3 w-3" />
+                               Aha!
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleQuickInsight('disagreement', task.id, task.task_name)}
+                               className="text-xs h-7 flex items-center gap-1 hover:bg-destructive/10"
+                             >
+                               <AlertTriangle className="h-3 w-3" />
+                               Disagree
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleQuickInsight('surprise', task.id, task.task_name)}
+                               className="text-xs h-7 flex items-center gap-1 hover:bg-secondary/10"
+                             >
+                               <Heart className="h-3 w-3" />
+                               Surprise
+                             </Button>
                           </div>
 
                           {/* Show existing insights for this task */}
@@ -689,14 +636,72 @@ const TaskQuestionnaire: React.FC = () => {
             className="flex items-center gap-2"
           >
             {currentCategoryIndex >= categorizedTasks.length - 1 ? (
-              isTogetherMode && currentResponder === 'me' ? 
-                "Partner's Turn" : 
-                isTogetherMode ? "Compare & Discuss" : "Continue"
+              isTogetherMode ? "Compare & Discuss" : "Continue"
             ) : (
               "Next Category"
             )}
           </Button>
         </div>
+
+        {/* Insight Modal */}
+        <Dialog open={showInsightModal} onOpenChange={setShowInsightModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {pendingInsightType === 'breakthrough' && <Lightbulb className="h-5 w-5 text-primary" />}
+                {pendingInsightType === 'disagreement' && <AlertTriangle className="h-5 w-5 text-destructive" />}
+                {pendingInsightType === 'surprise' && <Heart className="h-5 w-5 text-secondary" />}
+                {pendingInsightType === 'breakthrough' && 'Breakthrough Moment'}
+                {pendingInsightType === 'disagreement' && 'Disagreement to Resolve'}
+                {pendingInsightType === 'surprise' && 'Surprising Discovery'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {currentDiscussionTask && (
+                <div className="bg-muted/30 p-3 rounded-md">
+                  <div className="text-xs text-muted-foreground">About task:</div>
+                  <div className="font-medium">{currentDiscussionTask.name}</div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label className="text-sm">What did you discover?</Label>
+                <Textarea
+                  value={insightDescription}
+                  onChange={(e) => setInsightDescription(e.target.value)}
+                  placeholder={
+                    pendingInsightType === 'breakthrough' 
+                      ? "e.g., 'I never realized how much mental load this actually involves...'"
+                      : pendingInsightType === 'disagreement'
+                      ? "e.g., 'We disagree on how much time this really takes - need to track it'"
+                      : "e.g., 'Surprised that we both thought the other was handling this!'"
+                  }
+                  className="min-h-[80px]"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleInsightSave}
+                  disabled={!insightDescription.trim()}
+                  className="flex-1"
+                >
+                  Save Insight
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowInsightModal(false);
+                    setInsightDescription('');
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
