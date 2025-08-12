@@ -23,11 +23,11 @@ import {
   Legend,
   Tooltip
 } from 'recharts';
-import { RotateCcw, Download, Share2, Lightbulb, Calendar, Eye, Monitor, HeartHandshake, BarChart3, Heart, Brain, TrendingUp, MessageCircle, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { RotateCcw, Download, Share2, Lightbulb, Calendar, Eye, Monitor, HeartHandshake, BarChart3, Heart, Brain, TrendingUp, MessageCircle, Clock, AlertTriangle, CheckCircle, Users, Zap, Scale } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { state, resetAssessment } = useAssessment();
+  const { state, resetAssessment, addInsight } = useAssessment();
 
   // Helper function to calculate loads using exact formula
   const calculateLoadFromResponses = (responses: typeof state.taskResponses, taskLookup: Record<string, typeof mentalLoadTasks[0]>, hasTwoAdults: boolean) => {
@@ -533,6 +533,68 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Calculate perception gaps for visualization
+  const perceptionGapData = useMemo(() => {
+    const isTogetherMode = state.householdSetup.assessmentMode === 'together';
+    const hasPartnerData = state.partnerPerceptionGapResponses && state.perceptionGapResponses;
+    
+    if (!isTogetherMode || !hasPartnerData) return null;
+
+    const myResponses = state.perceptionGapResponses!;
+    const partnerResponses = state.partnerPerceptionGapResponses!;
+
+    return {
+      householdWork: {
+        my: { you: myResponses.workPercentageSelf, partner: myResponses.workPercentagePartner },
+        partner: { you: partnerResponses.workPercentageSelf, partner: partnerResponses.workPercentagePartner },
+        gap: {
+          you: Math.abs(myResponses.workPercentageSelf - partnerResponses.workPercentageSelf),
+          partner: Math.abs(myResponses.workPercentagePartner - partnerResponses.workPercentagePartner)
+        }
+      },
+      mentalLoad: {
+        my: myResponses.mentalLoadPercentageSelf,
+        partner: partnerResponses.mentalLoadPercentageSelf,
+        gap: Math.abs(myResponses.mentalLoadPercentageSelf - partnerResponses.mentalLoadPercentageSelf)
+      },
+      emotionalSupport: {
+        my: myResponses.emotionalSupportPercentageSelf,
+        partner: partnerResponses.emotionalSupportPercentageSelf,
+        gap: Math.abs(myResponses.emotionalSupportPercentageSelf - partnerResponses.emotionalSupportPercentageSelf)
+      }
+    };
+  }, [state.perceptionGapResponses, state.partnerPerceptionGapResponses, state.householdSetup]);
+
+  // Calculate emotional impact gaps
+  const emotionalGapData = useMemo(() => {
+    const isTogetherMode = state.householdSetup.assessmentMode === 'together';
+    const hasEmotionalData = state.emotionalImpactResponses && state.partnerEmotionalImpactResponses;
+    
+    if (!isTogetherMode || !hasEmotionalData) return null;
+
+    const myResponses = state.emotionalImpactResponses!;
+    const partnerResponses = state.partnerEmotionalImpactResponses!;
+
+    return [
+      {
+        metric: 'Stress Level',
+        icon: Zap,
+        color: 'text-orange-500',
+        my: myResponses.stressLevel,
+        partner: partnerResponses.stressLevel,
+        gap: Math.abs(myResponses.stressLevel - partnerResponses.stressLevel)
+      },
+      {
+        metric: 'Fairness Perception',
+        icon: Scale,
+        color: 'text-blue-500',
+        my: myResponses.fairnessLevel,
+        partner: partnerResponses.fairnessLevel,
+        gap: Math.abs(myResponses.fairnessLevel - partnerResponses.fairnessLevel)
+      }
+    ];
+  }, [state.emotionalImpactResponses, state.partnerEmotionalImpactResponses, state.householdSetup]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -656,6 +718,280 @@ const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Perception Gap Analysis - Only for Together Mode */}
+        {perceptionGapData && (
+          <div className="mb-8">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-accent/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-6 w-6 text-accent" />
+                  Perception Gap Analysis
+                </CardTitle>
+                <CardDescription>
+                  Compare how each of you perceives the household workload distribution
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Household Work Distribution */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Household Work Distribution</h4>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Your perspective: You handle</span>
+                        <span className="font-medium">{perceptionGapData.householdWork.my.you}%</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-3">
+                        <div 
+                          className="bg-primary h-3 rounded-full transition-all duration-300" 
+                          style={{ width: `${perceptionGapData.householdWork.my.you}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Partner's perspective: You handle</span>
+                        <span className="font-medium">{perceptionGapData.householdWork.partner.you}%</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-3">
+                        <div 
+                          className="bg-secondary h-3 rounded-full transition-all duration-300" 
+                          style={{ width: `${perceptionGapData.householdWork.partner.you}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {perceptionGapData.householdWork.gap.you > 10 && (
+                      <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                        <div className="flex items-center gap-2 text-destructive">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="text-sm font-medium">
+                            Gap: {perceptionGapData.householdWork.gap.you}% difference in how much work you think you do
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mental Load Distribution */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Mental Load Distribution</h4>
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="text-sm text-muted-foreground">Your perspective</div>
+                      <div className="text-2xl font-bold text-primary">{perceptionGapData.mentalLoad.my}%</div>
+                      <div className="w-full bg-muted rounded-full h-3">
+                        <div 
+                          className="bg-primary h-3 rounded-full transition-all duration-300" 
+                          style={{ width: `${perceptionGapData.mentalLoad.my}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="text-sm text-muted-foreground">Partner's perspective</div>
+                      <div className="text-2xl font-bold text-secondary">{perceptionGapData.mentalLoad.partner}%</div>
+                      <div className="w-full bg-muted rounded-full h-3">
+                        <div 
+                          className="bg-secondary h-3 rounded-full transition-all duration-300" 
+                          style={{ width: `${perceptionGapData.mentalLoad.partner}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {perceptionGapData.mentalLoad.gap > 15 && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                      <div className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          Gap: {perceptionGapData.mentalLoad.gap}% difference in mental load perception
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Emotional Support Distribution */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Emotional Support Work</h4>
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="text-sm text-muted-foreground">Your perspective</div>
+                      <div className="text-2xl font-bold text-primary">{perceptionGapData.emotionalSupport.my}%</div>
+                      <div className="w-full bg-muted rounded-full h-3">
+                        <div 
+                          className="bg-primary h-3 rounded-full transition-all duration-300" 
+                          style={{ width: `${perceptionGapData.emotionalSupport.my}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="text-sm text-muted-foreground">Partner's perspective</div>
+                      <div className="text-2xl font-bold text-secondary">{perceptionGapData.emotionalSupport.partner}%</div>
+                      <div className="w-full bg-muted rounded-full h-3">
+                        <div 
+                          className="bg-secondary h-3 rounded-full transition-all duration-300" 
+                          style={{ width: `${perceptionGapData.emotionalSupport.partner}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {perceptionGapData.emotionalSupport.gap > 15 && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                      <div className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          Gap: {perceptionGapData.emotionalSupport.gap}% difference in emotional support work perception
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Emotional Impact Gaps - Only for Together Mode */}
+        {emotionalGapData && (
+          <div className="mb-8">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-warning/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Heart className="h-6 w-6 text-warning" />
+                  Emotional Impact Comparison
+                </CardTitle>
+                <CardDescription>
+                  How differently you and your partner experience the mental load stress
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {emotionalGapData.map((item, index) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <div key={index} className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <IconComponent className={`h-5 w-5 ${item.color}`} />
+                        <h4 className="font-semibold text-foreground">{item.metric}</h4>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">Your level</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-2xl font-bold text-primary">{item.my}/5</div>
+                            <div className="flex-1">
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div 
+                                  className="bg-primary h-2 rounded-full transition-all duration-300" 
+                                  style={{ width: `${(item.my / 5) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">Partner's level</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-2xl font-bold text-secondary">{item.partner}/5</div>
+                            <div className="flex-1">
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div 
+                                  className="bg-secondary h-2 rounded-full transition-all duration-300" 
+                                  style={{ width: `${(item.partner / 5) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {item.gap >= 2 && (
+                        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                          <div className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span className="text-sm font-medium">
+                              Significant gap: {item.gap} point difference in {item.metric.toLowerCase()}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Discussion Insights Section - Only for Together Mode */}
+        {(perceptionGapData || emotionalGapData) && (
+          <div className="mb-8">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-info/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-6 w-6 text-info" />
+                  Conversation Starters & Insights
+                </CardTitle>
+                <CardDescription>
+                  Use these gaps as discussion points to improve understanding
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 rounded-lg bg-info/5 border border-info/20">
+                  <h5 className="font-medium text-info mb-2">Key Questions to Explore Together:</h5>
+                  <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+                    <li>Why do we see the workload distribution differently?</li>
+                    <li>What types of work might one of us not be noticing?</li>
+                    <li>How can we better acknowledge each other's contributions?</li>
+                    <li>What would make the distribution feel more fair to both of us?</li>
+                  </ul>
+                </div>
+                
+                {/* Insights Input Section */}
+                <div className="space-y-3">
+                  <h5 className="font-medium text-foreground">Capture Your Discussion Insights</h5>
+                  <textarea 
+                    className="w-full min-h-24 p-3 rounded-lg border border-border bg-background text-foreground resize-none"
+                    placeholder="What did you discover in your conversation? Any surprises, agreements, or action items?"
+                    onChange={(e) => {
+                      // Auto-save functionality could be added here
+                    }}
+                  />
+                  <Button 
+                    onClick={() => {
+                      const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                      if (textarea?.value.trim()) {
+                        addInsight({
+                          id: `gap-discussion-${Date.now()}`,
+                          type: 'breakthrough',
+                          description: textarea.value.trim(),
+                          timestamp: new Date()
+                        });
+                        textarea.value = '';
+                      }
+                    }}
+                    variant="outline" 
+                    size="sm"
+                    className="border-info/30 text-info hover:bg-info/10"
+                  >
+                    Save Insight
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Summary Stats */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
