@@ -428,9 +428,13 @@ const TaskQuestionnaire: React.FC = () => {
                         <span className="leading-tight">{task.task_name}</span>
                         {isNotApplicable && <span className="text-muted-foreground text-sm">(Skipped)</span>}
                       </CardTitle>
-                      <div className="text-xs text-muted-foreground mb-1">
-                        {task.category} • Mental load: {task.mental_load_weight}x • {formatTimeDisplay(task.baseline_minutes_week)} per {getFrequencyDisplayText(task.default_frequency).toLowerCase()}
-                      </div>
+                       <div className="flex items-center gap-4 text-xs text-muted-foreground mb-1">
+                         <span>{task.category} • Mental load: {task.mental_load_weight}x</span>
+                         <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-md">
+                           <Clock className="h-3 w-3" />
+                           <span className="font-medium">Research baseline: {formatTimeDisplay(task.baseline_minutes_week)} per {getFrequencyDisplayText(task.default_frequency).toLowerCase()}</span>
+                         </div>
+                       </div>
                       {task.description && (
                         <p className="text-sm text-muted-foreground leading-relaxed">
                           {task.description}
@@ -506,38 +510,49 @@ const TaskQuestionnaire: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Time Adjustment */}
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Time vs research baseline
-                        </Label>
-                        
-                        <div className="grid grid-cols-5 gap-1">
-                          {(['much_less', 'less', 'about_right', 'more', 'much_more'] as TimeAdjustment[]).map((adjustment) => (
-                            <Button
-                              key={adjustment}
-                              variant={response?.timeAdjustment === adjustment ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => updateResponse(task.id, { timeAdjustment: adjustment })}
-                              className="text-xs px-1 py-1 h-auto flex flex-col gap-0.5"
-                            >
-                              {adjustment === 'much_less' && <TrendingDown className="h-3 w-3" />}
-                              {adjustment === 'less' && <Minus className="h-3 w-3" />}
-                              {adjustment === 'about_right' && <span className="h-3 w-3 rounded-full bg-current" />}
-                              {adjustment === 'more' && <TrendingUp className="h-3 w-3" />}
-                              {adjustment === 'much_more' && <TrendingUp className="h-3 w-3" />}
-                              <span>{getTimeAdjustmentShortLabel(adjustment)}</span>
-                            </Button>
-                          ))}
-                        </div>
-                        
-                        {response?.timeAdjustment && response.timeAdjustment !== 'about_right' && (
-                          <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                            <strong>Adjusted time:</strong> {formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))} per {getFrequencyDisplayText(task.default_frequency).toLowerCase()}
-                          </div>
-                        )}
-                      </div>
+                       {/* Time Adjustment */}
+                       <div className="space-y-3">
+                         <Label className="text-sm font-medium flex items-center gap-1">
+                           <Clock className="h-3 w-3" />
+                           Does this take more or less time than research suggests?
+                         </Label>
+                         
+                         <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg text-sm">
+                           <div className="flex items-center gap-2 mb-1">
+                             <Brain className="h-4 w-4 text-primary" />
+                             <span className="font-medium text-foreground">Research baseline:</span>
+                             <span className="text-primary font-bold">{formatTimeDisplay(task.baseline_minutes_week)} per week</span>
+                           </div>
+                           <p className="text-muted-foreground text-xs">
+                             Source: {task.source} • Range: {task.time_range}
+                           </p>
+                         </div>
+                         
+                         <div className="grid grid-cols-5 gap-1">
+                           {(['much_less', 'less', 'about_right', 'more', 'much_more'] as TimeAdjustment[]).map((adjustment) => (
+                             <Button
+                               key={adjustment}
+                               variant={response?.timeAdjustment === adjustment ? 'default' : 'outline'}
+                               size="sm"
+                               onClick={() => updateResponse(task.id, { timeAdjustment: adjustment })}
+                               className="text-xs px-1 py-1 h-auto flex flex-col gap-0.5"
+                             >
+                               {adjustment === 'much_less' && <TrendingDown className="h-3 w-3" />}
+                               {adjustment === 'less' && <Minus className="h-3 w-3" />}
+                               {adjustment === 'about_right' && <span className="h-3 w-3 rounded-full bg-current" />}
+                               {adjustment === 'more' && <TrendingUp className="h-3 w-3" />}
+                               {adjustment === 'much_more' && <TrendingUp className="h-3 w-3" />}
+                               <span>{getTimeAdjustmentShortLabel(adjustment)}</span>
+                             </Button>
+                           ))}
+                         </div>
+                         
+                         {response?.timeAdjustment && response.timeAdjustment !== 'about_right' && (
+                           <div className="text-xs text-foreground bg-secondary/20 p-2 rounded border border-secondary/30">
+                             <strong>Your adjusted time:</strong> {formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))} per {getFrequencyDisplayText(task.default_frequency).toLowerCase()}
+                           </div>
+                         )}
+                       </div>
 
                       {/* Per-task Insight Capture for Couples */}
                       {isTogetherMode && response?.assignment && (
