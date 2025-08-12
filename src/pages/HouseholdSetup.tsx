@@ -159,7 +159,7 @@ const HouseholdSetup: React.FC = () => {
                     <Users className="h-5 w-5" />
                     <div className="text-center">
                       <div className="font-medium">Together</div>
-                      <div className="text-xs text-muted-foreground">We'll take turns answering</div>
+                      <div className="text-xs text-muted-foreground">We'll work on this together</div>
                     </div>
                   </Button>
                 </div>
@@ -167,7 +167,7 @@ const HouseholdSetup: React.FC = () => {
                 {setup.assessmentMode === 'together' && (
                   <div className="p-3 rounded-lg bg-secondary/10 border border-secondary/20">
                     <p className="text-xs text-muted-foreground text-center">
-                      💡 <strong>Together Mode:</strong> You'll each answer for the same tasks, and we'll compare your perspectives at the end.
+                      💡 <strong>Together Mode:</strong> You'll work through tasks collaboratively, then capture insights and discuss differences together.
                     </p>
                   </div>
                 )}
