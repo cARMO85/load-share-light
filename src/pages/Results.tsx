@@ -160,14 +160,14 @@ const Results: React.FC = () => {
         
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-4">
-            {isTogetherMode && hasPartnerData ? 'Perception Comparison Results' : 'Your Mental Load Analysis'}
+            {isTogetherMode && hasPartnerData ? 'Your Household Perspectives' : 'Your Mental Load Analysis'}
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             {isTogetherMode && hasPartnerData 
-              ? "Here's how each of you perceives the household workload distribution"
+              ? "Compare how each of you perceives your household's workload distribution"
               : isSingleAdult 
                 ? "Here's your total household workload breakdown"
-                : "Here's how the mental load is distributed in your household"
+                : "Here's how you see the mental load distribution in your household"
             }
           </p>
         </div>

@@ -540,10 +540,16 @@ const Dashboard: React.FC = () => {
         
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-4">
-            Mental Load Visualization Dashboard
+            {state.householdSetup.adults === 2 && state.householdSetup.assessmentMode === 'together' 
+              ? 'Your Household Mental Load Dashboard'
+              : 'Mental Load Visualization Dashboard'
+            }
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Interactive charts showing the distribution of household mental load and visible work.
+            {state.householdSetup.adults === 2 && state.householdSetup.assessmentMode === 'together'
+              ? 'Interactive charts showing how you and your partner distribute household mental load and visible work.'
+              : 'Interactive charts showing the distribution of household mental load and visible work.'
+            }
           </p>
         </div>
 
