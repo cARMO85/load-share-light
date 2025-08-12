@@ -6,6 +6,7 @@ import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
+import { formatTimeDisplay } from '@/lib/timeUtils';
 import {
   BarChart,
   Bar,
@@ -21,7 +22,7 @@ import {
   Legend,
   Tooltip
 } from 'recharts';
-import { RotateCcw, Download, Share2, Lightbulb, Calendar, Eye, Monitor, HeartHandshake, BarChart3, Heart, Brain, TrendingUp, MessageCircle } from 'lucide-react';
+import { RotateCcw, Download, Share2, Lightbulb, Calendar, Eye, Monitor, HeartHandshake, BarChart3, Heart, Brain, TrendingUp, MessageCircle, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -503,6 +504,34 @@ const Dashboard: React.FC = () => {
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--success))', 'hsl(var(--muted-foreground))'];
 
+  // Helper functions for interpretation
+  const getMentalLoadInterpretation = (points: number, isPartner = false) => {
+    const label = isPartner ? 'Partner' : 'You';
+    if (points < 300) return { level: 'low', message: `${label} carry a light mental load`, color: 'text-success', icon: CheckCircle };
+    if (points < 600) return { level: 'moderate', message: `${label} carry a moderate mental load`, color: 'text-warning', icon: AlertTriangle };
+    if (points < 1000) return { level: 'high', message: `${label} carry a significant mental load`, color: 'text-destructive', icon: AlertTriangle };
+    return { level: 'very-high', message: `${label} carry an extremely high mental load`, color: 'text-destructive', icon: AlertTriangle };
+  };
+
+  const getEmotionalScoreInterpretation = (score: number, metric: string) => {
+    switch (metric) {
+      case 'stress':
+        if (score <= 2) return { level: 'low', message: 'Low stress levels', color: 'text-success' };
+        if (score <= 3) return { level: 'moderate', message: 'Moderate stress levels', color: 'text-warning' };
+        return { level: 'high', message: 'High stress levels', color: 'text-destructive' };
+      case 'fairness':
+        if (score <= 2) return { level: 'fair', message: 'Work feels fairly distributed', color: 'text-success' };
+        if (score <= 3) return { level: 'somewhat-unfair', message: 'Some fairness concerns', color: 'text-warning' };
+        return { level: 'unfair', message: 'Work feels unfairly distributed', color: 'text-destructive' };
+      case 'satisfaction':
+        if (score >= 4) return { level: 'high', message: 'High satisfaction with arrangement', color: 'text-success' };
+        if (score >= 3) return { level: 'moderate', message: 'Moderate satisfaction', color: 'text-warning' };
+        return { level: 'low', message: 'Low satisfaction with arrangement', color: 'text-destructive' };
+      default:
+        return { level: 'neutral', message: '', color: 'text-muted-foreground' };
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -544,6 +573,12 @@ const Dashboard: React.FC = () => {
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px'
+                    }}
+                    formatter={(value, name) => {
+                      if (name === 'Visible Time (min)') {
+                        return [formatTimeDisplay(value as number), 'Visible Time'];
+                      }
+                      return [value, name];
                     }}
                   />
                   <Legend />
@@ -619,28 +654,56 @@ const Dashboard: React.FC = () => {
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card className="text-center shadow-md border-0 bg-gradient-to-br from-primary/5 to-primary/10">
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-primary mb-2">
-                {chartData.barData.reduce((sum, item) => sum + item['Visible Time (min)'], 0)} min/week
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Clock className="h-5 w-5 text-primary" />
+                <div className="text-2xl font-bold text-primary">
+                  {formatTimeDisplay(chartData.barData.reduce((sum, item) => sum + item['Visible Time (min)'], 0))}
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">Total Visible Work</div>
+              <div className="text-sm text-muted-foreground mb-2">Total Visible Work Per Week</div>
+              <div className="text-xs text-muted-foreground">
+                Time spent on tasks that others can see
+              </div>
             </CardContent>
           </Card>
           
           <Card className="text-center shadow-md border-0 bg-gradient-to-br from-secondary/5 to-secondary/10">
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-secondary mb-2">
-                {chartData.barData.reduce((sum, item) => sum + item['Mental Load'], 0)} points
-              </div>
-              <div className="text-sm text-muted-foreground">Total Mental Load</div>
+              {(() => {
+                const totalMentalLoad = chartData.barData.reduce((sum, item) => sum + item['Mental Load'], 0);
+                const interpretation = getMentalLoadInterpretation(totalMentalLoad);
+                const IconComponent = interpretation.icon;
+                return (
+                  <>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Brain className="h-5 w-5 text-secondary" />
+                      <div className="text-2xl font-bold text-secondary">
+                        {totalMentalLoad}
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-2">Mental Load Points</div>
+                    <div className={`text-xs flex items-center justify-center gap-1 ${interpretation.color}`}>
+                      <IconComponent className="h-3 w-3" />
+                      {interpretation.message}
+                    </div>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
           
           <Card className="text-center shadow-md border-0 bg-gradient-to-br from-accent/5 to-accent/10">
             <CardContent className="pt-6">
-               <div className="text-2xl font-bold text-accent mb-2">
-                 {state.taskResponses.filter(r => !r.notApplicable).length}
+               <div className="flex items-center justify-center gap-2 mb-2">
+                 <BarChart3 className="h-5 w-5 text-accent" />
+                 <div className="text-2xl font-bold text-accent">
+                   {state.taskResponses.filter(r => !r.notApplicable).length}
+                 </div>
                </div>
-               <div className="text-sm text-muted-foreground">Tasks Assessed</div>
+               <div className="text-sm text-muted-foreground mb-2">Tasks Assessed</div>
+               <div className="text-xs text-muted-foreground">
+                 Out of {state.taskResponses.length} total tasks
+               </div>
             </CardContent>
           </Card>
         </div>
@@ -698,6 +761,46 @@ const Dashboard: React.FC = () => {
                     maintaining relationships with extended family, and ensuring everyone's emotional well-being.
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Mental Load Points Explanation */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground mb-3">Understanding Mental Load Points</h4>
+              
+              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Mental load points are calculated by multiplying the time spent on each task by its "cognitive weight" - 
+                  how much mental energy that task requires beyond just the visible time.
+                </p>
+                
+                <div className="grid md:grid-cols-2 gap-4 text-xs">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Light mental load:</span>
+                      <span className="text-success font-medium">&lt; 300 points</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Moderate mental load:</span>
+                      <span className="text-warning font-medium">300-600 points</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>High mental load:</span>
+                      <span className="text-destructive font-medium">600-1000 points</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Very high mental load:</span>
+                      <span className="text-destructive font-medium">&gt; 1000 points</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-muted-foreground mt-3 italic">
+                  Example: Grocery shopping might take 1 hour of visible time, but planning meals, checking inventory, 
+                  and making the list could add 2-3x more cognitive effort.
+                </p>
               </div>
             </div>
 
@@ -840,68 +943,98 @@ const Dashboard: React.FC = () => {
                 <div className="space-y-4">
                   <h4 className="font-semibold text-foreground mb-3">Your Well-being Indicators</h4>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 border border-secondary/20">
-                      <span className="text-sm font-medium">Stress Level</span>
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <div
-                              key={i}
-                              className={`w-3 h-3 rounded-full ${
-                                i <= state.emotionalImpactResponses.stressLevel
-                                  ? 'bg-destructive'
-                                  : 'bg-muted'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {state.emotionalImpactResponses.stressLevel}/5
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 border border-secondary/20">
-                      <span className="text-sm font-medium">Fairness Perception</span>
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <div
-                              key={i}
-                              className={`w-3 h-3 rounded-full ${
-                                i <= state.emotionalImpactResponses.fairnessLevel
-                                  ? 'bg-warning'
-                                  : 'bg-muted'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {state.emotionalImpactResponses.fairnessLevel}/5
-                        </span>
-                      </div>
-                    </div>
+                     <div className="p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                       <div className="flex items-center justify-between mb-2">
+                         <span className="text-sm font-medium">Stress Level</span>
+                         <div className="flex items-center gap-2">
+                           <div className="flex gap-1">
+                             {[1, 2, 3, 4, 5].map((i) => (
+                               <div
+                                 key={i}
+                                 className={`w-3 h-3 rounded-full ${
+                                   i <= state.emotionalImpactResponses.stressLevel
+                                     ? 'bg-destructive'
+                                     : 'bg-muted'
+                                 }`}
+                               />
+                             ))}
+                           </div>
+                           <span className="text-sm text-muted-foreground">
+                             {state.emotionalImpactResponses.stressLevel}/5
+                           </span>
+                         </div>
+                       </div>
+                       {(() => {
+                         const interpretation = getEmotionalScoreInterpretation(state.emotionalImpactResponses.stressLevel, 'stress');
+                         return (
+                           <div className={`text-xs ${interpretation.color}`}>
+                             {interpretation.message}
+                           </div>
+                         );
+                       })()}
+                     </div>
+                     
+                     <div className="p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                       <div className="flex items-center justify-between mb-2">
+                         <span className="text-sm font-medium">Fairness Perception</span>
+                         <div className="flex items-center gap-2">
+                           <div className="flex gap-1">
+                             {[1, 2, 3, 4, 5].map((i) => (
+                               <div
+                                 key={i}
+                                 className={`w-3 h-3 rounded-full ${
+                                   i <= state.emotionalImpactResponses.fairnessLevel
+                                     ? 'bg-warning'
+                                     : 'bg-muted'
+                                 }`}
+                               />
+                             ))}
+                           </div>
+                           <span className="text-sm text-muted-foreground">
+                             {state.emotionalImpactResponses.fairnessLevel}/5
+                           </span>
+                         </div>
+                       </div>
+                       {(() => {
+                         const interpretation = getEmotionalScoreInterpretation(state.emotionalImpactResponses.fairnessLevel, 'fairness');
+                         return (
+                           <div className={`text-xs ${interpretation.color}`}>
+                             {interpretation.message}
+                           </div>
+                         );
+                       })()}
+                     </div>
 
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 border border-secondary/20">
-                      <span className="text-sm font-medium">Satisfaction Level</span>
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <div
-                              key={i}
-                              className={`w-3 h-3 rounded-full ${
-                                i <= state.emotionalImpactResponses.satisfactionLevel
-                                  ? 'bg-primary'
-                                  : 'bg-muted'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {state.emotionalImpactResponses.satisfactionLevel}/5
-                        </span>
-                      </div>
-                    </div>
+                     <div className="p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                       <div className="flex items-center justify-between mb-2">
+                         <span className="text-sm font-medium">Satisfaction Level</span>
+                         <div className="flex items-center gap-2">
+                           <div className="flex gap-1">
+                             {[1, 2, 3, 4, 5].map((i) => (
+                               <div
+                                 key={i}
+                                 className={`w-3 h-3 rounded-full ${
+                                   i <= state.emotionalImpactResponses.satisfactionLevel
+                                     ? 'bg-primary'
+                                     : 'bg-muted'
+                                 }`}
+                               />
+                             ))}
+                           </div>
+                           <span className="text-sm text-muted-foreground">
+                             {state.emotionalImpactResponses.satisfactionLevel}/5
+                           </span>
+                         </div>
+                       </div>
+                       {(() => {
+                         const interpretation = getEmotionalScoreInterpretation(state.emotionalImpactResponses.satisfactionLevel, 'satisfaction');
+                         return (
+                           <div className={`text-xs ${interpretation.color}`}>
+                             {interpretation.message}
+                           </div>
+                         );
+                       })()}
+                     </div>
 
                     <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 border border-secondary/20">
                       <span className="text-sm font-medium">Communication Frequency</span>
