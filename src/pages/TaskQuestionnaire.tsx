@@ -198,6 +198,71 @@ const TaskQuestionnaire: React.FC = () => {
     
     handleInsightAdded(insight);
   };
+  
+  // Development helper to fill sample data
+  const fillSampleData = (scenario: 'single' | 'couple' | 'family') => {
+    const sampleAssignments = {
+      single: ['me', 'me', 'shared', 'me'],
+      couple: ['me', 'partner', 'shared', 'me', 'partner'], 
+      family: ['me', 'partner', 'shared', 'me', 'shared']
+    };
+    
+    const sampleTimeAdjustments: TimeAdjustment[] = ['much_less', 'less', 'about_right', 'more', 'much_more'];
+    
+    const newResponses: Record<string, TaskResponse> = {};
+    
+    categorizedTasks.forEach(category => {
+      category.tasks.forEach((task, index) => {
+        const assignments = sampleAssignments[scenario];
+        const assignment = assignments[index % assignments.length] as 'me' | 'partner' | 'shared';
+        const timeAdjustment = sampleTimeAdjustments[index % sampleTimeAdjustments.length];
+        
+        const response: TaskResponse = {
+          taskId: task.id,
+          assignment,
+          timeAdjustment,
+          estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, timeAdjustment),
+          frequency: task.default_frequency,
+          notApplicable: Math.random() < 0.05, // 5% chance of not applicable
+          mySharePercentage: assignment === 'me' ? 90 : assignment === 'partner' ? 10 : 50
+        };
+        
+        newResponses[task.id] = response;
+        setTaskResponse(response);
+      });
+    });
+    
+    setResponses(newResponses);
+    
+    // Add some sample insights if in together mode
+    if (isTogetherMode) {
+      const sampleInsights = [
+        {
+          id: 'insight-1',
+          type: 'breakthrough' as const,
+          taskId: categorizedTasks[0]?.tasks[0]?.id,
+          taskName: categorizedTasks[0]?.tasks[0]?.task_name,
+          description: "Wow, I never realized how much mental load meal planning actually involves!",
+          timestamp: new Date()
+        },
+        {
+          id: 'insight-2', 
+          type: 'disagreement' as const,
+          taskId: categorizedTasks[1]?.tasks[0]?.id,
+          taskName: categorizedTasks[1]?.tasks[0]?.task_name,
+          description: "We disagree on how long this takes - maybe we should time it next week",
+          timestamp: new Date()
+        }
+      ];
+      
+      sampleInsights.forEach(insight => {
+        if (insight.taskId) {
+          setInsights(prev => [...prev, insight]);
+          addInsight(insight);
+        }
+      });
+    }
+  };
 
   const handleInsightContinue = () => {
     // Store insights in context for later use in results
@@ -376,6 +441,44 @@ const TaskQuestionnaire: React.FC = () => {
                 <strong>Discuss each task together</strong> and agree on who handles it and how long it takes. 
                 Use the insight buttons to capture key moments from your conversation.
               </p>
+            </div>
+          )}
+          
+          {/* Development Helper - Only in dev mode */}
+          {import.meta.env.DEV && (
+            <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">🚀 Dev Mode</p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300">Quick fill for testing</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fillSampleData('single')}
+                    className="text-xs"
+                  >
+                    Single Adult
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fillSampleData('couple')}
+                    className="text-xs"
+                  >
+                    Couple
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fillSampleData('family')}
+                    className="text-xs"
+                  >
+                    Family
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
           
