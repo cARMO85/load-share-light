@@ -23,7 +23,7 @@ import {
   Legend,
   Tooltip
 } from 'recharts';
-import { RotateCcw, Download, Share2, Lightbulb, Calendar, Eye, Monitor, HeartHandshake, BarChart3, Heart, Brain, TrendingUp, MessageCircle, Clock, AlertTriangle, CheckCircle, Users, Zap, Scale } from 'lucide-react';
+import { RotateCcw, Download, Share2, Lightbulb, Calendar, Eye, Monitor, HeartHandshake, BarChart3, Heart, Brain, TrendingUp, MessageCircle, Clock, AlertTriangle, CheckCircle, Users, Zap, Scale, Info, ExternalLink } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -1138,8 +1138,211 @@ const Dashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* What This Means Section */}
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 mb-8">
+        {/* Key Insights Section - Conversation Focused */}
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-accent/5 mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="h-6 w-6 text-accent" />
+                Key Insights for Discussion
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/advice')}>
+                <Info className="h-4 w-4 mr-1" />
+                Learn More
+              </Button>
+            </CardTitle>
+            <CardDescription>
+              The most important takeaways from your assessment to discuss together
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const isTwoAdults = state.householdSetup.adults === 2;
+              const insights = [];
+              
+              if (isTwoAdults) {
+                const myTotalPercentage = results.myMentalPercentage;
+                const partnerTotalPercentage = results.partnerMentalPercentage || 0;
+                
+                if (Math.abs(myTotalPercentage - 50) > 20) {
+                  if (myTotalPercentage > 70) {
+                    insights.push({
+                      icon: AlertTriangle,
+                      text: `You're carrying ${myTotalPercentage}% of the mental load - significantly more than your partner.`,
+                      action: "💬 Discuss redistributing some responsibilities, especially the invisible planning work."
+                    });
+                  } else if (myTotalPercentage < 30) {
+                    insights.push({
+                      icon: Users,
+                      text: `Your partner is handling ${partnerTotalPercentage}% of the mental load.`,
+                      action: "🤝 Look for opportunities to take ownership of specific household areas."
+                    });
+                  }
+                } else {
+                  insights.push({
+                    icon: CheckCircle,
+                    text: `You have a balanced mental load distribution (${myTotalPercentage}% vs ${partnerTotalPercentage}%).`,
+                    action: "✅ Keep up the good work and check in regularly to maintain this balance."
+                  });
+                }
+
+                // Add category-specific insights
+                const highestDifference = Object.entries(categoryAnalysis).reduce((max, [category, data]) => {
+                  const diff = Math.abs(data.myMentalLoad - data.partnerMentalLoad);
+                  return diff > max.diff ? { category, diff, data } : max;
+                }, { category: '', diff: 0, data: null });
+
+                if (highestDifference.diff > 50) {
+                  insights.push({
+                    icon: TrendingUp,
+                    text: `Biggest difference in "${highestDifference.category}" - one partner carries significantly more cognitive load.`,
+                    action: "🎯 Focus your conversation on this category first."
+                  });
+                }
+              } else {
+                insights.push({
+                  icon: Brain,
+                  text: "You're managing all household mental load as a single adult.",
+                  action: "💡 Consider strategies for simplification, automation, and external support when possible."
+                });
+              }
+
+              return (
+                <div className="space-y-4">
+                  {insights.map((insight, index) => (
+                    <div key={index} className="flex gap-3 p-4 rounded-lg bg-white/50 border border-muted">
+                      <insight.icon className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-foreground mb-2 font-medium">{insight.text}</p>
+                        <p className="text-sm text-muted-foreground">{insight.action}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        {/* Conversation Starters - Only for couples */}
+        {state.householdSetup.adults === 2 && (
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-primary/5 mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-6 w-6 text-primary" />
+                Start the Conversation
+              </CardTitle>
+              <CardDescription>
+                Use these conversation starters to discuss your results together
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <p className="text-sm text-foreground">"I've been thinking about how we share household responsibilities. Could we look at this assessment together?"</p>
+                </div>
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <p className="text-sm text-foreground">"What surprised you most about these results? Did anything match what you expected?"</p>
+                </div>
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <p className="text-sm text-foreground">"Which type of mental work feels most draining to you? What would help you feel more supported?"</p>
+                </div>
+                {state.emotionalImpactResponses?.conversationFrequency && state.emotionalImpactResponses.conversationFrequency <= 2 && (
+                  <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+                    <p className="text-sm text-foreground font-medium">"Could we schedule monthly check-ins about household tasks and how we're both feeling?"</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Discussion Capture Section */}
+        {state.householdSetup.adults === 2 && (
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-info/5 mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-6 w-6 text-info" />
+                Capture Your Discussion
+              </CardTitle>
+              <CardDescription>
+                Record insights and agreements from your conversation
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">                
+              <div className="space-y-3">
+                <textarea 
+                  className="w-full min-h-24 p-3 rounded-lg border border-border bg-background text-foreground resize-none"
+                  placeholder="What did you discover in your conversation? Any surprises, agreements, or action items?"
+                />
+                <Button 
+                  onClick={() => {
+                    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                    if (textarea?.value.trim()) {
+                      addInsight({
+                        id: `discussion-${Date.now()}`,
+                        type: 'breakthrough',
+                        description: textarea.value.trim(),
+                        timestamp: new Date()
+                      });
+                      textarea.value = '';
+                    }
+                  }}
+                  variant="outline" 
+                  size="sm"
+                  className="border-info/30 text-info hover:bg-info/10"
+                >
+                  Save Discussion Note
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Saved Discussion Notes */}
+        {state.insights && state.insights.length > 0 && (
+          <Card className="mb-8 border-primary/20 bg-gradient-to-br from-card to-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                Your Discussion Notes ({state.insights.length})
+              </CardTitle>
+              <CardDescription>
+                Key insights and agreements from your conversations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {state.insights.map((insight) => (
+                  <div key={insight.id} className={`p-3 rounded-lg border ${
+                    insight.type === 'breakthrough' ? 'bg-primary/5 border-primary/20' :
+                    insight.type === 'disagreement' ? 'bg-destructive/5 border-destructive/20' :
+                    'bg-secondary/5 border-secondary/20'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
+                        insight.type === 'breakthrough' ? 'bg-primary' :
+                        insight.type === 'disagreement' ? 'bg-destructive' :
+                        'bg-secondary'
+                      }`} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium capitalize">{insight.type}</span>
+                          {insight.taskName && (
+                            <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                              {insight.taskName}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-foreground">{insight.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
           <CardHeader>
             <CardTitle>What This Means: Understanding Your Results</CardTitle>
             <CardDescription>
@@ -1685,6 +1888,10 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-wrap gap-4 justify-center">
           <Button variant="outline" onClick={() => navigate('/results')}>
             View Results Summary
+          </Button>
+          <Button onClick={() => navigate('/advice')}>
+            <Lightbulb className="h-4 w-4 mr-2" />
+            Understanding & Advice
           </Button>
           <Button variant="soft">
             <Share2 className="h-4 w-4 mr-2" />

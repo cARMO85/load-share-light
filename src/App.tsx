@@ -12,6 +12,7 @@ import EmotionalImpact from "./pages/EmotionalImpact";
 import Results from "./pages/Results";
 import Dashboard from "./pages/Dashboard";
 import LearnMore from "./pages/LearnMore";
+import Advice from "./pages/Advice";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/emotional-impact" element={<EmotionalImpact />} />
             <Route path="/results" element={<Results />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/advice" element={<Advice />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
