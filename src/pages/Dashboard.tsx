@@ -1694,7 +1694,7 @@ const Dashboard: React.FC = () => {
             <Download className="h-4 w-4 mr-2" />
             Export Data
           </Button>
-          <Button variant="outline" onClick={resetAssessment}>
+          <Button variant="outline" onClick={handleStartOver}>
             <RotateCcw className="h-4 w-4 mr-2" />
             Start New Assessment
           </Button>
