@@ -32,6 +32,8 @@ const Dashboard: React.FC = () => {
   const chartData = useMemo(() => {
     let myVisibleTime = 0;
     let myMentalLoad = 0;
+    let partnerVisibleTime = 0;
+    let partnerMentalLoad = 0;
 
     // Category breakdown
     const categoryBreakdown: Record<string, { visible: number; mental: number }> = {};
@@ -57,20 +59,31 @@ const Dashboard: React.FC = () => {
         myMentalLoad += mentalContrib;
         categoryBreakdown[task.category].visible += visibleContrib;
         categoryBreakdown[task.category].mental += mentalContrib;
+      } else if (response.assignment === 'partner') {
+        const visibleContrib = minutes;
+        const mentalContrib = minutes * mentalWeight;
+        
+        partnerVisibleTime += visibleContrib;
+        partnerMentalLoad += mentalContrib;
       } else if (response.assignment === 'shared') {
         const myShare = (response.mySharePercentage || 50) / 100;
+        const partnerShare = 1 - myShare;
         
         const myVisibleContrib = minutes * myShare;
         const myMentalContrib = minutes * mentalWeight * myShare;
+        const partnerVisibleContrib = minutes * partnerShare;
+        const partnerMentalContrib = minutes * mentalWeight * partnerShare;
         
         myVisibleTime += myVisibleContrib;
         myMentalLoad += myMentalContrib;
+        partnerVisibleTime += partnerVisibleContrib;
+        partnerMentalLoad += partnerMentalContrib;
         categoryBreakdown[task.category].visible += myVisibleContrib;
         categoryBreakdown[task.category].mental += myMentalContrib;
       }
     });
 
-    // Create bar chart data
+    // Create bar chart data for categories
     const barData = Object.values(TASK_CATEGORIES).map(category => ({
       category: category === 'Decision-making' ? 'Decisions' : 
                 category === 'Emotional Labour' ? 'Emotional' :
@@ -79,10 +92,27 @@ const Dashboard: React.FC = () => {
       'Mental Load': Math.round(categoryBreakdown[category].mental)
     }));
 
+    // Create comparison data for both partners
+    const comparisonData = [
+      {
+        partner: 'You',
+        'Visible Load': Math.round(myVisibleTime),
+        'Mental Load': Math.round(myMentalLoad)
+      },
+      {
+        partner: 'Partner',
+        'Visible Load': Math.round(partnerVisibleTime),
+        'Mental Load': Math.round(partnerMentalLoad)
+      }
+    ];
+
     return {
       barData,
+      comparisonData,
       myVisibleTime: Math.round(myVisibleTime),
-      myMentalLoad: Math.round(myMentalLoad)
+      myMentalLoad: Math.round(myMentalLoad),
+      partnerVisibleTime: Math.round(partnerVisibleTime),
+      partnerMentalLoad: Math.round(partnerMentalLoad)
     };
   }, [state.taskResponses, taskLookup]);
 
@@ -116,12 +146,12 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Mental Load by Category - Bar Chart */}
+        {/* Partner Comparison - Visible vs Mental Load */}
         <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-6 w-6 text-primary" />
-              Mental Load by Category
+              Load Distribution by Partner
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -133,7 +163,45 @@ const Dashboard: React.FC = () => {
               </Button>
             </CardTitle>
             <CardDescription>
-              Cognitive burden in minutes per week across different types of household work
+              Comparison of visible work time vs mental load between partners (minutes per week)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData.comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis 
+                    dataKey="partner" 
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 11 }}
+                    label={{ value: 'Time (min/week)', angle: -90, position: 'insideLeft' }}
+                  />
+                  <Tooltip 
+                    formatter={(value, name) => [
+                      `${value} min/week`,
+                      name
+                    ]}
+                  />
+                  <Bar dataKey="Visible Load" fill="hsl(var(--secondary))" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="Mental Load" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Mental Load by Category - Bar Chart */}
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 text-primary" />
+              Your Mental Load by Category
+            </CardTitle>
+            <CardDescription>
+              Your cognitive burden in minutes per week across different types of household work
             </CardDescription>
           </CardHeader>
           <CardContent>
