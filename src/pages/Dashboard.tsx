@@ -1343,6 +1343,9 @@ const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Understanding Section */}
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 mb-8">
           <CardHeader>
             <CardTitle>What This Means: Understanding Your Results</CardTitle>
             <CardDescription>
@@ -1582,7 +1585,7 @@ const Dashboard: React.FC = () => {
 
         {/* Emotional Impact & Interpretation */}
         {state.emotionalImpactResponses && (
-          <Card>
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Heart className="h-5 w-5 text-primary" />
