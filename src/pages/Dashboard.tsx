@@ -175,6 +175,19 @@ const Dashboard: React.FC = () => {
     return analysis;
   }, [state.taskResponses, state.householdSetup]);
 
+  // Calculate maximum mental load values for fixed chart scaling
+  const maxMentalLoadValues = useMemo(() => {
+    const allCategoryLoads = Object.values(categoryAnalysis).map(data => 
+      Math.max(data.myMentalLoad, data.partnerMentalLoad || 0)
+    );
+    const maxCategory = Math.max(...allCategoryLoads, 100); // Minimum 100 for reasonable scale
+    
+    return {
+      categoryMax: Math.ceil(maxCategory / 100) * 100, // Round up to nearest 100
+      totalMax: Math.max(results.myMentalLoad, results.partnerMentalLoad || 0, 500) // Minimum 500 for total
+    };
+  }, [categoryAnalysis, results]);
+
   // Generate comprehensive personalized advice
   const personalizedAdvice = useMemo(() => {
     const advice: string[] = [];
@@ -457,7 +470,7 @@ const Dashboard: React.FC = () => {
       });
     }
 
-    // Radar chart data for categories
+    // Radar chart data for categories with fixed scale
     const radarData = Object.entries(TASK_CATEGORIES).map(([_, category]) => {
       const data = categoryBreakdown[category] || { mental: 0 };
       const result: any = {
@@ -488,7 +501,15 @@ const Dashboard: React.FC = () => {
       return result;
     });
 
-    return { barData, radarData };
+    // Comparison chart data for side-by-side view
+    const comparisonData = Object.entries(categoryAnalysis).map(([category, data]) => ({
+      category: category.replace(/[A-Z]/g, ' $&').trim(), // Add spaces to camelCase
+      You: data.myMentalLoad,
+      Partner: data.partnerMentalLoad || 0,
+      'Difference': Math.abs(data.myMentalLoad - (data.partnerMentalLoad || 0))
+    }));
+
+    return { barData, radarData, comparisonData };
   }, [state.taskResponses, state.householdSetup]);
 
   const steps = [
@@ -666,55 +687,121 @@ const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Radar Chart */}
+          {/* Enhanced Mental Load Distribution */}
           <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
             <CardHeader>
-              <CardTitle>Mental Load Profile</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Mental Load by Cognitive Type
+              </CardTitle>
               <CardDescription>
-                Cognitive burden distribution across task categories
+                Distribution across mental load categories with fixed scale for accurate comparison
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <RadarChart data={chartData.radarData} margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
-                  <PolarGrid stroke="hsl(var(--border))" />
-                  <PolarAngleAxis 
-                    dataKey="category" 
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                  />
-                  <PolarRadiusAxis 
-                    angle={90} 
-                    domain={[0, 'dataMax']}
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                  />
-                  <Radar
-                    name="My Load"
-                    dataKey="My Load"
-                    stroke="hsl(var(--primary))"
-                    fill="hsl(var(--primary))"
-                    fillOpacity={0.3}
-                    strokeWidth={2}
-                  />
-                  {state.householdSetup.adults === 2 && (
+              {state.householdSetup.adults === 2 ? (
+                <div className="space-y-6">
+                  {/* Side-by-side comparison chart */}
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart 
+                      data={chartData.comparisonData} 
+                      margin={{ top: 20, right: 30, left: 40, bottom: 80 }}
+                      layout="horizontal"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis 
+                        type="number"
+                        domain={[0, maxMentalLoadValues.categoryMax]}
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        label={{ value: 'Mental Load Points', position: 'insideBottom', offset: -5 }}
+                      />
+                      <YAxis 
+                        type="category"
+                        dataKey="category"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={11}
+                        width={100}
+                      />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                        formatter={(value, name) => [`${value} points`, name]}
+                      />
+                      <Legend />
+                      <Bar 
+                        dataKey="You" 
+                        fill="hsl(var(--primary))" 
+                        radius={[0, 4, 4, 0]}
+                        name="Your Mental Load"
+                      />
+                      <Bar 
+                        dataKey="Partner" 
+                        fill="hsl(var(--secondary))" 
+                        radius={[0, 4, 4, 0]}
+                        name="Partner's Mental Load"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  
+                  {/* Chart interpretation */}
+                  <div className="mt-4 p-4 rounded-lg bg-blue/5 border border-blue/20">
+                    <h5 className="font-medium text-blue mb-2">How to Read This Chart</h5>
+                    <p className="text-sm text-muted-foreground">
+                      This horizontal bar chart uses a <span className="font-medium">fixed scale (0-{maxMentalLoadValues.categoryMax} points)</span> so you can accurately compare mental load levels. 
+                      When both bars reach similar lengths, it indicates balanced sharing in that cognitive area. 
+                      Large differences show where one partner carries more mental burden - these are prime areas for discussion and potential redistribution.
+                    </p>
+                  </div>
+                  
+                  {/* Category explanations */}
+                  <div className="grid gap-4 mt-6">
+                    <div className="text-sm space-y-2">
+                      <h4 className="font-semibold text-foreground">What These Categories Mean:</h4>
+                      <div className="grid gap-2 text-muted-foreground">
+                        <div><strong>Anticipation:</strong> Planning ahead, meal planning, scheduling</div>
+                        <div><strong>Identification:</strong> Noticing what needs attention, supply levels</div>
+                        <div><strong>Decision-making:</strong> Choosing services, budget decisions, priorities</div>
+                        <div><strong>Monitoring:</strong> Tracking progress, following up, ensuring completion</div>
+                        <div><strong>Emotional Labour:</strong> Managing relationships, conflicts, emotional support</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={chartData.radarData} margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis 
+                      dataKey="category" 
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={[0, maxMentalLoadValues.categoryMax]}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    />
                     <Radar
-                      name="Partner Load"
-                      dataKey="Partner Load"
-                      stroke="hsl(var(--secondary))"
-                      fill="hsl(var(--secondary))"
+                      name="Mental Load"
+                      dataKey="My Load"
+                      stroke="hsl(var(--primary))"
+                      fill="hsl(var(--primary))"
                       fillOpacity={0.3}
                       strokeWidth={2}
                     />
-                  )}
-                  <Legend />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1219,6 +1306,28 @@ const Dashboard: React.FC = () => {
                       </p>
                     </div>
                   )}
+                  
+                  {/* Special interpretation for high emotional labour in both partners */}
+                  {(() => {
+                    const myEmotionalLoad = chartData.radarData.find(cat => cat.category === 'Emotional Labour')?.['My Load'] || 0;
+                    const partnerEmotionalLoad = chartData.radarData.find(cat => cat.category === 'Emotional Labour')?.['Partner Load'] || 0;
+                    
+                    if (myEmotionalLoad > 100 && partnerEmotionalLoad > 100 && Math.abs(myEmotionalLoad - partnerEmotionalLoad) < 50) {
+                      return (
+                        <div className="p-4 rounded-lg bg-emerald/5 border border-emerald/20">
+                          <h5 className="font-medium text-emerald mb-2">Shared Emotional Responsibility</h5>
+                          <p className="text-sm text-muted-foreground">
+                            Both you and your partner carry high emotional labour loads (You: {myEmotionalLoad}, Partner: {partnerEmotionalLoad} points). 
+                            When both partners are near the "edge" of the chart for emotional support, this often indicates 
+                            <span className="font-medium"> shared emotional responsibility</span> - a positive sign that both of you are invested 
+                            in maintaining family relationships and emotional well-being. This suggests strong collaboration in the emotional aspects of household management.
+                          </p>
+                        </div>
+                      );
+                    }
+                    
+                    return null;
+                  })()}
                 </div>
               );
             })()}
