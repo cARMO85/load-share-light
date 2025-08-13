@@ -182,6 +182,12 @@ const Dashboard: React.FC = () => {
     );
     const maxCategory = Math.max(...allCategoryLoads, 100); // Minimum 100 for reasonable scale
     
+    console.log('Max values debug:', {
+      allCategoryLoads,
+      maxCategory,
+      categoryAnalysis
+    });
+    
     return {
       categoryMax: Math.ceil(maxCategory / 100) * 100, // Round up to nearest 100
       totalMax: Math.max(results.myMentalLoad, results.partnerMentalLoad || 0, 500) // Minimum 500 for total
@@ -503,11 +509,19 @@ const Dashboard: React.FC = () => {
 
     // Comparison chart data for side-by-side view
     const comparisonData = Object.entries(categoryAnalysis).map(([category, data]) => ({
-      category: category.replace(/[A-Z]/g, ' $&').trim(), // Add spaces to camelCase
+      category: category.replace(/([A-Z])/g, ' $1').trim(), // Add spaces to camelCase
       You: data.myMentalLoad,
       Partner: data.partnerMentalLoad || 0,
       'Difference': Math.abs(data.myMentalLoad - (data.partnerMentalLoad || 0))
     }));
+
+    // Debug logging
+    console.log('Chart data debug:', {
+      categoryAnalysis,
+      comparisonData,
+      barData,
+      radarData
+    });
 
     return { barData, radarData, comparisonData };
   }, [state.taskResponses, state.householdSetup]);
@@ -701,6 +715,11 @@ const Dashboard: React.FC = () => {
             <CardContent>
               {state.householdSetup.adults === 2 ? (
                 <div className="space-y-6">
+                  {/* Debug info */}
+                  <div className="p-2 bg-muted/50 rounded text-xs">
+                    <strong>Debug:</strong> Chart has {chartData.comparisonData.length} items, max: {maxMentalLoadValues.categoryMax}
+                  </div>
+                  
                   {/* Side-by-side comparison chart */}
                   <ResponsiveContainer width="100%" height={350}>
                     <BarChart 
@@ -711,7 +730,7 @@ const Dashboard: React.FC = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis 
                         type="number"
-                        domain={[0, maxMentalLoadValues.categoryMax]}
+                        domain={[0, Math.max(maxMentalLoadValues.categoryMax, 100)]}
                         stroke="hsl(var(--muted-foreground))"
                         fontSize={12}
                         label={{ value: 'Mental Load Points', position: 'insideBottom', offset: -5 }}
@@ -721,7 +740,7 @@ const Dashboard: React.FC = () => {
                         dataKey="category"
                         stroke="hsl(var(--muted-foreground))"
                         fontSize={11}
-                        width={100}
+                        width={120}
                       />
                       <Tooltip 
                         contentStyle={{
