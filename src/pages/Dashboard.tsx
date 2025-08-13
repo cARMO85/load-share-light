@@ -182,12 +182,6 @@ const Dashboard: React.FC = () => {
     );
     const maxCategory = Math.max(...allCategoryLoads, 100); // Minimum 100 for reasonable scale
     
-    console.log('Max values debug:', {
-      allCategoryLoads,
-      maxCategory,
-      categoryAnalysis
-    });
-    
     return {
       categoryMax: Math.ceil(maxCategory / 100) * 100, // Round up to nearest 100
       totalMax: Math.max(results.myMentalLoad, results.partnerMentalLoad || 0, 500) // Minimum 500 for total
@@ -515,14 +509,6 @@ const Dashboard: React.FC = () => {
       'Difference': Math.abs(data.myMentalLoad - (data.partnerMentalLoad || 0))
     }));
 
-    // Debug logging
-    console.log('Chart data debug:', {
-      categoryAnalysis,
-      comparisonData,
-      barData,
-      radarData
-    });
-
     return { barData, radarData, comparisonData };
   }, [state.taskResponses, state.householdSetup]);
 
@@ -715,32 +701,27 @@ const Dashboard: React.FC = () => {
             <CardContent>
               {state.householdSetup.adults === 2 ? (
                 <div className="space-y-6">
-                  {/* Debug info */}
-                  <div className="p-2 bg-muted/50 rounded text-xs">
-                    <strong>Debug:</strong> Chart has {chartData.comparisonData.length} items, max: {maxMentalLoadValues.categoryMax}
-                  </div>
+                  
                   
                   {/* Side-by-side comparison chart */}
-                  <ResponsiveContainer width="100%" height={350}>
+                  <ResponsiveContainer width="100%" height={400}>
                     <BarChart 
                       data={chartData.comparisonData} 
-                      margin={{ top: 20, right: 30, left: 40, bottom: 80 }}
-                      layout="horizontal"
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis 
-                        type="number"
-                        domain={[0, Math.max(maxMentalLoadValues.categoryMax, 100)]}
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                        label={{ value: 'Mental Load Points', position: 'insideBottom', offset: -5 }}
-                      />
-                      <YAxis 
-                        type="category"
                         dataKey="category"
                         stroke="hsl(var(--muted-foreground))"
                         fontSize={11}
-                        width={120}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                      />
+                      <YAxis 
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        label={{ value: 'Mental Load Points', angle: -90, position: 'insideLeft' }}
                       />
                       <Tooltip 
                         contentStyle={{
@@ -754,13 +735,13 @@ const Dashboard: React.FC = () => {
                       <Bar 
                         dataKey="You" 
                         fill="hsl(var(--primary))" 
-                        radius={[0, 4, 4, 0]}
+                        radius={[4, 4, 0, 0]}
                         name="Your Mental Load"
                       />
                       <Bar 
                         dataKey="Partner" 
                         fill="hsl(var(--secondary))" 
-                        radius={[0, 4, 4, 0]}
+                        radius={[4, 4, 0, 0]}
                         name="Partner's Mental Load"
                       />
                     </BarChart>
