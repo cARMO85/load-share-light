@@ -372,7 +372,11 @@ const TaskQuestionnaire: React.FC = () => {
                       key={task.id}
                       variant={currentDiscussionTask?.id === task.id ? 'default' : 'ghost'}
                       size="sm"
-                      onClick={() => setCurrentDiscussionTask({id: task.id, name: task.task_name})}
+                      onClick={() => {
+                        console.log('Task clicked:', task.task_name, task.id);
+                        setCurrentDiscussionTask({id: task.id, name: task.task_name});
+                        console.log('Current discussion task set to:', {id: task.id, name: task.task_name});
+                      }}
                       className="justify-start text-left h-auto py-2 px-3"
                     >
                       <div className="truncate">
