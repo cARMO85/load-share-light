@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Brain, Users, BarChart3, Heart } from 'lucide-react';
+import { Brain, Users, BarChart3, Heart, MessageCircle, CheckCircle, Target } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -25,8 +25,8 @@ const Index = () => {
                 <span className="text-foreground">Assessment Tool</span>
               </h1>
               <p className="text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                Understand and visualize the invisible work that keeps your household running. 
-                Measure the mental load distribution and spark meaningful conversations about balance.
+                A thoughtful assessment tool designed to spark meaningful conversations about household mental load. 
+                Use it solo for self-reflection or with your partner to build understanding and create positive change together.
               </p>
             </div>
             
@@ -112,6 +112,67 @@ const Index = () => {
               </CardDescription>
             </CardContent>
           </Card>
+        </div>
+      </div>
+
+      {/* How It Works Section */}
+      <div className="max-w-6xl mx-auto px-4 py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+            How It Works
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            A guided process to help you reflect on, discuss, and improve how mental load is shared in your household.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          <Card className="text-center shadow-lg border-0 bg-gradient-to-br from-card to-primary/5 hover:shadow-xl transition-all duration-300">
+            <CardHeader>
+              <MessageCircle className="h-12 w-12 text-primary mx-auto mb-4" />
+              <CardTitle className="text-xl">Reflect & Discuss</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Answer thoughtful questions about household tasks and responsibilities. Use it for personal insight or as conversation starters with your partner.
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center shadow-lg border-0 bg-gradient-to-br from-card to-secondary/5 hover:shadow-xl transition-all duration-300">
+            <CardHeader>
+              <CheckCircle className="h-12 w-12 text-secondary mx-auto mb-4" />
+              <CardTitle className="text-xl">Capture Insights</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Record your thoughts, observations, and discussion notes throughout the assessment to build understanding together.
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center shadow-lg border-0 bg-gradient-to-br from-card to-accent/5 hover:shadow-xl transition-all duration-300">
+            <CardHeader>
+              <Target className="h-12 w-12 text-accent mx-auto mb-4" />
+              <CardTitle className="text-xl">Create Change</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Use your insights and visualizations to identify specific areas for improvement and create actionable plans together.
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-16 text-center">
+          <div className="max-w-4xl mx-auto bg-gradient-to-r from-muted/50 to-muted/30 rounded-xl p-8 border">
+            <h3 className="text-xl font-semibold text-foreground mb-4">
+              Perfect for Solo Reflection or Partner Conversations
+            </h3>
+            <p className="text-muted-foreground">
+              Whether you're looking to understand your own mental load patterns or create a safe space for discussing household responsibilities with your partner, this tool adapts to your needs. Take it individually first, then use your results as a starting point for meaningful conversations about creating better balance together.
+            </p>
+          </div>
         </div>
       </div>
 
