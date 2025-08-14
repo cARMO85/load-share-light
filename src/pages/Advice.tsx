@@ -2,10 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Lightbulb, Brain, Scale, Users, Heart, AlertTriangle, TrendingUp, BookOpen } from 'lucide-react';
+import { useAssessment } from '@/context/AssessmentContext';
+import { ArrowLeft, Lightbulb, Brain, Scale, Users, Heart, AlertTriangle, TrendingUp, BookOpen, User, Clock, Shield } from 'lucide-react';
 
 const Advice: React.FC = () => {
   const navigate = useNavigate();
+  const { state } = useAssessment();
+  const isSingleParent = state.householdSetup.adults === 1;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -206,55 +209,157 @@ const Advice: React.FC = () => {
           </Card>
         </div>
 
-        {/* General Advice Section */}
+        {/* Conditional Advice Section - Different for Single Parents vs Couples */}
         <div className="mb-8">
           <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-accent/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-6 w-6 text-accent" />
-                Strategies for Better Balance
+                {isSingleParent ? "Strategies for Managing Solo" : "Strategies for Better Balance"}
               </CardTitle>
               <CardDescription>
-                Practical approaches to redistribute mental load
+                {isSingleParent 
+                  ? "Practical approaches to manage mental load as a single parent"
+                  : "Practical approaches to redistribute mental load with your partner"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4">
-                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                  <h5 className="font-medium text-primary mb-2">Start with Awareness</h5>
-                  <p className="text-sm text-muted-foreground">
-                    Share your assessment results with your partner. Many people don't realize how much cognitive work 
-                    goes into household management. Use this as a starting point for discussion, not blame.
-                  </p>
-                </div>
-                
-                <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
-                  <h5 className="font-medium text-secondary mb-2">Transfer Ownership, Not Just Tasks</h5>
-                  <p className="text-sm text-muted-foreground">
-                    Instead of asking your partner to "help" with your tasks, transfer complete ownership of specific areas. 
-                    For example, one person owns all pet care (feeding, vet appointments, supplies) from start to finish.
-                  </p>
-                </div>
-                
-                <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
-                  <h5 className="font-medium text-accent mb-2">Create Systems and Routines</h5>
-                  <p className="text-sm text-muted-foreground">
-                    Reduce mental load through automation and systems. Use shared calendars, meal planning apps, 
-                    automatic bill payments, and regular household schedules to minimize decision fatigue.
-                  </p>
-                </div>
-                
-                <div className="p-4 rounded-lg bg-success/5 border border-success/20">
-                  <h5 className="font-medium text-success mb-2">Practice Parallel Processing</h5>
-                  <p className="text-sm text-muted-foreground">
-                    Work on different household areas simultaneously rather than one person managing everything. 
-                    This prevents bottlenecks and reduces the feeling that one person is "in charge" of the household.
-                  </p>
-                </div>
+                {isSingleParent ? (
+                  <>
+                    {/* Single Parent Advice */}
+                    <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                      <h5 className="font-medium text-primary mb-2 flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Build Your Support Network
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        Connect with other single parents, family members, or trusted friends who can help with tasks. 
+                        Consider reciprocal arrangements - you help with their kids while they help with yours, 
+                        or share resources like carpools and meal prep.
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
+                      <h5 className="font-medium text-secondary mb-2 flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Batch and Automate Everything
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        Batch similar tasks together (all errands in one trip, meal prep for the week). 
+                        Automate what you can: bill payments, grocery delivery, subscription services. 
+                        Every automated task is mental load you don't have to carry.
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
+                      <h5 className="font-medium text-accent mb-2">Lower Your Standards Strategically</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Identify which tasks really matter and which can be simplified. Perfect meals aren't necessary - 
+                        nutritious ones are. Kids can help with age-appropriate tasks, even if they don't do them perfectly. 
+                        Focus your energy on what truly impacts your family's wellbeing.
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg bg-success/5 border border-success/20">
+                      <h5 className="font-medium text-success mb-2">Invest in Time-Saving Services</h5>
+                      <p className="text-sm text-muted-foreground">
+                        When possible, invest in services that buy back your time and mental energy: 
+                        housekeeping, lawn care, grocery delivery, or even a monthly organizer. 
+                        Calculate the cost per hour vs. your peace of mind - often it's worth it.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-lg bg-warning/5 border border-warning/20">
+                      <h5 className="font-medium text-warning mb-2">Co-parent Coordination (If Applicable)</h5>
+                      <p className="text-sm text-muted-foreground">
+                        If you share custody, establish clear systems for handoffs and communication. 
+                        Use shared calendars for activities and appointments. Coordinate on major decisions 
+                        to avoid duplicate mental work. Even if the relationship is strained, structured communication 
+                        reduces your cognitive load.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Couple Advice */}
+                    <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                      <h5 className="font-medium text-primary mb-2">Start with Awareness</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Share your assessment results with your partner. Many people don't realize how much cognitive work 
+                        goes into household management. Use this as a starting point for discussion, not blame.
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
+                      <h5 className="font-medium text-secondary mb-2">Transfer Ownership, Not Just Tasks</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Instead of asking your partner to "help" with your tasks, transfer complete ownership of specific areas. 
+                        For example, one person owns all pet care (feeding, vet appointments, supplies) from start to finish.
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
+                      <h5 className="font-medium text-accent mb-2">Create Systems and Routines</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Reduce mental load through automation and systems. Use shared calendars, meal planning apps, 
+                        automatic bill payments, and regular household schedules to minimize decision fatigue.
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg bg-success/5 border border-success/20">
+                      <h5 className="font-medium text-success mb-2">Practice Parallel Processing</h5>
+                      <p className="text-sm text-muted-foreground">
+                        Work on different household areas simultaneously rather than one person managing everything. 
+                        This prevents bottlenecks and reduces the feeling that one person is "in charge" of the household.
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Single Parent Specific Section */}
+        {isSingleParent && (
+          <div className="mb-8">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-info/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-6 w-6 text-info" />
+                  Single Parent Realities
+                </CardTitle>
+                <CardDescription>
+                  Understanding and managing the unique challenges of solo parenting
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 rounded-lg bg-info/5 border border-info/20">
+                  <h5 className="font-medium text-info mb-2">Your Mental Load is Valid</h5>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    As a single parent, you're managing 100% of the household mental load. This isn't about "efficiency" 
+                    or "getting help" - it's about recognizing the full scope of what you're handling and finding 
+                    sustainable ways to manage it.
+                  </p>
+                  <p className="text-xs text-muted-foreground italic">
+                    Remember: You're not doing this wrong if you feel overwhelmed. You're doing an enormous job.
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-lg bg-warning/5 border border-warning/20">
+                  <h5 className="font-medium text-warning mb-2">Burnout Prevention</h5>
+                  <p className="text-sm text-muted-foreground">
+                    Schedule regular breaks, even if they're small. Ask for help when you need it. 
+                    Consider respite care options in your community. Your wellbeing directly impacts 
+                    your ability to care for your family.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Back to Dashboard */}
         <div className="text-center">
