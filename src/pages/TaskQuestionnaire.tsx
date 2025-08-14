@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
@@ -354,41 +355,61 @@ const TaskQuestionnaire: React.FC = () => {
             currentTask={currentDiscussionTask}
           />
 
-          {/* Optional: Quick task reference for discussion */}
+          {/* Topic Selection for Discussion */}
           <div className="mt-8">
             <Card className="border-muted">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Brain className="h-5 w-5" />
-                  Task Reference for Discussion
+                  Choose a Discussion Topic
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Click on any task to set context for your insight capture
+                  If you want to discuss a specific task and record insights about it, please select it from the dropdown below.
                 </p>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {categorizedTasks.flatMap(cat => cat.tasks).map(task => (
-                    <Button
-                      key={task.id}
-                      variant={currentDiscussionTask?.id === task.id ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => {
-                        setCurrentDiscussionTask({id: task.id, name: task.task_name});
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium min-w-fit">Topic to discuss:</span>
+                    <Select 
+                      value={currentDiscussionTask?.id || ""} 
+                      onValueChange={(taskId) => {
+                        const allTasks = categorizedTasks.flatMap(cat => cat.tasks);
+                        const selectedTask = allTasks.find(task => task.id === taskId);
+                        if (selectedTask) {
+                          setCurrentDiscussionTask({id: selectedTask.id, name: selectedTask.task_name});
+                        }
                       }}
-                      className={cn(
-                        "justify-start text-left h-auto py-2 px-3 transition-all duration-200",
-                        currentDiscussionTask?.id === task.id 
-                          ? "bg-primary text-primary-foreground shadow-md border-2 border-primary" 
-                          : "hover:bg-accent hover:text-accent-foreground border border-transparent"
-                      )}
                     >
-                      <div className="truncate">
-                        <div className="font-medium text-sm">{task.task_name}</div>
-                        <div className="text-xs opacity-70">{task.category}</div>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select a task to discuss..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categorizedTasks.map(category => (
+                          <div key={category.name}>
+                            <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted/50">
+                              {category.name}
+                            </div>
+                            {category.tasks.map(task => (
+                              <SelectItem key={task.id} value={task.id}>
+                                {task.task_name}
+                              </SelectItem>
+                            ))}
+                          </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {currentDiscussionTask && (
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                      <div className="text-xs text-primary/80 font-medium">Ready to discuss:</div>
+                      <div className="text-sm font-medium text-primary">{currentDiscussionTask.name}</div>
+                      <div className="text-xs text-primary/70 mt-1">
+                        Your insights will be linked to this task for your action plan.
                       </div>
-                    </Button>
-                  ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
