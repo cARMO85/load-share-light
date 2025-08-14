@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { ProgressSteps } from '@/components/ui/progress-steps';
@@ -373,15 +374,18 @@ const TaskQuestionnaire: React.FC = () => {
                       variant={currentDiscussionTask?.id === task.id ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => {
-                        console.log('Task clicked:', task.task_name, task.id);
                         setCurrentDiscussionTask({id: task.id, name: task.task_name});
-                        console.log('Current discussion task set to:', {id: task.id, name: task.task_name});
                       }}
-                      className="justify-start text-left h-auto py-2 px-3"
+                      className={cn(
+                        "justify-start text-left h-auto py-2 px-3 transition-all duration-200",
+                        currentDiscussionTask?.id === task.id 
+                          ? "bg-primary text-primary-foreground shadow-md border-2 border-primary" 
+                          : "hover:bg-accent hover:text-accent-foreground border border-transparent"
+                      )}
                     >
                       <div className="truncate">
                         <div className="font-medium text-sm">{task.task_name}</div>
-                        <div className="text-xs text-muted-foreground">{task.category}</div>
+                        <div className="text-xs opacity-70">{task.category}</div>
                       </div>
                     </Button>
                   ))}
