@@ -2,7 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Clock, Brain, BarChart3, AlertCircle } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ArrowLeft, Clock, Brain, BarChart3, AlertCircle, Shield } from 'lucide-react';
 
 const LearnMore: React.FC = () => {
   const navigate = useNavigate();
@@ -50,15 +51,15 @@ const LearnMore: React.FC = () => {
                   </p>
                 </div>
                 
-                <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Brain className="h-4 w-4 text-secondary" />
-                    <h4 className="font-semibold text-secondary">Invisible Work</h4>
+                  <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Brain className="h-4 w-4 text-secondary" />
+                      <h4 className="font-semibold text-secondary">Invisible Work</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      The mental, emotional, and organisational effort required to anticipate, plan, monitor, and make decisions about those tasks.
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    The mental, emotional, and organisational effort required to anticipate, plan, monitor, and make decisions about those tasks.
-                  </p>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -111,7 +112,7 @@ const LearnMore: React.FC = () => {
                   <div className="p-3 rounded-lg bg-secondary/5">
                     <h5 className="font-medium text-secondary mb-1">Mental load weight</h5>
                     <p className="text-sm text-muted-foreground">
-                      Based on how much anticipation, organisation, decision-making, and emotional labour the task typically requires (scaled from 1–5).
+                      weighted by cognitive/emotional complexity using a multiplier centred on 1.0 (routine execution ≈ 0.8–1.0; planning/monitoring ≈ 1.1–1.3; high emotional/co‑ordination ≈ 1.4–1.6).
                     </p>
                   </div>
                 </div>
@@ -144,7 +145,7 @@ const LearnMore: React.FC = () => {
                 <div className="p-4 rounded-lg bg-gradient-to-r from-accent/5 to-primary/5 border">
                   <h4 className="font-semibold mb-2">Step 3: We Compare</h4>
                   <p className="text-sm text-muted-foreground">
-                    If both partners complete the assessment, we compare perceptions side-by-side to highlight any gaps.
+                    If both partners complete the assessment, we compare perceptions side-by-side to highlight any gaps. When both partners answer, we show two views: your perception and a normalised model that blends both answers with literature baselines to reduce guesswork.
                   </p>
                 </div>
               </div>
@@ -170,12 +171,12 @@ const LearnMore: React.FC = () => {
               
               <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
                 <p className="text-sm">
-                  <strong>For example:</strong> National averages might say lawn mowing takes 60 minutes/week — but your garden might take 15 minutes or 2 hours.
+                  <strong>For example:</strong> National averages might say lawn mowing takes 60 minutes per week — but your garden might take 15 minutes or 2 hours.
                 </p>
               </div>
               
               <p className="text-sm text-muted-foreground">
-                That's why you can edit the default time values to reflect your own experience.
+                That is why you can edit the default time values to reflect your own experience.
               </p>
             </CardContent>
           </Card>
@@ -202,6 +203,94 @@ const LearnMore: React.FC = () => {
                   <li>• Replace honest, ongoing discussion between partners</li>
                 </ul>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Couple Mode Normalisation */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
+            <CardHeader>
+              <CardTitle>6. Couple Mode — How We Reconcile Two Answers</CardTitle>
+              <CardDescription>We separate perception from a normalised estimate.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <p>We display two parallel views:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li><strong>Perception view</strong> — what each person believes they contribute.</li>
+                <li><strong>Normalised model</strong> — a blended estimate using literature baselines and both partners' shares.</li>
+              </ul>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="mb-2"><strong>In plain English:</strong> we average your shares for each task and anchor the time to national/literature averages (unless you edited them). This reduces random over/under‑estimation.</p>
+                <p className="font-mono text-xs">
+                  normalised_share = average( your_share , 1 − partner_share ) <br/>
+                  normalised_minutes = median( baseline , your_time/your_share? , partner_time/(1−partner_share)? )
+                </p>
+              </div>
+              <p>We also flag tasks with a big disagreement badge (e.g., "You: 80% • Partner: 40%") to help you talk about those first.</p>
+            </CardContent>
+          </Card>
+
+          {/* Weighting Explanation */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
+            <CardHeader>
+              <CardTitle>7. How Mental Load Weights Work</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>
+                Each task has a <strong>weight multiplier</strong> that reflects invisible effort. It is centred on <strong>1.0</strong>:
+              </p>
+              <ul className="list-disc list-inside">
+                <li><strong>0.8–1.0</strong>: mainly physical execution (e.g., routine tidying)</li>
+                <li><strong>1.1–1.3</strong>: planning/monitoring/administration (e.g., bills, calendars)</li>
+                <li><strong>1.4–1.6</strong>: high emotional/coordination complexity (e.g., child emotional support)</li>
+              </ul>
+              <p>
+                Categories are grounded in Daminger's cognitive dimensions (anticipation, identification, decision‑making, monitoring) and emotional labour literature. You can see the default weight for each task in the questionnaire.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Sources & Transparency */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
+            <CardHeader>
+              <CardTitle>8. Sources & Transparency</CardTitle>
+              <CardDescription>Exactly where our defaults come from</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              <Accordion type="single" collapsible>
+                <AccordionItem value="frameworks">
+                  <AccordionTrigger>Frameworks</AccordionTrigger>
+                  <AccordionContent>
+                    Daminger (2019) — cognitive dimensions; Dean, Churchill &amp; Ruppanner (2022) — emotional/invisible labour; Hjálmsdóttir &amp; Bjarnadóttir (2021).
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="baselines">
+                  <AccordionTrigger>Baseline times</AccordionTrigger>
+                  <AccordionContent>
+                    National time‑use studies and peer‑reviewed sources (see Appendix Table in the report). Defaults are editable to reflect your context.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="weights">
+                  <AccordionTrigger>Weighting policy</AccordionTrigger>
+                  <AccordionContent>
+                    Weight multipliers (0.8–1.6) are assigned by category complexity; they can be tuned for research sensitivity analysis.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+
+          {/* Privacy */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                9. Privacy
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              <p>
+                We store your answers locally for this session unless you choose to save/export them. No personal identifiers are required. See the in‑app Privacy notice for details.
+              </p>
             </CardContent>
           </Card>
 
