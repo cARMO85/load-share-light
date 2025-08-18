@@ -28,6 +28,7 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { addSampleInsights, isDevelopment } from '@/lib/devUtils';
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
@@ -232,6 +233,38 @@ const Results: React.FC = () => {
         </TabsList>
 
         <TabsContent value="conversation" className="space-y-6">
+          {/* Development Panel - Only visible in dev mode */}
+          {isDevelopment && (
+            <Card className="bg-yellow-50 border-yellow-200 dark:bg-yellow-900/10 dark:border-yellow-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                  <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                    DEV
+                  </Badge>
+                  Development Testing Tools
+                </CardTitle>
+                <CardDescription>
+                  Tools for testing the conversation facilitator with sample data
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-3">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => addSampleInsights(addInsight)}
+                    className="border-yellow-300 text-yellow-800 hover:bg-yellow-100 dark:border-yellow-700 dark:text-yellow-200 dark:hover:bg-yellow-900/20"
+                  >
+                    Add Sample Insights ({state.insights.length} current)
+                  </Button>
+                  <div className="text-sm text-muted-foreground flex items-center">
+                    This will populate realistic sample comments from the questionnaire for testing
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <DialogueFacilitator
             prompts={conversationPrompts}
             onNotesUpdate={handleNotesUpdate}
