@@ -204,7 +204,7 @@ const Results: React.FC = () => {
                     <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
                       <h4 className="font-medium text-accent mb-2">Weekly Time Comparison</h4>
                       <p className="text-sm text-muted-foreground">
-                        Research shows women in dual-earner couples average 15 hrs/week on household tasks, men average 6.8 hrs/week.
+                        Research shows women in dual-earner couples handle 67% of household tasks vs. men at 33% (34 percentage point gap).
                       </p>
                       <div className="mt-2 text-xs font-mono bg-muted/50 p-2 rounded">
                         You: {Math.round(results.myVisibleTime / 60 * 10) / 10}h/week ({results.myVisiblePercentage}%)
