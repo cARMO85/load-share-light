@@ -1,19 +1,39 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
+import { DialogueFacilitator } from '@/components/DialogueFacilitator';
+import { ConversationReport } from '@/components/ConversationReport';
+import { SharedVocabulary } from '@/components/SharedVocabulary';
+import { generateConversationPrompts } from '@/lib/conversationEngine';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
 import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
 import { getResearchComparison, RESEARCH_BENCHMARKS } from '@/lib/researchBenchmarks';
-import { AlertCircle, BarChart3, BookOpen, Clock, Heart, Lightbulb, MessageCircle, TrendingUp, Users, UserCheck, Brain } from 'lucide-react';
+import { 
+  AlertCircle, 
+  BarChart3, 
+  BookOpen, 
+  Clock, 
+  Heart, 
+  Lightbulb, 
+  MessageCircle, 
+  TrendingUp, 
+  Users, 
+  UserCheck, 
+  Brain,
+  ArrowRight 
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
-  const { state, setCurrentStep } = useAssessment();
+  const { state, addInsight } = useAssessment();
+  const [activeTab, setActiveTab] = useState('conversation');
+  const [discussionNotes, setDiscussionNotes] = useState<Record<string, string>>({});
 
   // Helper function to calculate loads using exact formula: Mental Load Score = (Time × Weight × Share%)
   const calculateLoadFromResponses = (responses: typeof state.taskResponses, taskLookup: Record<string, typeof mentalLoadTasks[0]>, hasTwoAdults: boolean) => {
@@ -51,69 +71,65 @@ const Results: React.FC = () => {
         myMentalLoad += timeInMinutes * mentalLoadWeight * sharePercent;
         
         // Partner gets remainder
-        const partnerSharePercent = 1 - sharePercent;
+        const partnerSharePercent = (100 - (response.mySharePercentage || 0)) / 100;
         if (hasTwoAdults) {
           partnerVisibleTime += timeInMinutes * partnerSharePercent;
           partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
         }
       } else if (response.assignment === 'shared') {
-        // Shared: 50/50 by default
-        const mySharePercent = 50 / 100; // Always 50/50 for shared
-        const partnerSharePercent = 1 - mySharePercent;
-        
-        myVisibleTime += timeInMinutes * mySharePercent;
-        myMentalLoad += timeInMinutes * mentalLoadWeight * mySharePercent;
+        const myShare = (response.mySharePercentage || 50) / 100;
+        const partnerShare = hasTwoAdults ? (1 - myShare) : 0;
+
+        myVisibleTime += timeInMinutes * myShare;
+        myMentalLoad += timeInMinutes * mentalLoadWeight * myShare;
         
         if (hasTwoAdults) {
-          partnerVisibleTime += timeInMinutes * partnerSharePercent;
-          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
+          partnerVisibleTime += timeInMinutes * partnerShare;
+          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerShare;
         }
       }
     });
 
     const totalVisibleTime = myVisibleTime + partnerVisibleTime;
     const totalMentalLoad = myMentalLoad + partnerMentalLoad;
-
+    
     return {
       myVisibleTime: Math.round(myVisibleTime),
-      myMentalLoad: Math.round(myMentalLoad),
-      partnerVisibleTime: hasTwoAdults ? Math.round(partnerVisibleTime) : undefined,
-      partnerMentalLoad: hasTwoAdults ? Math.round(partnerMentalLoad) : undefined,
+      myMentalLoad: Math.round(myMentalLoad * 10) / 10,
+      partnerVisibleTime: Math.round(partnerVisibleTime),
+      partnerMentalLoad: Math.round(partnerMentalLoad * 10) / 10,
       totalVisibleTime: Math.round(totalVisibleTime),
-      totalMentalLoad: Math.round(totalMentalLoad),
+      totalMentalLoad: Math.round(totalMentalLoad * 10) / 10,
       myVisiblePercentage: totalVisibleTime > 0 ? Math.round((myVisibleTime / totalVisibleTime) * 100) : 0,
       myMentalPercentage: totalMentalLoad > 0 ? Math.round((myMentalLoad / totalMentalLoad) * 100) : 0,
-      partnerVisiblePercentage: hasTwoAdults && totalVisibleTime > 0 
-        ? Math.round((partnerVisibleTime / totalVisibleTime) * 100) : undefined,
-      partnerMentalPercentage: hasTwoAdults && totalMentalLoad > 0 
-        ? Math.round((partnerMentalLoad / totalMentalLoad) * 100) : undefined,
+      partnerVisiblePercentage: totalVisibleTime > 0 ? Math.round((partnerVisibleTime / totalVisibleTime) * 100) : 0,
+      partnerMentalPercentage: totalMentalLoad > 0 ? Math.round((partnerMentalLoad / totalMentalLoad) * 100) : 0,
     };
   };
 
-  const results = useMemo((): CalculatedResults => {
+  // Calculate results
+  const results = useMemo(() => {
     const taskLookup = mentalLoadTasks.reduce((acc, task) => {
       acc[task.id] = task;
       return acc;
     }, {} as Record<string, typeof mentalLoadTasks[0]>);
 
-    const isTogetherMode = state.householdSetup.assessmentMode === 'together';
+    const hasTwoAdults = state.householdSetup.adults >= 2;
+    const myCalculations = calculateLoadFromResponses(state.taskResponses, taskLookup, hasTwoAdults);
     
-    // Calculate from my perspective
-    const myCalculations = calculateLoadFromResponses(state.taskResponses, taskLookup, state.householdSetup.adults === 2);
-    
-    // Calculate from partner's perspective (if together mode)
+    // For together mode, calculate partner's perspective if available
     let partnerCalculations = null;
     let perceptionGaps = null;
     
-    if (isTogetherMode && state.partnerTaskResponses && state.partnerTaskResponses.length > 0) {
-      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses, taskLookup, true);
+    if (state.partnerTaskResponses?.length) {
+      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses, taskLookup, hasTwoAdults);
       
       // Calculate perception gaps
       perceptionGaps = {
-        myVisibleTimeGap: partnerCalculations.myVisibleTime - myCalculations.myVisibleTime,
-        myMentalLoadGap: partnerCalculations.myMentalLoad - myCalculations.myMentalLoad,
-        partnerVisibleTimeGap: partnerCalculations.partnerVisibleTime! - myCalculations.partnerVisibleTime!,
-        partnerMentalLoadGap: partnerCalculations.partnerMentalLoad! - myCalculations.partnerMentalLoad!,
+        myVisibleTimeGap: myCalculations.myVisiblePercentage - partnerCalculations.partnerVisiblePercentage,
+        myMentalLoadGap: myCalculations.myMentalPercentage - partnerCalculations.partnerMentalPercentage,
+        partnerVisibleTimeGap: partnerCalculations.myVisiblePercentage - myCalculations.partnerVisiblePercentage,
+        partnerMentalLoadGap: partnerCalculations.myMentalPercentage - myCalculations.partnerMentalPercentage,
       };
     }
 
@@ -125,455 +141,250 @@ const Results: React.FC = () => {
       partnerPerspectivePartnerMentalLoad: partnerCalculations?.partnerMentalLoad,
       perceptionGaps
     };
-  }, [state.taskResponses, state.partnerTaskResponses, state.householdSetup]);
-
-  const steps = [
-    { title: "Setup", description: "Household info" },
-    { title: "Tasks", description: "Assign responsibilities" },
-    { title: "Results", description: "View calculations" },
-    { title: "Visualize", description: "Charts & insights" }
-  ];
-
-  const handleNext = () => {
-    setCurrentStep(4);
-    navigate('/dashboard');
-  };
+  }, [state.taskResponses, state.partnerTaskResponses, state.householdSetup.adults]);
 
   const isSingleAdult = state.householdSetup.adults === 1;
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
   const hasPartnerData = results.perceptionGaps && state.partnerTaskResponses?.length;
 
-  // Calculate partner's perspective results for together mode
-  const partnerPerspectiveResults = useMemo(() => {
-    if (!hasPartnerData) return null;
-    
-    const taskLookup = mentalLoadTasks.reduce((acc, task) => {
-      acc[task.id] = task;
-      return acc;
-    }, {} as Record<string, typeof mentalLoadTasks[0]>);
-    
-    return calculateLoadFromResponses(state.partnerTaskResponses!, taskLookup, true);
-  }, [state.partnerTaskResponses, hasPartnerData]);
+  // Generate conversation prompts based on results
+  const conversationPrompts = useMemo(() => {
+    return generateConversationPrompts(results, state);
+  }, [results, state]);
+
+  // Define steps for progress indicator
+  const steps = [
+    { id: 1, name: 'Household Setup', status: 'complete' as const },
+    { id: 2, name: 'Task Assessment', status: 'complete' as const },
+    ...(isTogetherMode ? [{ id: 3, name: 'Perception Gap', status: 'complete' as const }] : []),
+    { id: isTogetherMode ? 4 : 3, name: 'Conversation', status: 'current' as const },
+    { id: isTogetherMode ? 5 : 4, name: 'Dashboard', status: 'upcoming' as const }
+  ];
+
+  const handleNext = () => {
+    navigate('/dashboard');
+  };
+
+  const handleNotesUpdate = (promptId: string, notes: string) => {
+    setDiscussionNotes(prev => ({ ...prev, [promptId]: notes }));
+  };
+
+  const handleInsightCapture = (insight: string) => {
+    if (addInsight) {
+      addInsight({
+        id: Date.now().toString(),
+        type: 'breakthrough',
+        description: insight,
+        timestamp: new Date()
+      });
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <ProgressSteps currentStep={3} totalSteps={4} steps={steps} />
-        
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-4">
-            {isTogetherMode && hasPartnerData ? 'Your Household Perspectives' : 'Your Mental Load Analysis'}
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            {isTogetherMode && hasPartnerData 
-              ? "Compare how each of you perceives your household's workload distribution"
-              : isSingleAdult 
-                ? "Here's your total household workload breakdown"
-                : "Here's how you see the mental load distribution in your household"
-            }
-          </p>
-        </div>
-
-        {/* Discussion Insights Report - if insights were captured */}
-        {state.insights && state.insights.length > 0 && (
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-secondary/5 mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-6 w-6 text-secondary" />
-                Your Discussion Insights
-                <Badge variant="secondary">{state.insights.length} captured</Badge>
-              </CardTitle>
-              <CardDescription>
-                Key moments and discoveries from your household assessment discussion
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {state.insights.map((insight, index) => (
-                <div key={insight.id} className="p-4 rounded-lg border border-border/50 bg-card/50">
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-full ${
-                      insight.type === 'breakthrough' ? 'bg-green-100 text-green-600' :
-                      insight.type === 'disagreement' ? 'bg-yellow-100 text-yellow-600' :
-                      'bg-blue-100 text-blue-600'
-                    }`}>
-                      {insight.type === 'breakthrough' ? <Lightbulb className="h-4 w-4" /> :
-                       insight.type === 'disagreement' ? <AlertCircle className="h-4 w-4" /> :
-                       <Heart className="h-4 w-4" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium capitalize">{insight.type.replace('_', ' ')}</span>
-                        {insight.taskName && (
-                          <Badge variant="outline" className="text-xs">{insight.taskName}</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
-                      {insight.followUpAction && (
-                        <p className="text-xs text-primary font-medium">
-                          Follow-up: {insight.followUpAction}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div className="mt-4 p-3 bg-muted/30 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Discussion Tip:</strong> Use these insights as conversation starters for ongoing 
-                  discussions about household responsibilities and expectations.
-                </p>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Progress</h2>
+        <div className="flex items-center gap-4">
+          {steps.map((step, index) => (
+            <div key={step.id} className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                step.status === 'complete' ? 'bg-green-500 text-white' :
+                step.status === 'current' ? 'bg-primary text-white' :
+                'bg-muted text-muted-foreground'
+              }`}>
+                {step.id}
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <span className="ml-2 text-sm">{step.name}</span>
+              {index < steps.length - 1 && <div className="w-8 h-px bg-border mx-4" />}
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold mb-4">Understanding Your Household Work</h1>
+        <p className="text-lg text-muted-foreground">
+          {isTogetherMode 
+            ? "Use this space to discuss your findings and plan next steps together"
+            : "Reflect on these insights and consider how to discuss them with your household"
+          }
+        </p>
+      </div>
 
-        {/* Research Context Card */}
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-primary/5 mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-6 w-6 text-primary" />
-              Research Context
-            </CardTitle>
-            <CardDescription>
-              How your household compares to research findings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(() => {
-              const householdType = state.householdSetup.adults === 2 ? 'couple' : 'single';
-              const hasChildren = state.householdSetup.householdType === 'single_parent' || state.householdSetup.householdType === 'couple_with_children';
-              
-              if (householdType === 'couple') {
-                // For couples, show comparison to research averages
-                const userGender = 'unknown'; // We could add gender selection in setup if needed
-                const comparison = getResearchComparison(
-                  results.myVisibleTime,
-                  results.myVisiblePercentage,
-                  userGender,
-                  hasChildren
-                );
-                
-                return (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
-                      <h4 className="font-medium text-accent mb-2">Research Context</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {hasChildren 
-                          ? "Research suggests significant increases in household tasks after children, with mothers typically handling a larger share of childcare responsibilities."
-                          : "Research indicates household task distribution often becomes less equitable over time, particularly in dual-earner couples."
-                        }
-                      </p>
-                      <div className="mt-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                        Note: Your results reflect your specific household and assessment approach, which may differ from research methodologies.
-                      </div>
-                    </div>
-                  </div>
-                );
-              } else {
-                // For single adults
-                return (
-                  <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
-                    <h4 className="font-medium text-accent mb-2">Single Parent Context</h4>
-                    <p className="text-sm text-muted-foreground">
-                      As a single parent, you're managing 100% of household tasks and mental load. Research shows this typically represents 15-20+ hours per week of household work, plus full cognitive and emotional responsibility.
-                    </p>
-                  </div>
-                );
-              }
-            })()}
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="conversation">
+            <MessageCircle className="h-4 w-4 mr-1" />
+            Discussion
+          </TabsTrigger>
+          <TabsTrigger value="insights">
+            <BarChart3 className="h-4 w-4 mr-1" />
+            Your Data
+          </TabsTrigger>
+          <TabsTrigger value="vocabulary">
+            <BookOpen className="h-4 w-4 mr-1" />
+            Key Terms
+          </TabsTrigger>
+          <TabsTrigger value="report">
+            <TrendingUp className="h-4 w-4 mr-1" />
+            Summary
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Together Mode: Side-by-side comparison */}
-        {isTogetherMode && hasPartnerData && partnerPerspectiveResults ? (
-          <div className="space-y-8 mb-8">
-            {/* Header explaining the comparison */}
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-accent/5">
-              <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center gap-2">
-                  <Users className="h-6 w-6 text-accent" />
-                  Perception Comparison
+        <TabsContent value="conversation" className="space-y-6">
+          <DialogueFacilitator
+            prompts={conversationPrompts}
+            onNotesUpdate={handleNotesUpdate}
+            onInsightCapture={handleInsightCapture}
+            existingNotes={discussionNotes}
+            isTogetherMode={isTogetherMode}
+          />
+        </TabsContent>
+
+        <TabsContent value="insights" className="space-y-6">
+          {/* Data Overview Cards */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-blue/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  Visible Work Load
                 </CardTitle>
                 <CardDescription>
-                  Each column shows how one person views the household workload distribution
+                  The actual time spent on household tasks
                 </CardDescription>
               </CardHeader>
-            </Card>
-
-            {/* Side-by-side comparison cards */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Your Perspective */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-primary text-center flex items-center justify-center gap-2">
-                  <UserCheck className="h-5 w-5" />
-                  Your Perspective
-                </h2>
-                
-                {/* Your view - Visible Time */}
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-primary/5">
-                  <CardHeader className="text-center pb-3">
-                    <CardTitle className="flex items-center justify-center gap-2 text-lg">
-                      <Clock className="h-5 w-5 text-primary" />
-                      Visible Time
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center space-y-3">
-                    <div className="space-y-2">
-                      <div className="text-sm text-muted-foreground">You handle:</div>
-                      <div className="text-2xl font-bold text-primary">{results.myVisibleTime} min/week</div>
-                      <div className="text-sm text-muted-foreground">({results.myVisiblePercentage}%)</div>
-                    </div>
-                    <div className="border-t pt-3 space-y-2">
-                      <div className="text-sm text-muted-foreground">Partner handles:</div>
-                      <div className="text-lg font-semibold">{results.partnerVisibleTime} min/week</div>
-                      <div className="text-sm text-muted-foreground">({results.partnerVisiblePercentage}%)</div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Your view - Mental Load */}
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-primary/5">
-                  <CardHeader className="text-center pb-3">
-                    <CardTitle className="flex items-center justify-center gap-2 text-lg">
-                      <Brain className="h-5 w-5 text-primary" />
-                      Mental Load
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center space-y-3">
-                    <div className="space-y-2">
-                      <div className="text-sm text-muted-foreground">You carry:</div>
-                      <div className="text-2xl font-bold text-primary">{results.myMentalLoad} points</div>
-                      <div className="text-sm text-muted-foreground">({results.myMentalPercentage}%)</div>
-                    </div>
-                    <div className="border-t pt-3 space-y-2">
-                      <div className="text-sm text-muted-foreground">Partner carries:</div>
-                      <div className="text-lg font-semibold">{results.partnerMentalLoad} points</div>
-                      <div className="text-sm text-muted-foreground">({results.partnerMentalPercentage}%)</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Partner's Perspective */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-secondary text-center flex items-center justify-center gap-2">
-                  <Heart className="h-5 w-5" />
-                  Partner's Perspective
-                </h2>
-                
-                {/* Partner's view - Visible Time */}
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-secondary/5">
-                  <CardHeader className="text-center pb-3">
-                    <CardTitle className="flex items-center justify-center gap-2 text-lg">
-                      <Clock className="h-5 w-5 text-secondary" />
-                      Visible Time
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center space-y-3">
-                    <div className="space-y-2">
-                      <div className="text-sm text-muted-foreground">You handle:</div>
-                      <div className="text-2xl font-bold text-secondary">{partnerPerspectiveResults.myVisibleTime} min/week</div>
-                      <div className="text-sm text-muted-foreground">({partnerPerspectiveResults.myVisiblePercentage}%)</div>
-                    </div>
-                    <div className="border-t pt-3 space-y-2">
-                      <div className="text-sm text-muted-foreground">Partner handles:</div>
-                      <div className="text-lg font-semibold">{partnerPerspectiveResults.partnerVisibleTime} min/week</div>
-                      <div className="text-sm text-muted-foreground">({partnerPerspectiveResults.partnerVisiblePercentage}%)</div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Partner's view - Mental Load */}
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-secondary/5">
-                  <CardHeader className="text-center pb-3">
-                    <CardTitle className="flex items-center justify-center gap-2 text-lg">
-                      <Brain className="h-5 w-5 text-secondary" />
-                      Mental Load
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center space-y-3">
-                    <div className="space-y-2">
-                      <div className="text-sm text-muted-foreground">You carry:</div>
-                      <div className="text-2xl font-bold text-secondary">{partnerPerspectiveResults.myMentalLoad} points</div>
-                      <div className="text-sm text-muted-foreground">({partnerPerspectiveResults.myMentalPercentage}%)</div>
-                    </div>
-                    <div className="border-t pt-3 space-y-2">
-                      <div className="text-sm text-muted-foreground">Partner carries:</div>
-                      <div className="text-lg font-semibold">{partnerPerspectiveResults.partnerMentalLoad} points</div>
-                      <div className="text-sm text-muted-foreground">({partnerPerspectiveResults.partnerMentalPercentage}%)</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            {/* Perception Gaps Analysis */}
-            {results.perceptionGaps && (
-              <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-accent/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-6 w-6 text-accent" />
-                    Key Perception Differences
-                  </CardTitle>
-                  <CardDescription>
-                    Where your perspectives differ and what it might mean
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-foreground">Your Workload Differences</h4>
-                      <div className="text-sm space-y-1">
-                        <div>Visible time gap: <span className={`font-medium ${results.perceptionGaps.myVisibleTimeGap > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {results.perceptionGaps.myVisibleTimeGap > 0 ? '+' : ''}{results.perceptionGaps.myVisibleTimeGap} minutes
-                        </span></div>
-                        <div>Mental load gap: <span className={`font-medium ${results.perceptionGaps.myMentalLoadGap > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {results.perceptionGaps.myMentalLoadGap > 0 ? '+' : ''}{results.perceptionGaps.myMentalLoadGap} points
-                        </span></div>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-foreground">Partner's Workload Differences</h4>
-                      <div className="text-sm space-y-1">
-                        <div>Visible time gap: <span className={`font-medium ${results.perceptionGaps.partnerVisibleTimeGap > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {results.perceptionGaps.partnerVisibleTimeGap > 0 ? '+' : ''}{results.perceptionGaps.partnerVisibleTimeGap} minutes
-                        </span></div>
-                        <div>Mental load gap: <span className={`font-medium ${results.perceptionGaps.partnerMentalLoadGap > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {results.perceptionGaps.partnerMentalLoadGap > 0 ? '+' : ''}{results.perceptionGaps.partnerMentalLoadGap} points
-                        </span></div>
-                      </div>
-                    </div>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-blue-600">{results.myVisiblePercentage}%</div>
+                    <p className="text-sm text-muted-foreground">Your share of visible work</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {Math.round(results.myVisibleTime / 60 * 10) / 10} hours per week
+                    </p>
                   </div>
                   
-                  {(Math.abs(results.perceptionGaps.myVisibleTimeGap) > 30 || 
-                    Math.abs(results.perceptionGaps.partnerVisibleTimeGap) > 30 ||
-                    Math.abs(results.perceptionGaps.myMentalLoadGap) > 50 ||
-                    Math.abs(results.perceptionGaps.partnerMentalLoadGap) > 50) && (
-                    <div className="p-4 rounded-lg bg-accent/10 border border-accent/20 mt-4">
-                      <p className="text-sm text-accent-foreground">
-                        <strong>Discussion Opportunity:</strong> These perception differences reveal important insights about how household work is viewed. 
-                        Consider discussing which tasks feel more/less burdensome and why your estimates differ.
-                      </p>
+                  {!isSingleAdult && (
+                    <div className="flex justify-between text-sm">
+                      <span>You: {results.myVisiblePercentage}%</span>
+                      <span>Partner: {results.partnerVisiblePercentage}%</span>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        ) : (
-          /* Single Person or Solo Mode View */
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            {/* Visible Time Card */}
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-primary/5">
-              <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center gap-2 text-xl">
-                  <Clock className="h-6 w-6 text-primary" />
-                  Visible Time Load
-                </CardTitle>
-                <CardDescription>Actual time spent on tasks</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <div className="text-3xl font-bold text-primary">
-                  {results.myVisibleTime} minutes/week
                 </div>
-                {!isSingleAdult && (
-                  <div className="text-lg text-muted-foreground">
-                    {results.myVisiblePercentage}% of total household visible work
-                  </div>
-                )}
-                {!isSingleAdult && results.partnerVisibleTime && (
-                  <div className="text-sm text-muted-foreground border-t pt-4">
-                    Partner: {results.partnerVisibleTime} minutes/week ({results.partnerVisiblePercentage}%)
-                  </div>
-                )}
               </CardContent>
             </Card>
 
-            {/* Mental Load Card */}
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-secondary/5">
-              <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center gap-2 text-xl">
-                  <Brain className="h-6 w-6 text-secondary" />
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-purple/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-600" />
                   Mental Load
                 </CardTitle>
-                <CardDescription>Cognitive burden (time × complexity)</CardDescription>
+                <CardDescription>
+                  The cognitive work of planning and managing
+                </CardDescription>
               </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <div className="text-3xl font-bold text-secondary">
-                  {results.myMentalLoad} points/week
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-purple-600">{results.myMentalPercentage}%</div>
+                    <p className="text-sm text-muted-foreground">Your share of mental load</p>
+                  </div>
+                  
+                  {!isSingleAdult && (
+                    <div className="flex justify-between text-sm">
+                      <span>You: {results.myMentalPercentage}%</span>
+                      <span>Partner: {results.partnerMentalPercentage}%</span>
+                    </div>
+                  )}
                 </div>
-                {!isSingleAdult && (
-                  <div className="text-lg text-muted-foreground">
-                    {results.myMentalPercentage}% of total household mental load
-                  </div>
-                )}
-                {!isSingleAdult && results.partnerMentalLoad && (
-                  <div className="text-sm text-muted-foreground border-t pt-4">
-                    Partner: {results.partnerMentalLoad} points/week ({results.partnerMentalPercentage}%)
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
-        )}
 
-        {/* Summary Card - shown for all modes */}
-        {!isTogetherMode || !hasPartnerData ? (
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 mb-8">
+          {/* Perception Gaps for Together Mode */}
+          {isTogetherMode && hasPartnerData && results.perceptionGaps && (
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-orange/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-orange-600" />
+                  Different Perspectives
+                </CardTitle>
+                <CardDescription>
+                  How you each see the workload distribution
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-3 bg-muted/50 rounded">
+                      <h4 className="font-medium mb-2">Visible Work Gap</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {Math.abs(results.perceptionGaps.myVisibleTimeGap)}% difference in how you see your contributions
+                      </p>
+                    </div>
+                    <div className="p-3 bg-muted/50 rounded">
+                      <h4 className="font-medium mb-2">Mental Load Gap</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {Math.abs(results.perceptionGaps.myMentalLoadGap)}% difference in mental load perceptions
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-primary/5 rounded border border-primary/20">
+                    <p className="text-sm text-primary">
+                      <strong>Discussion Opportunity:</strong> These perception differences reveal important insights 
+                      about invisible work and different values around household tasks.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Research Context */}
+          <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-6 w-6 text-foreground" />
-                Key Insights
+                <BookOpen className="h-5 w-5" />
+                Research Context
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {isSingleAdult ? (
-                <div className="space-y-3">
-                  <p className="text-muted-foreground">
-                    Your total weekly household commitment is <strong>{results.myVisibleTime} minutes</strong> of visible work 
-                    with a mental load impact of <strong>{results.myMentalLoad} points</strong>.
-                  </p>
-                  <p className="text-muted-foreground">
-                    This represents approximately <strong>{Math.round(results.myVisibleTime / 60)} hours</strong> per week 
-                    of household management.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-muted-foreground">
-                    You handle <strong>{results.myVisiblePercentage}%</strong> of visible household work and{' '}
-                    <strong>{results.myMentalPercentage}%</strong> of the mental load.
-                  </p>
-                  
-                  {Math.abs(results.myVisiblePercentage - results.myMentalPercentage) > 10 && (
-                    <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
-                      <p className="text-sm text-accent-foreground">
-                        <strong>Notice:</strong> There's a {Math.abs(results.myVisiblePercentage - results.myMentalPercentage)}% 
-                        difference between your visible work and mental load percentages. This suggests the cognitive burden 
-                        may not be evenly distributed.
-                      </p>
-                    </div>
-                  )}
-                  
-                  {results.myMentalPercentage > 60 && (
-                    <div className="p-4 rounded-lg bg-secondary/10 border border-secondary/20">
-                      <p className="text-sm text-secondary-foreground">
-                        You're carrying a significant portion of the household's mental load. 
-                        Consider discussing task redistribution with your partner.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">
+                Research indicates household task distribution often becomes less equitable over time, 
+                particularly in dual-earner couples. Your results reflect your specific household and 
+                assessment approach.
+              </p>
+              <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                Note: These comparisons are contextual - what matters most is what feels fair and 
+                sustainable for your specific relationship and circumstances.
+              </div>
             </CardContent>
           </Card>
-        ) : null}
+        </TabsContent>
 
-        <div className="flex justify-center">
-          <Button onClick={handleNext} variant="hero" size="lg" className="px-8">
-            View Detailed Analysis Dashboard
-          </Button>
-        </div>
+        <TabsContent value="vocabulary" className="space-y-6">
+          <SharedVocabulary 
+            highlightTerms={['mental load', 'invisible work', 'emotional labour']}
+            showExamples={true}
+          />
+        </TabsContent>
+
+        <TabsContent value="report" className="space-y-6">
+          <ConversationReport
+            results={results}
+            assessmentData={state}
+            insights={state.insights || []}
+            discussionNotes={discussionNotes}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <div className="mt-8 flex justify-center">
+        <Button onClick={handleNext} size="lg" className="px-8">
+          Continue to Dashboard
+          <ArrowRight className="h-4 w-4 ml-2" />
+        </Button>
       </div>
     </div>
   );
