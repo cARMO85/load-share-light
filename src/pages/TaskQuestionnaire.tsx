@@ -352,68 +352,8 @@ const TaskQuestionnaire: React.FC = () => {
             onInsightAdded={handleInsightAdded}
             onContinue={handleInsightContinue}
             insights={insights}
-            currentTask={currentDiscussionTask}
+            currentTask={null}
           />
-
-          {/* Topic Selection for Discussion */}
-          <div className="mt-8">
-            <Card className="border-muted">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Brain className="h-5 w-5" />
-                  Choose a Discussion Topic
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  If you want to discuss a specific task and record insights about it, please select it from the dropdown below.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium min-w-fit">Topic to discuss:</span>
-                    <Select 
-                      value={currentDiscussionTask?.id || ""} 
-                      onValueChange={(taskId) => {
-                        const allTasks = categorizedTasks.flatMap(cat => cat.tasks);
-                        const selectedTask = allTasks.find(task => task.id === taskId);
-                        if (selectedTask) {
-                          setCurrentDiscussionTask({id: selectedTask.id, name: selectedTask.task_name});
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select a task to discuss..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categorizedTasks.map(category => (
-                          <div key={category.name}>
-                            <div className="px-2 py-1 text-xs font-semibold text-muted-foreground bg-muted/50">
-                              {category.name}
-                            </div>
-                            {category.tasks.map(task => (
-                              <SelectItem key={task.id} value={task.id}>
-                                {task.task_name}
-                              </SelectItem>
-                            ))}
-                          </div>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {currentDiscussionTask && (
-                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-                      <div className="text-xs text-primary/80 font-medium">Ready to discuss:</div>
-                      <div className="text-sm font-medium text-primary">{currentDiscussionTask.name}</div>
-                      <div className="text-xs text-primary/70 mt-1">
-                        Your insights will be linked to this task for your action plan.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     );
