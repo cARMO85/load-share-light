@@ -674,13 +674,13 @@ const TaskQuestionnaire: React.FC = () => {
                          )}
                        </div>
 
-                      {/* Per-task Insight Capture for Couples */}
-                      {isTogetherMode && response?.assignment && (
+                      {/* Per-task Insight Capture for All Users */}
+                      {response?.assignment && (
                         <div className="border-t pt-3 mt-3">
                           <div className="flex items-center justify-between mb-2">
                             <Label className="text-sm font-medium flex items-center gap-1">
                               <MessageCircle className="h-3 w-3" />
-                              Discussion notes
+                              Add a note about this task
                             </Label>
                             {taskInsights.length > 0 && (
                               <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded">
@@ -689,7 +689,10 @@ const TaskQuestionnaire: React.FC = () => {
                             )}
                           </div>
                            <div className="text-xs text-muted-foreground mb-2">
-                             While discussing this task, did you have any key insights? Click to capture them:
+                             {isTogetherMode 
+                               ? "While discussing this task, did you have any key insights? Click to capture them:"
+                               : "Did you learn something interesting about this task? Click to capture your thoughts:"
+                             }
                            </div>
                            
                            <div className="grid grid-cols-3 gap-1 mb-2">
@@ -700,7 +703,7 @@ const TaskQuestionnaire: React.FC = () => {
                                className="text-xs h-7 flex items-center gap-1 hover:bg-primary/10"
                              >
                                <Lightbulb className="h-3 w-3" />
-                               Aha!
+                               {isTogetherMode ? "Aha!" : "Insight"}
                              </Button>
                              <Button
                                variant="ghost"
@@ -709,7 +712,7 @@ const TaskQuestionnaire: React.FC = () => {
                                className="text-xs h-7 flex items-center gap-1 hover:bg-destructive/10"
                              >
                                <AlertTriangle className="h-3 w-3" />
-                               Disagree
+                               {isTogetherMode ? "Disagree" : "Challenge"}
                              </Button>
                              <Button
                                variant="ghost"
@@ -718,9 +721,9 @@ const TaskQuestionnaire: React.FC = () => {
                                className="text-xs h-7 flex items-center gap-1 hover:bg-secondary/10"
                              >
                                <Heart className="h-3 w-3" />
-                               Surprise
+                               {isTogetherMode ? "Surprise" : "Surprise"}
                              </Button>
-                          </div>
+                           </div>
 
                           {/* Show existing insights for this task */}
                           {taskInsights.length > 0 && (
