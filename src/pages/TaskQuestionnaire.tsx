@@ -44,7 +44,60 @@ const TaskQuestionnaire: React.FC = () => {
   const [insights, setInsights] = useState<InsightEntry[]>([]);
   const [currentDiscussionTask, setCurrentDiscussionTask] = useState<{id: string; name: string} | null>(null);
 
-  // Remove scroll to top effect since no turn-taking
+  // DEV FEATURE: Prepopulate responses based on research showing women handle more household tasks
+  const prepopulateResponses = () => {
+    const allTasks = categorizedTasks.flatMap(cat => cat.tasks);
+    const newResponses: Record<string, TaskResponse> = {};
+    
+    allTasks.forEach(task => {
+      // Research shows women handle ~67% of household tasks, with higher mental load
+      // High mental load tasks (anticipation, emotional labor) - mostly assigned to women
+      if (task.category === TASK_CATEGORIES.ANTICIPATION || 
+          task.category === TASK_CATEGORIES.EMOTIONAL_LABOUR ||
+          task.mental_load_weight >= 1.3) {
+        newResponses[task.id] = {
+          taskId: task.id,
+          assignment: 'me',
+          mySharePercentage: Math.random() > 0.3 ? (Math.random() > 0.5 ? 80 : 90) : 100, // Mostly high percentages
+          timeAdjustment: Math.random() > 0.7 ? 'more' : 'about_right', // Often takes more time
+          estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, Math.random() > 0.7 ? 'more' : 'about_right'),
+          frequency: task.default_frequency,
+          notApplicable: false
+        };
+      }
+      // Medium tasks - shared but with higher female percentage
+      else if (task.mental_load_weight >= 1.1) {
+        newResponses[task.id] = {
+          taskId: task.id,
+          assignment: Math.random() > 0.6 ? 'me' : 'shared',
+          mySharePercentage: Math.random() > 0.4 ? 70 : 60,
+          timeAdjustment: 'about_right',
+          estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, 'about_right'),
+          frequency: task.default_frequency,
+          notApplicable: false
+        };
+      }
+      // Lower mental load tasks - more likely to be shared or partner
+      else {
+        const rand = Math.random();
+        newResponses[task.id] = {
+          taskId: task.id,
+          assignment: rand > 0.7 ? 'partner' : (rand > 0.4 ? 'shared' : 'me'),
+          mySharePercentage: rand > 0.7 ? 20 : (rand > 0.4 ? 50 : 60),
+          timeAdjustment: 'about_right',
+          estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, 'about_right'),
+          frequency: task.default_frequency,
+          notApplicable: Math.random() > 0.95 // 5% chance not applicable
+        };
+      }
+    });
+    
+    setResponses(newResponses);
+    // Update context with all responses
+    Object.values(newResponses).forEach(response => {
+      setTaskResponse(response);
+    });
+  };
 
   // Organize tasks by category
   const categorizedTasks = useMemo(() => {
@@ -366,36 +419,53 @@ const TaskQuestionnaire: React.FC = () => {
         
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-4">
-            Mental Load Assessment
-            {isTogetherMode && (
-              <div className="flex items-center justify-center gap-3 text-lg font-normal mt-3">
-                <Users className="h-6 w-6 text-primary" />
-                <span className="text-primary">Working Together</span>
-              </div>
-            )}
+            Task Assignment Questionnaire
           </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            {isTogetherMode 
+              ? "Work through each category together and discuss who handles each task"
+              : "Tell us who handles each household task and mental load activity"
+            }
+          </p>
           
-          {/* Category Header */}
-          {currentCategory && (
-            <div className="mb-6">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <div className={theme.accentColor}>
-                  {categoryInfo[currentCategory.name]?.icon}
-                </div>
-                <h2 className="text-2xl font-semibold text-foreground">
-                  {currentCategory.name}
-                </h2>
+          {/* DEV FEATURE: Prepopulate button */}
+          <div className="mt-4">
+            <Button 
+              onClick={prepopulateResponses}
+              variant="outline" 
+              size="sm"
+              className="bg-yellow-50 border-yellow-200 text-yellow-800 hover:bg-yellow-100"
+            >
+              🚧 DEV: Prepopulate (Women's Pattern)
+            </Button>
+            <p className="text-xs text-muted-foreground mt-1">
+              Research-based prepopulation reflecting typical gender patterns
+            </p>
+          </div>
+        </div>
+          
+        {/* Category Header */}
+        {currentCategory && (
+          <div className="mb-6">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className={theme.accentColor}>
+                {categoryInfo[currentCategory.name]?.icon}
               </div>
-              <p className="text-muted-foreground text-lg mb-2">
-                {categoryInfo[currentCategory.name]?.description}
-              </p>
-              <div className="text-sm text-muted-foreground">
-                Category {currentCategoryIndex + 1} of {categorizedTasks.length} 
-                • {completedTasks} of {applicableTasks.length} tasks completed
-              </div>
+              <h2 className="text-2xl font-semibold text-foreground">
+                {currentCategory.name}
+              </h2>
             </div>
-          )}
+            <p className="text-muted-foreground text-lg mb-2">
+              {categoryInfo[currentCategory.name]?.description}
+            </p>
+            <div className="text-sm text-muted-foreground">
+              Category {currentCategoryIndex + 1} of {categorizedTasks.length} 
+              • {completedTasks} of {applicableTasks.length} tasks completed
+            </div>
+          </div>
+        )}
 
+        <div className="text-center mb-8">
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             For each task, indicate who primarily handles it and how it compares to research-based time estimates.
           </p>
