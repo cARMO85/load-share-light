@@ -7,7 +7,8 @@ import { useAssessment } from '@/context/AssessmentContext';
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
 import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
-import { Clock, Brain, BarChart3, Users, UserCheck, Heart } from 'lucide-react';
+import { getResearchComparison, RESEARCH_BENCHMARKS } from '@/lib/researchBenchmarks';
+import { Clock, Brain, BarChart3, Users, UserCheck, Heart, BookOpen } from 'lucide-react';
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
@@ -171,6 +172,73 @@ const Results: React.FC = () => {
             }
           </p>
         </div>
+
+        {/* Research Context Card */}
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-primary/5 mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-6 w-6 text-primary" />
+              Research Context
+            </CardTitle>
+            <CardDescription>
+              How your household compares to research findings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(() => {
+              const householdType = state.householdSetup.adults === 2 ? 'couple' : 'single';
+              const hasChildren = state.householdSetup.householdType === 'single_parent' || state.householdSetup.householdType === 'couple_with_children';
+              
+              if (householdType === 'couple') {
+                // For couples, show comparison to research averages
+                const userGender = 'unknown'; // We could add gender selection in setup if needed
+                const comparison = getResearchComparison(
+                  results.myVisibleTime,
+                  results.myVisiblePercentage,
+                  userGender,
+                  hasChildren
+                );
+                
+                return (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
+                      <h4 className="font-medium text-accent mb-2">Weekly Time Comparison</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Research shows women in dual-earner couples average 15 hrs/week on household tasks, men average 6.8 hrs/week.
+                      </p>
+                      <div className="mt-2 text-xs font-mono bg-muted/50 p-2 rounded">
+                        You: {Math.round(results.myVisibleTime / 60 * 10) / 10}h/week ({results.myVisiblePercentage}%)
+                        {results.partnerVisibleTime && (
+                          <><br/>Partner: {Math.round(results.partnerVisibleTime / 60 * 10) / 10}h/week ({results.partnerVisiblePercentage}%)</>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
+                      <h4 className="font-medium text-accent mb-2">Historical Context</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {hasChildren 
+                          ? "Research shows family-related activities jump from 5.8/day to 36.2/day after having children, with mothers handling ~78% of childcare tasks."
+                          : "Before children, wives typically complete 67% of household chores, husbands 33% (Huston & Vangilisti, 1995)."
+                        }
+                      </p>
+                    </div>
+                  </div>
+                );
+              } else {
+                // For single adults
+                return (
+                  <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
+                    <h4 className="font-medium text-accent mb-2">Single Parent Context</h4>
+                    <p className="text-sm text-muted-foreground">
+                      As a single parent, you're managing 100% of household tasks and mental load. Research shows this typically represents 15-20+ hours per week of household work, plus full cognitive and emotional responsibility.
+                    </p>
+                  </div>
+                );
+              }
+            })()}
+          </CardContent>
+        </Card>
 
         {/* Together Mode: Side-by-side comparison */}
         {isTogetherMode && hasPartnerData && partnerPerspectiveResults ? (

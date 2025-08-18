@@ -88,6 +88,18 @@ const LearnMore: React.FC = () => {
                 
                 <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
                   <p className="text-sm">
+                    <strong>Ciciolla & Luthar (2019)</strong> — "Invisible Household Labor and Ramifications for Adjustment: Mothers as Captains of Households" - documenting disproportionate cognitive and emotional labor.
+                  </p>
+                </div>
+                
+                <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+                  <p className="text-sm">
+                    <strong>Huston & Vangilisti (1995); Stevens, Kiger, & Riley (2001)</strong> — Quantitative benchmarks: pre-children (wives 67%, husbands 33%), post-children (mothers 15 hrs/week vs fathers 6.8 hrs/week in dual-earner couples).
+                  </p>
+                </div>
+                
+                <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+                  <p className="text-sm">
                     <strong>Holten (2025)</strong> — Economic cost of unpaid care work.
                   </p>
                 </div>
