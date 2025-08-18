@@ -8,7 +8,8 @@ import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
 import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
 import { getResearchComparison, RESEARCH_BENCHMARKS } from '@/lib/researchBenchmarks';
-import { Clock, Brain, BarChart3, Users, UserCheck, Heart, BookOpen } from 'lucide-react';
+import { AlertCircle, BarChart3, BookOpen, Clock, Heart, Lightbulb, MessageCircle, TrendingUp, Users, UserCheck, Brain } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
@@ -173,6 +174,59 @@ const Results: React.FC = () => {
           </p>
         </div>
 
+        {/* Discussion Insights Report - if insights were captured */}
+        {state.insights && state.insights.length > 0 && (
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-secondary/5 mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-6 w-6 text-secondary" />
+                Your Discussion Insights
+                <Badge variant="secondary">{state.insights.length} captured</Badge>
+              </CardTitle>
+              <CardDescription>
+                Key moments and discoveries from your household assessment discussion
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {state.insights.map((insight, index) => (
+                <div key={insight.id} className="p-4 rounded-lg border border-border/50 bg-card/50">
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-full ${
+                      insight.type === 'breakthrough' ? 'bg-green-100 text-green-600' :
+                      insight.type === 'disagreement' ? 'bg-yellow-100 text-yellow-600' :
+                      'bg-blue-100 text-blue-600'
+                    }`}>
+                      {insight.type === 'breakthrough' ? <Lightbulb className="h-4 w-4" /> :
+                       insight.type === 'disagreement' ? <AlertCircle className="h-4 w-4" /> :
+                       <Heart className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium capitalize">{insight.type.replace('_', ' ')}</span>
+                        {insight.taskName && (
+                          <Badge variant="outline" className="text-xs">{insight.taskName}</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
+                      {insight.followUpAction && (
+                        <p className="text-xs text-primary font-medium">
+                          Follow-up: {insight.followUpAction}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Discussion Tip:</strong> Use these insights as conversation starters for ongoing 
+                  discussions about household responsibilities and expectations.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Research Context Card */}
         <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-primary/5 mb-8">
           <CardHeader>
@@ -202,26 +256,16 @@ const Results: React.FC = () => {
                 return (
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
-                      <h4 className="font-medium text-accent mb-2">Weekly Time Comparison</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Research shows women in dual-earner couples handle 67% of household tasks vs. men at 33% (34 percentage point gap).
-                      </p>
-                      <div className="mt-2 text-xs font-mono bg-muted/50 p-2 rounded">
-                        You: {Math.round(results.myVisibleTime / 60 * 10) / 10}h/week ({results.myVisiblePercentage}%)
-                        {results.partnerVisibleTime && (
-                          <><br/>Partner: {Math.round(results.partnerVisibleTime / 60 * 10) / 10}h/week ({results.partnerVisiblePercentage}%)</>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
-                      <h4 className="font-medium text-accent mb-2">Historical Context</h4>
+                      <h4 className="font-medium text-accent mb-2">Research Context</h4>
                       <p className="text-sm text-muted-foreground">
                         {hasChildren 
-                          ? "Research shows family-related activities jump from 5.8/day to 36.2/day after having children, with mothers handling ~78% of childcare tasks."
-                          : "Before children, wives typically complete 67% of household chores, husbands 33% (Huston & Vangilisti, 1995)."
+                          ? "Research suggests significant increases in household tasks after children, with mothers typically handling a larger share of childcare responsibilities."
+                          : "Research indicates household task distribution often becomes less equitable over time, particularly in dual-earner couples."
                         }
                       </p>
+                      <div className="mt-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                        Note: Your results reflect your specific household and assessment approach, which may differ from research methodologies.
+                      </div>
                     </div>
                   </div>
                 );
