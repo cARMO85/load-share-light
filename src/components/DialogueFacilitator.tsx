@@ -24,6 +24,14 @@ interface DialogueFacilitatorProps {
   onInsightCapture: (insight: string) => void;
   existingNotes: Record<string, string>;
   isTogetherMode: boolean;
+  existingInsights: Array<{
+    id: string;
+    type: 'breakthrough' | 'disagreement' | 'surprise';
+    taskId?: string;
+    taskName?: string;
+    description: string;
+    timestamp: Date;
+  }>;
 }
 
 export const DialogueFacilitator: React.FC<DialogueFacilitatorProps> = ({
@@ -31,7 +39,8 @@ export const DialogueFacilitator: React.FC<DialogueFacilitatorProps> = ({
   onNotesUpdate,
   onInsightCapture,
   existingNotes,
-  isTogetherMode
+  isTogetherMode,
+  existingInsights
 }) => {
   const [activePrompt, setActivePrompt] = useState<string | null>(null);
   const [currentNotes, setCurrentNotes] = useState<Record<string, string>>(existingNotes);
@@ -180,6 +189,40 @@ export const DialogueFacilitator: React.FC<DialogueFacilitatorProps> = ({
             )}
 
             <Separator />
+
+            {/* Existing Insights from Questionnaire */}
+            {existingInsights.length > 0 && (
+              <div className="p-3 bg-accent/5 rounded border border-accent/20">
+                <h6 className="font-medium text-sm mb-2 flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-accent" />
+                  Your Previous Insights
+                </h6>
+                <div className="space-y-2">
+                  {existingInsights.map((insight) => (
+                    <div key={insight.id} className="text-sm p-2 bg-background/50 rounded border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            insight.type === 'surprise' ? 'border-blue-300 text-blue-700' :
+                            insight.type === 'disagreement' ? 'border-orange-300 text-orange-700' :
+                            'border-green-300 text-green-700'
+                          }
+                        >
+                          {insight.type}
+                        </Badge>
+                        {insight.taskName && (
+                          <span className="text-xs text-muted-foreground">
+                            {insight.taskName}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-foreground">{insight.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Notes Section */}
             <div>

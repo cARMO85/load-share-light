@@ -238,6 +238,7 @@ const Results: React.FC = () => {
             onInsightCapture={handleInsightCapture}
             existingNotes={discussionNotes}
             isTogetherMode={isTogetherMode}
+            existingInsights={state.insights}
           />
         </TabsContent>
 
