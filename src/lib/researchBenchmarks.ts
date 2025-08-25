@@ -13,21 +13,30 @@ export interface ResearchBenchmark {
 
 export const RESEARCH_BENCHMARKS: ResearchBenchmark[] = [
   {
-    id: 'pre_children_household_split',
-    description: 'Household task division before children',
-    finding: 'Wives complete 67% of chores (3.9 per day), husbands 33% (1.9 per day)',
-    source: 'Huston & Vangilisti (1995); MacDermid, Huston & McHale (1990)',
-    year: 1995,
-    context: 'pre_children',
-    applicableConditions: ['no_children', 'dual_earner']
+    id: 'global_unpaid_care_division',
+    description: 'Global unpaid care work division',
+    finding: 'Women spend 4.3 hours/day on unpaid care work, men spend 1.6 hours/day',
+    source: 'UN Women & Pardee Center (2023) - Gendered Analysis of Climate Change Impact',
+    year: 2023,
+    context: 'global_care_work',
+    applicableConditions: ['global_average']
   },
   {
-    id: 'post_children_task_increase',
-    description: 'Task load increase after having children',
-    finding: 'Family-related activities jump from 5.8/day to 36.2/day',
-    source: 'Huston & Vangilisti (1995)',
-    year: 1995,
-    context: 'post_children',
+    id: 'childcare_time_division',
+    description: 'Weekly childcare time division',
+    finding: 'Women spend 31 hours/week (~4.4/day) on childcare, men spend 24 hours/week (~3.4/day)',
+    source: 'UN Women (2020) - Whose Time to Care? Unpaid Care During COVID-19',
+    year: 2020,
+    context: 'childcare_time',
+    applicableConditions: ['has_children']
+  },
+  {
+    id: 'household_division_after_childbirth',
+    description: 'Household task division after childbirth',
+    finding: 'Women perform ~80% of household tasks after having children, inequalities widen with each child',
+    source: 'Régnier-Loilier (2009) - L\'arrivée d\'un enfant modifie-t-elle la répartition des tâches domestiques',
+    year: 2009,
+    context: 'post_childbirth',
     applicableConditions: ['has_children']
   },
   {
