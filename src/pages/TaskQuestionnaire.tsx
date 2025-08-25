@@ -418,15 +418,12 @@ const TaskQuestionnaire: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         <ProgressSteps currentStep={2} totalSteps={6} steps={steps} />
         
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-4">
-            Task Assignment Questionnaire
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            Who Does What?
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            {isTogetherMode 
-              ? "Work through each category together and discuss who handles each task"
-              : "Tell us who handles each household task and mental load activity"
-            }
+          <p className="text-muted-foreground">
+            {isTogetherMode ? "Discuss and assign each task" : "Assign household tasks"}
           </p>
           
           {/* DEV FEATURE: Prepopulate button */}
@@ -447,22 +444,17 @@ const TaskQuestionnaire: React.FC = () => {
           
         {/* Category Header */}
         {currentCategory && (
-          <div className="mb-6">
-            <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="mb-4">
+            <div className="flex items-center justify-center gap-2 mb-2">
               <div className={theme.accentColor}>
                 {categoryInfo[currentCategory.name]?.icon}
               </div>
-              <h2 className="text-2xl font-semibold text-foreground">
+              <h2 className="text-xl font-semibold text-foreground">
                 {currentCategory.name}
               </h2>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <p className="text-muted-foreground text-lg">
-                {categoryInfo[currentCategory.name]?.description}
-              </p>
               <InfoButton 
                 variant="tooltip" 
-                tooltipContent="Research shows that mental load tasks often involve invisible cognitive work - the thinking, planning, and emotional management that happens behind the scenes."
+                tooltipContent={`${categoryInfo[currentCategory.name]?.description}. Research shows these tasks often involve invisible cognitive work.`}
               />
             </div>
             <div className="text-sm text-muted-foreground">
@@ -472,66 +464,11 @@ const TaskQuestionnaire: React.FC = () => {
           </div>
         )}
 
-        <div className="text-center mb-8">
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            For each task, indicate who primarily handles it and how it compares to research-based time estimates.
+        {/* Minimal progress info */}
+        <div className="text-center mb-6">
+          <p className="text-sm text-muted-foreground">
+            {completedTasks} of {applicableTasks.length} tasks done
           </p>
-          {isSingleAdult && (
-            <p className="text-sm text-muted-foreground mt-2 max-w-2xl mx-auto">
-              Even if your partner isn't taking this assessment, you can still indicate their responsibilities.
-            </p>
-          )}
-          {isTogetherMode && (
-            <div className="mt-4 p-4 rounded-lg border bg-primary/10 border-primary/20">
-              <p className="text-sm text-primary">
-                <strong>Discuss each task together</strong> and agree on who handles it and how long it takes. 
-                Use the insight buttons to capture key moments from your conversation.
-              </p>
-            </div>
-          )}
-          
-          {/* Development Helper - Only in dev mode */}
-          {import.meta.env.DEV && (
-            <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">🚀 Dev Mode</p>
-                  <p className="text-xs text-yellow-700 dark:text-yellow-300">Quick fill for testing</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fillSampleData('single')}
-                    className="text-xs"
-                  >
-                    Single Adult
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fillSampleData('couple')}
-                    className="text-xs"
-                  >
-                    Couple
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fillSampleData('family')}
-                    className="text-xs"
-                  >
-                    Family
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Overall Progress Indicator */}
-          <div className="mt-4 text-sm text-muted-foreground">
-            Overall Progress: {totalCompletedTasks} of {allApplicableTasks.length} total tasks completed
-          </div>
         </div>
 
         <div className="space-y-4 mb-8">
@@ -550,23 +487,24 @@ const TaskQuestionnaire: React.FC = () => {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg text-foreground flex items-center gap-2 mb-2">
+                      <CardTitle className="text-lg text-foreground flex items-center gap-2 mb-1">
                         <Brain className="h-4 w-4 text-primary flex-shrink-0" />
                         <span className="leading-tight">{task.task_name}</span>
                         {isNotApplicable && <span className="text-muted-foreground text-sm">(Skipped)</span>}
                       </CardTitle>
-                       <div className="flex items-center gap-4 text-xs text-muted-foreground mb-1">
-                         <span>{task.category} • Mental load: {task.mental_load_weight}x</span>
-                         <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-md">
-                           <Clock className="h-3 w-3" />
-                           <span className="font-medium">Research baseline: {formatTimeDisplay(task.baseline_minutes_week)} per {getFrequencyDisplayText(task.default_frequency).toLowerCase()}</span>
-                         </div>
-                       </div>
                       {task.description && (
-                        <p className="text-sm text-muted-foreground leading-relaxed">
+                        <p className="text-sm text-muted-foreground mb-2">
                           {task.description}
                         </p>
                       )}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>Research: {formatTimeDisplay(task.baseline_minutes_week)}/week</span>
+                        <InfoButton 
+                          variant="tooltip" 
+                          tooltipContent={`Source: ${task.source}. Time range: ${task.time_range}. Mental load weight: ${task.mental_load_weight}x`}
+                        />
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -576,7 +514,7 @@ const TaskQuestionnaire: React.FC = () => {
                     <>
                       {/* Assignment Selection */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">Who handles this?</Label>
+                        <Label className="text-sm font-medium">Who does this?</Label>
                         <div className="grid grid-cols-3 gap-1">
                           <Button
                             variant={response?.assignment === 'me' ? 'default' : 'outline'}
@@ -638,22 +576,11 @@ const TaskQuestionnaire: React.FC = () => {
                       )}
 
                        {/* Time Adjustment */}
-                       <div className="space-y-3">
-                         <Label className="text-sm font-medium flex items-center gap-1">
-                           <Clock className="h-3 w-3" />
-                           Does this take more or less time than research suggests?
-                         </Label>
-                         
-                         <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg text-sm">
-                           <div className="flex items-center gap-2 mb-1">
-                             <Brain className="h-4 w-4 text-primary" />
-                             <span className="font-medium text-foreground">Research baseline:</span>
-                             <span className="text-primary font-bold">{formatTimeDisplay(task.baseline_minutes_week)} per week</span>
-                           </div>
-                           <p className="text-muted-foreground text-xs">
-                             Source: {task.source} • Range: {task.time_range}
-                           </p>
-                         </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            How long does this take you?
+                          </Label>
                          
                          <div className="grid grid-cols-5 gap-1">
                            {(['much_less', 'less', 'about_right', 'more', 'much_more'] as TimeAdjustment[]).map((adjustment) => (
@@ -674,12 +601,12 @@ const TaskQuestionnaire: React.FC = () => {
                            ))}
                          </div>
                          
-                         {response?.timeAdjustment && response.timeAdjustment !== 'about_right' && (
-                           <div className="text-xs text-foreground bg-secondary/20 p-2 rounded border border-secondary/30">
-                             <strong>Your adjusted time:</strong> {formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))} per {getFrequencyDisplayText(task.default_frequency).toLowerCase()}
-                           </div>
-                         )}
-                       </div>
+                          {response?.timeAdjustment && response.timeAdjustment !== 'about_right' && (
+                            <div className="text-xs text-foreground bg-secondary/20 p-2 rounded">
+                              <strong>Your time:</strong> {formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))} per week
+                            </div>
+                          )}
+                        </div>
 
                       {/* Per-task Insight Capture for All Users */}
                       {response?.assignment && (
@@ -687,20 +614,14 @@ const TaskQuestionnaire: React.FC = () => {
                           <div className="flex items-center justify-between mb-2">
                             <Label className="text-sm font-medium flex items-center gap-1">
                               <MessageCircle className="h-3 w-3" />
-                              Add a note about this task
+                              Notes
                             </Label>
                             {taskInsights.length > 0 && (
                               <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded">
-                                {taskInsights.length} note{taskInsights.length !== 1 ? 's' : ''}
+                                {taskInsights.length}
                               </span>
                             )}
                           </div>
-                           <div className="text-xs text-muted-foreground mb-2">
-                             {isTogetherMode 
-                               ? "While discussing this task, did you have any key insights? Click to capture them:"
-                               : "Did you learn something interesting about this task? Click to capture your thoughts:"
-                             }
-                           </div>
                            
                            <div className="grid grid-cols-3 gap-1 mb-2">
                              <Button

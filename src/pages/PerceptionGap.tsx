@@ -108,24 +108,24 @@ const PerceptionGap: React.FC = () => {
 
         <Card className="max-w-2xl mx-auto shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-foreground">Perception Questions</CardTitle>
+            <CardTitle className="text-xl text-foreground">How Much Do You Do?</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Rate each area on a scale from 0-100%
+              Rate 0-100%
             </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-8">
             {/* Total Household Work */}
             <div className="space-y-4">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-3">
                 <Users className="h-5 w-5 text-primary" />
-                <Label className="text-base font-semibold">Total Household Work</Label>
+                <Label className="text-base font-semibold">Household Work</Label>
               </div>
               
               <div className="space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">
-                    What percentage of total household work do you think you do?
+                <div className="space-y-2">
+                  <Label className="text-sm">
+                    What % do you do?
                   </Label>
                   <div className="px-4">
                     <Slider
@@ -143,9 +143,9 @@ const PerceptionGap: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">
-                    What percentage of total household work do you think your partner does?
+                <div className="space-y-2">
+                  <Label className="text-sm">
+                    What % does your partner do?
                   </Label>
                   <div className="px-4">
                     <Slider
@@ -176,9 +176,9 @@ const PerceptionGap: React.FC = () => {
                 />
               </div>
               
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  How much of the mental planning and organization do you think you do?
+              <div className="space-y-2">
+                <Label className="text-sm">
+                  How much mental planning do you do?
                 </Label>
                 <div className="px-4">
                   <Slider
@@ -208,9 +208,9 @@ const PerceptionGap: React.FC = () => {
                 />
               </div>
               
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  How much of the emotional support work do you think you do?
+              <div className="space-y-2">
+                <Label className="text-sm">
+                  How much emotional support do you provide?
                 </Label>
                 <div className="px-4">
                   <Slider

@@ -226,7 +226,7 @@ const EmotionalImpact: React.FC = () => {
               />
             </div>
             <CardDescription className="text-muted-foreground">
-              Rate how you feel (1 = Never/Very Low, 5 = Always/Very High)
+              Rate how often (1 = Never, 5 = Always)
             </CardDescription>
           </CardHeader>
           
