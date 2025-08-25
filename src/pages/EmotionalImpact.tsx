@@ -9,6 +9,7 @@ import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { EmotionalImpactResponse } from '@/types/assessment';
 import { Zap, Scale, Smile, MessageCircle, Users, Heart, Lightbulb, AlertTriangle } from 'lucide-react';
+import { InfoButton } from '@/components/InfoButton';
 
 const EmotionalImpact: React.FC = () => {
   const navigate = useNavigate();
@@ -217,9 +218,15 @@ const EmotionalImpact: React.FC = () => {
 
         <Card className="max-w-2xl mx-auto shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-foreground">Emotional & Cognitive Impact</CardTitle>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <CardTitle className="text-2xl text-foreground">Emotional Impact</CardTitle>
+              <InfoButton 
+                variant="tooltip" 
+                tooltipContent="Research shows that unequal household task distribution can significantly impact mental health, relationship satisfaction, and overall well-being. These questions help measure that impact."
+              />
+            </div>
             <CardDescription className="text-muted-foreground">
-              Rate each statement on a scale from 1-5
+              Rate how you feel (1 = Never/Very Low, 5 = Always/Very High)
             </CardDescription>
           </CardHeader>
           

@@ -8,6 +8,7 @@ import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { PerceptionGapResponse } from '@/types/assessment';
 import { Brain, Heart, Users, Eye } from 'lucide-react';
+import { InfoButton } from '@/components/InfoButton';
 
 const PerceptionGap: React.FC = () => {
   const navigate = useNavigate();
@@ -169,6 +170,10 @@ const PerceptionGap: React.FC = () => {
               <div className="flex items-center gap-3 mb-4">
                 <Brain className="h-5 w-5 text-primary" />
                 <Label className="text-base font-semibold text-primary">Mental Planning & Organization</Label>
+                <InfoButton 
+                  variant="tooltip" 
+                  tooltipContent="Mental load includes invisible work like remembering what needs to be done, planning ahead, making decisions, and coordinating family schedules. Research shows this cognitive burden is often unequally distributed."
+                />
               </div>
               
               <div className="space-y-3">
@@ -197,6 +202,10 @@ const PerceptionGap: React.FC = () => {
               <div className="flex items-center gap-3 mb-4">
                 <Heart className="h-5 w-5 text-secondary" />
                 <Label className="text-base font-semibold text-secondary">Emotional Support Work</Label>
+                <InfoButton 
+                  variant="tooltip" 
+                  tooltipContent="Emotional support work includes comforting family members, managing relationships, remembering important events, and maintaining family harmony. This invisible labor is often undervalued."
+                />
               </div>
               
               <div className="space-y-3">

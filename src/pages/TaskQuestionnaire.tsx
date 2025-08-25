@@ -16,6 +16,7 @@ import { CoupleInsightCapture } from '@/components/CoupleInsightCapture';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Clock, Brain, Users, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus, MessageCircle, AlertTriangle } from 'lucide-react';
+import { InfoButton } from '@/components/InfoButton';
 
 interface InsightEntry {
   id: string;
@@ -455,9 +456,15 @@ const TaskQuestionnaire: React.FC = () => {
                 {currentCategory.name}
               </h2>
             </div>
-            <p className="text-muted-foreground text-lg mb-2">
-              {categoryInfo[currentCategory.name]?.description}
-            </p>
+            <div className="flex items-center justify-center gap-2">
+              <p className="text-muted-foreground text-lg">
+                {categoryInfo[currentCategory.name]?.description}
+              </p>
+              <InfoButton 
+                variant="tooltip" 
+                tooltipContent="Research shows that mental load tasks often involve invisible cognitive work - the thinking, planning, and emotional management that happens behind the scenes."
+              />
+            </div>
             <div className="text-sm text-muted-foreground">
               Category {currentCategoryIndex + 1} of {categorizedTasks.length} 
               • {completedTasks} of {applicableTasks.length} tasks completed
