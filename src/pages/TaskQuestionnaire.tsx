@@ -422,9 +422,37 @@ const TaskQuestionnaire: React.FC = () => {
           <h1 className="text-2xl font-bold text-foreground mb-2">
             Who Does What?
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             {isTogetherMode ? "Discuss and assign each task" : "Assign household tasks"}
           </p>
+          
+          {/* Insight Capture Explanation */}
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-4 max-w-2xl mx-auto">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageCircle className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-foreground">Capture Your Insights</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              As you go through each task, use the <strong>Notes</strong> buttons to capture:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2 text-xs">
+              <div className="flex items-center gap-1">
+                <Lightbulb className="h-3 w-3 text-primary" />
+                <span><strong>Insights:</strong> "I never realized..."</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3 text-destructive" />
+                <span><strong>Disagreements:</strong> "We see this differently"</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Heart className="h-3 w-3 text-secondary" />
+                <span><strong>Surprises:</strong> "Wow, didn't expect that"</span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              These notes will be collected at the end to help you reflect on your mental load patterns.
+            </p>
+          </div>
           
           {/* DEV FEATURE: Prepopulate button */}
           <div className="mt-4">

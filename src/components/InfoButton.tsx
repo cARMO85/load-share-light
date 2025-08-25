@@ -32,8 +32,8 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
               <Info className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            <p className="text-sm">{tooltipContent}</p>
+          <TooltipContent className="max-w-sm p-3 text-sm bg-popover border shadow-md">
+            <p>{tooltipContent}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
