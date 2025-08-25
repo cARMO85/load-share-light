@@ -178,6 +178,7 @@ const TaskQuestionnaire: React.FC = () => {
     const timeAdjustment = updates.timeAdjustment || currentResponse?.timeAdjustment || 'about_right';
     
     const newResponse = {
+      ...currentResponse, // Preserve existing response data (like slider values)
       taskId,
       assignment: currentResponse?.assignment || 'me',
       timeAdjustment,
@@ -525,14 +526,20 @@ const TaskQuestionnaire: React.FC = () => {
                           {task.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>Research: {formatTimeDisplay(task.baseline_minutes_week)}/week</span>
-                        <InfoButton 
-                          variant="tooltip" 
-                          tooltipContent={`Research Source: ${task.source}. Time range: ${task.time_range}. Mental load weight: ${task.mental_load_weight}x. This baseline comes from time-use studies and household labor research.`}
-                        />
-                      </div>
+                       <div className="flex items-center gap-2 text-xs">
+                         <Clock className="h-3 w-3 text-muted-foreground" />
+                         <span className="text-muted-foreground">Research baseline: {formatTimeDisplay(task.baseline_minutes_week)}/week</span>
+                         {response?.timeAdjustment && (
+                           <span className="font-medium text-foreground bg-primary/10 px-2 py-0.5 rounded">
+                             Current: {getTimeAdjustmentShortLabel(response.timeAdjustment)} 
+                             ({formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))}/week)
+                           </span>
+                         )}
+                         <InfoButton 
+                           variant="tooltip" 
+                           tooltipContent={`Research Source: ${task.source}. Time range: ${task.time_range}. Mental load weight: ${task.mental_load_weight}x. This baseline comes from time-use studies and household labor research.`}
+                         />
+                       </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -603,38 +610,32 @@ const TaskQuestionnaire: React.FC = () => {
                         </div>
                       )}
 
-                       {/* Time Adjustment */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            How long does this take you?
-                          </Label>
-                         
-                         <div className="grid grid-cols-5 gap-1">
-                           {(['much_less', 'less', 'about_right', 'more', 'much_more'] as TimeAdjustment[]).map((adjustment) => (
-                             <Button
-                               key={adjustment}
-                               variant={response?.timeAdjustment === adjustment ? 'default' : 'outline'}
-                               size="sm"
-                               onClick={() => updateResponse(task.id, { timeAdjustment: adjustment })}
-                               className="text-xs px-1 py-1 h-auto flex flex-col gap-0.5"
-                             >
-                               {adjustment === 'much_less' && <TrendingDown className="h-3 w-3" />}
-                               {adjustment === 'less' && <Minus className="h-3 w-3" />}
-                               {adjustment === 'about_right' && <span className="h-3 w-3 rounded-full bg-current" />}
-                               {adjustment === 'more' && <TrendingUp className="h-3 w-3" />}
-                               {adjustment === 'much_more' && <TrendingUp className="h-3 w-3" />}
-                               <span>{getTimeAdjustmentShortLabel(adjustment)}</span>
-                             </Button>
-                           ))}
+                        {/* Time Adjustment */}
+                         <div className="space-y-2">
+                           <Label className="text-sm font-medium flex items-center gap-1">
+                             <Clock className="h-3 w-3" />
+                             How long does this take you compared to research baseline?
+                           </Label>
+                          
+                          <div className="grid grid-cols-5 gap-1">
+                            {(['much_less', 'less', 'about_right', 'more', 'much_more'] as TimeAdjustment[]).map((adjustment) => (
+                              <Button
+                                key={adjustment}
+                                variant={response?.timeAdjustment === adjustment ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => updateResponse(task.id, { timeAdjustment: adjustment })}
+                                className="text-xs px-1 py-1 h-auto flex flex-col gap-0.5"
+                              >
+                                {adjustment === 'much_less' && <TrendingDown className="h-3 w-3" />}
+                                {adjustment === 'less' && <Minus className="h-3 w-3" />}
+                                {adjustment === 'about_right' && <span className="h-3 w-3 rounded-full bg-current" />}
+                                {adjustment === 'more' && <TrendingUp className="h-3 w-3" />}
+                                {adjustment === 'much_more' && <TrendingUp className="h-3 w-3" />}
+                                <span>{getTimeAdjustmentShortLabel(adjustment)}</span>
+                              </Button>
+                            ))}
+                          </div>
                          </div>
-                         
-                          {response?.timeAdjustment && response.timeAdjustment !== 'about_right' && (
-                            <div className="text-xs text-foreground bg-secondary/20 p-2 rounded">
-                              <strong>Your time:</strong> {formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))} per week
-                            </div>
-                          )}
-                        </div>
 
                       {/* Per-task Insight Capture for All Users */}
                       {response?.assignment && (

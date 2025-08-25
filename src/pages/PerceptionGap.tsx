@@ -104,6 +104,12 @@ const PerceptionGap: React.FC = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             {theme.subtitle}
           </p>
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-4 max-w-2xl mx-auto">
+            <p className="text-sm text-muted-foreground">
+              <strong>What this measures:</strong> How you and your partner each perceive the distribution of work. 
+              Differences in these percentages reveal "perception gaps" - when partners see the same workload differently.
+            </p>
+          </div>
         </div>
 
         <Card className="max-w-2xl mx-auto shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
