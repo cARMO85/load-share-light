@@ -502,7 +502,7 @@ const TaskQuestionnaire: React.FC = () => {
                         <span>Research: {formatTimeDisplay(task.baseline_minutes_week)}/week</span>
                         <InfoButton 
                           variant="tooltip" 
-                          tooltipContent={`Source: ${task.source}. Time range: ${task.time_range}. Mental load weight: ${task.mental_load_weight}x`}
+                          tooltipContent={`Research Source: ${task.source}. Time range: ${task.time_range}. Mental load weight: ${task.mental_load_weight}x. This baseline comes from time-use studies and household labor research.`}
                         />
                       </div>
                     </div>
