@@ -113,10 +113,6 @@ const TaskQuestionnaire: React.FC = () => {
             return householdSetup.adults === 2;
           case 'has_children':
             return householdSetup.children > 0;
-          case 'has_pets':
-            return householdSetup.hasPets;
-          case 'has_garden':
-            return householdSetup.hasGarden;
           case 'is_employed':
             return householdSetup.isEmployed || householdSetup.partnerEmployed;
           default:

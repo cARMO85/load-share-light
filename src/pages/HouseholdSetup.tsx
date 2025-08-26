@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { HouseholdSetup as HouseholdSetupType } from '@/types/assessment';
-import { Users, Baby, Dog, TreePine, Briefcase, Home, Heart, UserCheck } from 'lucide-react';
+import { Users, Baby, Briefcase, Home, Heart, UserCheck } from 'lucide-react';
 
 const HouseholdSetup: React.FC = () => {
   const navigate = useNavigate();
@@ -199,76 +199,6 @@ const HouseholdSetup: React.FC = () => {
               </div>
             )}
 
-            {/* Pets */}
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-3">
-                <Dog className="h-6 w-6 text-primary" />
-                <div>
-                  <Label className="text-base font-medium">Do you have pets?</Label>
-                  <p className="text-sm text-muted-foreground">Dogs, cats, or other pets requiring care</p>
-                </div>
-              </div>
-              <Switch
-                checked={setup.hasPets}
-                onCheckedChange={(checked) => updateSetup({ hasPets: checked })}
-              />
-            </div>
-
-            {/* Garden */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <TreePine className="h-6 w-6 text-primary" />
-                  <div>
-                    <Label className="text-base font-medium">Do you have a garden?</Label>
-                    <p className="text-sm text-muted-foreground">Yard, garden, or outdoor space requiring maintenance</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={setup.hasGarden}
-                  onCheckedChange={(checked) => updateSetup({ hasGarden: checked, gardenSize: checked ? 'medium' : undefined })}
-                />
-              </div>
-
-              {setup.hasGarden && (
-                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                  <div className="text-center mb-3">
-                    <Label className="text-base font-medium text-primary">What size is your garden?</Label>
-                    <p className="text-sm text-muted-foreground">This helps us estimate maintenance time</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      variant={setup.gardenSize === 'small' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => updateSetup({ gardenSize: 'small' })}
-                      className="text-xs flex flex-col h-auto py-2"
-                    >
-                      <span>Small</span>
-                      <span className="text-xs opacity-70">~50m²</span>
-                    </Button>
-                    <Button
-                      variant={setup.gardenSize === 'medium' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => updateSetup({ gardenSize: 'medium' })}
-                      className="text-xs flex flex-col h-auto py-2"
-                    >
-                      <span>Medium</span>
-                      <span className="text-xs opacity-70">~200m²</span>
-                    </Button>
-                    <Button
-                      variant={setup.gardenSize === 'large' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => updateSetup({ gardenSize: 'large' })}
-                      className="text-xs flex flex-col h-auto py-2"
-                    >
-                      <span>Large</span>
-                      <span className="text-xs opacity-70">~500m²</span>
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* Employment */}
             <div className="space-y-4">

@@ -383,31 +383,4 @@ export const mentalLoadTasks: Task[] = [
     description: "Managing the emotional toll of balancing work and family responsibilities, dealing with guilt and stress, and maintaining emotional well-being across life domains."
   },
 
-  // Additional Context-Specific Tasks
-  {
-    id: "pet_care_coordination",
-    task_name: "Coordinating pet care, health, and needs",
-    category: TASK_CATEGORIES.MONITORING,
-    baseline_minutes_week: 105,
-    default_frequency: 'weekly',
-    mental_load_weight: 0.8,
-    condition_trigger: ["has_pets"],
-    source: "Pet Care Research",
-    source_details: "American Veterinary Medical Association Studies",
-    time_range: "60-180 minutes",
-    description: "Managing pet feeding schedules, health care, exercise needs, and behavioral monitoring. Includes coordinating vet appointments and ensuring pet well-being."
-  },
-  {
-    id: "garden_seasonal_planning",
-    task_name: "Planning and maintaining garden through seasons",
-    category: TASK_CATEGORIES.ANTICIPATION,
-    baseline_minutes_week: 90,
-    default_frequency: 'monthly',
-    mental_load_weight: 0.7,
-    condition_trigger: ["has_garden"],
-    source: "Gardening Research",
-    source_details: "Seasonal Garden Management Studies",
-    time_range: "45-180 minutes",
-    description: "Planning what to plant when, preparing for seasonal changes, maintaining garden health, and coordinating outdoor space management throughout the year."
-  }
 ];

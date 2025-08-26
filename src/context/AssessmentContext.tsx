@@ -65,9 +65,6 @@ const initialState: AssessmentState = {
     assessmentMode: 'solo' as const,
     adults: 1,
     children: 0,
-    hasPets: false,
-    hasGarden: false,
-    gardenSize: undefined,
     isEmployed: false
   },
   taskResponses: [],

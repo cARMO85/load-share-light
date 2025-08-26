@@ -183,7 +183,7 @@ const LearnMore: React.FC = () => {
               
               <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
                 <p className="text-sm">
-                  <strong>For example:</strong> National averages might say lawn mowing takes 60 minutes per week — but your garden might take 15 minutes or 2 hours.
+                  <strong>For example:</strong> National averages might say grocery shopping takes 60 minutes per week — but your household might take 30 minutes or 2 hours.
                 </p>
               </div>
               
