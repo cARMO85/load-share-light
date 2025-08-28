@@ -216,7 +216,7 @@ const HouseholdSetup: React.FC = () => {
                 />
               </div>
 
-              {setup.adults === 2 && (
+              {(setup.householdType === 'couple' || setup.householdType === 'couple_with_children') && (
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
                     <Briefcase className="h-6 w-6 text-secondary" />
