@@ -39,7 +39,7 @@ const Results: React.FC = () => {
   const [discussionNotes, setDiscussionNotes] = useState<Record<string, string>>({});
 
   // Helper function to calculate loads using exact formula: Mental Load Score = (Time × Weight × Share%)
-  const calculateLoadFromResponses = (responses: typeof state.taskResponses, taskLookup: Record<string, typeof mentalLoadTasks[0]>, hasTwoAdults: boolean) => {
+  const calculateLoadFromResponses = (responses: typeof state.taskResponses, taskLookup: typeof allTaskLookup, hasTwoAdults: boolean) => {
     let myVisibleTime = 0;
     let myMentalLoad = 0;
     let partnerVisibleTime = 0;
@@ -52,8 +52,20 @@ const Results: React.FC = () => {
       const task = taskLookup[response.taskId];
       if (!task) return;
 
-      const timeInMinutes = getEffectiveTaskTime(response, task.baseline_minutes_week);
-      const mentalLoadWeight = task.mental_load_weight;
+      // Handle different task types
+      const physicalTask = physicalTaskLookup[response.taskId];
+      const cognitiveTask = cognitiveTaskLookup[response.taskId];
+      
+      let timeInMinutes = 0;
+      let mentalLoadWeight = 1;
+      
+      if (physicalTask) {
+        timeInMinutes = getEffectiveTaskTime(response, physicalTask.baseline_minutes_week);
+        mentalLoadWeight = 1; // Physical tasks have fixed weight
+      } else if (cognitiveTask && response.likertRating) {
+        timeInMinutes = response.likertRating.burden * 10; // Convert burden to time equivalent
+        mentalLoadWeight = 2; // Cognitive tasks have higher mental weight
+      }
 
       if (response.assignment === 'me') {
         // Me: 100% share
@@ -120,7 +132,7 @@ const Results: React.FC = () => {
     let perceptionGaps = null;
     
     if (state.partnerTaskResponses?.length) {
-      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses, taskLookup, hasTwoAdults);
+      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses, allTaskLookup, hasTwoAdults);
       
       // Calculate perception gaps
       perceptionGaps = {

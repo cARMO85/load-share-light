@@ -1,6 +1,6 @@
 // Combined task definitions for the questionnaire
 import { physicalTasks, PhysicalTask, PHYSICAL_TASK_CATEGORIES } from './physicalTasks';
-import { cognitiveTasks, CognitiveTask, TASK_CATEGORIES } from './tasks';
+import { cognitiveTasks, CognitiveTask, TASK_CATEGORIES as COGNITIVE_CATEGORIES } from './tasks';
 
 // Union type for all tasks
 export type AllTask = PhysicalTask | CognitiveTask;
@@ -8,7 +8,7 @@ export type AllTask = PhysicalTask | CognitiveTask;
 // Combined task categories
 export const ALL_CATEGORIES = {
   ...PHYSICAL_TASK_CATEGORIES,
-  ...TASK_CATEGORIES
+  ...COGNITIVE_CATEGORIES
 } as const;
 
 // Combined tasks array
@@ -27,6 +27,9 @@ export const cognitiveTaskLookup = cognitiveTasks.reduce((acc, task) => {
   acc[task.id] = task;
   return acc;
 }, {} as Record<string, CognitiveTask>);
+
+// Export combined task categories
+export const TASK_CATEGORIES = ALL_CATEGORIES;
 
 export const allTaskLookup = allTasks.reduce((acc, task) => {
   acc[task.id] = task;

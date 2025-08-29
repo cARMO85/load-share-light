@@ -62,6 +62,10 @@ export const calculatePersonLoad = (
   let totalLikertScore = 0;
   let timeTaskCount = 0;
   let likertTaskCount = 0;
+  let myVisibleTime = 0;
+  let myMentalLoad = 0;
+  let partnerVisibleTime = 0;
+  let partnerMentalLoad = 0;
   
   const categoryScores: Record<string, number> = {};
   
@@ -70,12 +74,16 @@ export const calculatePersonLoad = (
     
     let taskScore = 0;
     let category = '';
+    let minutes = 0;
+    let mentalWeight = 1;
     
     // Check if it's a physical (time-based) task
     const physicalTask = physicalTaskLookup[response.taskId];
     if (physicalTask) {
       taskScore = calculateTimeBasedScore(response, physicalTask);
       category = physicalTask.category;
+      minutes = getEffectiveTaskTime(response, physicalTask.baseline_minutes_week);
+      mentalWeight = 1; // Physical tasks have weight of 1
       totalTimeScore += taskScore;
       timeTaskCount++;
     }
@@ -85,14 +93,43 @@ export const calculatePersonLoad = (
     if (cognitiveTask) {
       taskScore = calculateLikertBasedScore(response, cognitiveTask);
       category = cognitiveTask.category;
+      // For cognitive tasks, use burden rating as "time equivalent"
+      minutes = response.likertRating ? response.likertRating.burden * 10 : 0; // Convert 1-5 to rough time
+      mentalWeight = 2; // Cognitive tasks have higher mental weight
       totalLikertScore += taskScore;
       likertTaskCount++;
     }
     
-    // Apply share percentage
-    const sharePercent = response.assignment === 'me' ? (response.mySharePercentage || 100) / 100 :
+    // Calculate contributions based on assignment
+    if (response.assignment === 'me') {
+      const visibleContrib = minutes;
+      const mentalContrib = minutes * mentalWeight;
+      myVisibleTime += visibleContrib;
+      myMentalLoad += mentalContrib;
+    } else if (response.assignment === 'partner') {
+      const visibleContrib = minutes;
+      const mentalContrib = minutes * mentalWeight;
+      partnerVisibleTime += visibleContrib;
+      partnerMentalLoad += mentalContrib;
+    } else if (response.assignment === 'shared') {
+      const myShare = (response.mySharePercentage || 50) / 100;
+      const partnerShare = 1 - myShare;
+      
+      const myVisibleContrib = minutes * myShare;
+      const myMentalContrib = minutes * mentalWeight * myShare;
+      const partnerVisibleContrib = minutes * partnerShare;
+      const partnerMentalContrib = minutes * mentalWeight * partnerShare;
+      
+      myVisibleTime += myVisibleContrib;
+      myMentalLoad += myMentalContrib;
+      partnerVisibleTime += partnerVisibleContrib;
+      partnerMentalLoad += partnerMentalContrib;
+    }
+    
+    // Apply share percentage for category scores
+    const sharePercent = response.assignment === 'me' ? 1 :
                         response.assignment === 'shared' ? (response.mySharePercentage || 50) / 100 :
-                        response.assignment === 'partner' ? (response.mySharePercentage || 0) / 100 : 0;
+                        0;
     
     const adjustedScore = taskScore * sharePercent;
     
@@ -100,6 +137,15 @@ export const calculatePersonLoad = (
       categoryScores[category] = (categoryScores[category] || 0) + adjustedScore;
     }
   });
+  
+  // Calculate totals and percentages
+  const totalVisibleTime = myVisibleTime + partnerVisibleTime;
+  const totalMentalLoad = myMentalLoad + partnerMentalLoad;
+  
+  const myVisiblePercentage = totalVisibleTime > 0 ? (myVisibleTime / totalVisibleTime) * 100 : 0;
+  const myMentalPercentage = totalMentalLoad > 0 ? (myMentalLoad / totalMentalLoad) * 100 : 0;
+  const partnerVisiblePercentage = totalVisibleTime > 0 ? (partnerVisibleTime / totalVisibleTime) * 100 : 0;
+  const partnerMentalPercentage = totalMentalLoad > 0 ? (partnerMentalLoad / totalMentalLoad) * 100 : 0;
   
   // Combine time and Likert scores with equal weighting
   const combinedScore = (totalTimeScore + totalLikertScore) / Math.max(timeTaskCount + likertTaskCount, 1);
@@ -109,7 +155,17 @@ export const calculatePersonLoad = (
     timeScore: totalTimeScore / Math.max(timeTaskCount, 1),
     likertScore: totalLikertScore / Math.max(likertTaskCount, 1),
     categoryScores,
-    displayScore: normalizeToDisplayScale(combinedScore)
+    displayScore: normalizeToDisplayScale(combinedScore),
+    myVisibleTime: Math.round(myVisibleTime),
+    myMentalLoad: Math.round(myMentalLoad),
+    partnerVisibleTime: Math.round(partnerVisibleTime), 
+    partnerMentalLoad: Math.round(partnerMentalLoad),
+    totalVisibleTime: Math.round(totalVisibleTime),
+    totalMentalLoad: Math.round(totalMentalLoad),
+    myVisiblePercentage: Math.round(myVisiblePercentage),
+    myMentalPercentage: Math.round(myMentalPercentage),
+    partnerVisiblePercentage: Math.round(partnerVisiblePercentage),
+    partnerMentalPercentage: Math.round(partnerMentalPercentage)
   };
 };
 

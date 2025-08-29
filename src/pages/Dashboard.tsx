@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
-import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup } from '@/data/allTasks';
+import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup, TASK_CATEGORIES } from '@/data/allTasks';
 import { calculatePersonLoad } from '@/lib/calculationUtils';
 import { formatTimeDisplay } from '@/lib/timeUtils';
 import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
@@ -23,11 +23,8 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { state, resetAssessment } = useAssessment();
 
-  // Create task lookup
-  const taskLookup = mentalLoadTasks.reduce((acc, task) => {
-    acc[task.id] = task;
-    return acc;
-  }, {} as Record<string, typeof mentalLoadTasks[0]>);
+  // Use the existing task lookups from allTasks
+  const taskLookup = allTaskLookup;
 
   // Chart data calculations
   const chartData = useMemo(() => {
@@ -49,8 +46,20 @@ const Dashboard: React.FC = () => {
       const task = taskLookup[response.taskId];
       if (!task) return;
 
-      const minutes = getEffectiveTaskTime(response, task.baseline_minutes_week);
-      const mentalWeight = task.mental_load_weight;
+      // Handle different task types
+      const physicalTask = physicalTaskLookup[response.taskId];
+      const cognitiveTask = cognitiveTaskLookup[response.taskId];
+      
+      let minutes = 0;
+      let mentalWeight = 1;
+      
+      if (physicalTask) {
+        minutes = getEffectiveTaskTime(response, physicalTask.baseline_minutes_week);
+        mentalWeight = 1;
+      } else if (cognitiveTask && response.likertRating) {
+        minutes = response.likertRating.burden * 10; // Convert burden to time equivalent
+        mentalWeight = 2;
+      }
 
       if (response.assignment === 'me') {
         const visibleContrib = minutes;
@@ -58,8 +67,9 @@ const Dashboard: React.FC = () => {
         
         myVisibleTime += visibleContrib;
         myMentalLoad += mentalContrib;
-        categoryBreakdown[task.category].visible += visibleContrib;
-        categoryBreakdown[task.category].mental += mentalContrib;
+        const category = physicalTask?.category || cognitiveTask?.category || 'Other';
+        categoryBreakdown[category].visible += visibleContrib;
+        categoryBreakdown[category].mental += mentalContrib;
       } else if (response.assignment === 'partner') {
         const visibleContrib = minutes;
         const mentalContrib = minutes * mentalWeight;
@@ -79,8 +89,9 @@ const Dashboard: React.FC = () => {
         myMentalLoad += myMentalContrib;
         partnerVisibleTime += partnerVisibleContrib;
         partnerMentalLoad += partnerMentalContrib;
-        categoryBreakdown[task.category].visible += myVisibleContrib;
-        categoryBreakdown[task.category].mental += myMentalContrib;
+        const category = physicalTask?.category || cognitiveTask?.category || 'Other';
+        categoryBreakdown[category].visible += myVisibleContrib;
+        categoryBreakdown[category].mental += myMentalContrib;
       }
     });
 

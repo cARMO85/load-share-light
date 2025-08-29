@@ -144,7 +144,7 @@ const TaskQuestionnaire: React.FC = () => {
       type: 'cognitive' as const
     },
     { 
-      id: ALL_CATEGORIES.DECISION_MAKING, 
+      id: ALL_CATEGORIES['Decision-making'], 
       label: "Decision-making", 
       icon: Brain,
       description: "Making choices about household matters",
@@ -158,7 +158,7 @@ const TaskQuestionnaire: React.FC = () => {
       type: 'cognitive' as const
     },
     { 
-      id: ALL_CATEGORIES.EMOTIONAL_LABOUR, 
+      id: ALL_CATEGORIES['Emotional Labour'], 
       label: "Emotional Labour", 
       icon: Heart,
       description: "Managing emotions and relationships within the home",
