@@ -9,7 +9,8 @@ import { ConversationReport } from '@/components/ConversationReport';
 import { SharedVocabulary } from '@/components/SharedVocabulary';
 import { generateConversationPrompts } from '@/lib/conversationEngine';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
+import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup } from '@/data/allTasks';
+import { calculatePersonLoad } from '@/lib/calculationUtils';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
 import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
 import { getResearchComparison, RESEARCH_BENCHMARKS } from '@/lib/researchBenchmarks';
@@ -109,15 +110,10 @@ const Results: React.FC = () => {
     };
   };
 
-  // Calculate results
+  // Calculate results using new hybrid system
   const results = useMemo(() => {
-    const taskLookup = mentalLoadTasks.reduce((acc, task) => {
-      acc[task.id] = task;
-      return acc;
-    }, {} as Record<string, typeof mentalLoadTasks[0]>);
-
+    const myCalculations = calculatePersonLoad(state.taskResponses, physicalTaskLookup, cognitiveTaskLookup);
     const hasTwoAdults = state.householdSetup.adults >= 2;
-    const myCalculations = calculateLoadFromResponses(state.taskResponses, taskLookup, hasTwoAdults);
     
     // For together mode, calculate partner's perspective if available
     let partnerCalculations = null;

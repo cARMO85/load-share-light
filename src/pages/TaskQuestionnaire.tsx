@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
-import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
-import { TaskResponse, TimeAdjustment } from '@/types/assessment';
+import { allTasks, ALL_CATEGORIES, isPhysicalTask, isCognitiveTask, allTaskLookup } from '@/data/allTasks';
+import { TaskResponse, TimeAdjustment, LikertRating } from '@/types/assessment';
 import { formatTimeDisplay, getFrequencyDisplayText } from '@/lib/timeUtils';
 import { calculateAdjustedTime, getTimeAdjustmentShortLabel } from '@/lib/timeAdjustmentUtils';
 import { CoupleInsightCapture } from '@/components/CoupleInsightCapture';
@@ -45,92 +45,129 @@ const TaskQuestionnaire: React.FC = () => {
   const [insights, setInsights] = useState<InsightEntry[]>([]);
   const [currentDiscussionTask, setCurrentDiscussionTask] = useState<{id: string; name: string} | null>(null);
 
-  // DEV FEATURE: Prepopulate responses based on research showing women handle more household tasks
-  const prepopulateResponses = () => {
-    const allTasks = categorizedTasks.flatMap(cat => cat.tasks);
-    const newResponses: Record<string, TaskResponse> = {};
-    
-    allTasks.forEach(task => {
-      // Research shows women handle ~67% of household tasks, with higher mental load
-      // High mental load tasks (anticipation, emotional labor) - mostly assigned to women
-      if (task.category === TASK_CATEGORIES.ANTICIPATION || 
-          task.category === TASK_CATEGORIES.EMOTIONAL_LABOUR ||
-          task.mental_load_weight >= 1.3) {
-        newResponses[task.id] = {
-          taskId: task.id,
-          assignment: 'me',
-          mySharePercentage: Math.random() > 0.3 ? (Math.random() > 0.5 ? 80 : 90) : 100, // Mostly high percentages
-          timeAdjustment: Math.random() > 0.7 ? 'more' : 'about_right', // Often takes more time
-          estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, Math.random() > 0.7 ? 'more' : 'about_right'),
-          frequency: task.default_frequency,
-          notApplicable: false
-        };
-      }
-      // Medium tasks - shared but with higher female percentage
-      else if (task.mental_load_weight >= 1.1) {
-        newResponses[task.id] = {
-          taskId: task.id,
-          assignment: Math.random() > 0.6 ? 'me' : 'shared',
-          mySharePercentage: Math.random() > 0.4 ? 70 : 60,
-          timeAdjustment: 'about_right',
-          estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, 'about_right'),
-          frequency: task.default_frequency,
-          notApplicable: false
-        };
-      }
-      // Lower mental load tasks - more likely to be shared or partner
-      else {
-        const rand = Math.random();
-        newResponses[task.id] = {
-          taskId: task.id,
-          assignment: rand > 0.7 ? 'partner' : (rand > 0.4 ? 'shared' : 'me'),
-          mySharePercentage: rand > 0.7 ? 20 : (rand > 0.4 ? 50 : 60),
-          timeAdjustment: 'about_right',
-          estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, 'about_right'),
-          frequency: task.default_frequency,
-          notApplicable: Math.random() > 0.95 // 5% chance not applicable
-        };
-      }
-    });
-    
-    setResponses(newResponses);
-    // Update context with all responses
-    Object.values(newResponses).forEach(response => {
-      setTaskResponse(response);
-    });
-  };
-
-  // Organize tasks by category
-  const categorizedTasks = useMemo(() => {
-    const { householdSetup } = state;
-    
-    const relevantTasks = mentalLoadTasks.filter(task => {
+  // Organize tasks by category and filter by conditions
+  const tasksByCategory = useMemo(() => {
+    const filtered = allTasks.filter(task => {
+      const { householdType, adults, children, isEmployed } = state.householdSetup;
+      
       return task.condition_trigger.some(condition => {
         switch (condition) {
           case 'all':
             return true;
-          case 'two_adults':
-            return householdSetup.adults === 2;
           case 'has_children':
-            return householdSetup.children > 0;
+            return children > 0;
+          case 'two_adults':
+            return adults >= 2;
           case 'is_employed':
-            return householdSetup.isEmployed || householdSetup.partnerEmployed;
+            return isEmployed;
           default:
             return false;
         }
       });
     });
 
-    // Group tasks by category
-    const categories = Object.values(TASK_CATEGORIES);
-    return categories.map(category => ({
-      name: category,
-      tasks: relevantTasks.filter(task => task.category === category)
-    })).filter(category => category.tasks.length > 0);
+    const grouped = filtered.reduce((acc, task) => {
+      if (!acc[task.category]) {
+        acc[task.category] = [];
+      }
+      acc[task.category].push(task);
+      return acc;
+    }, {} as Record<string, typeof allTasks>);
+
+    return grouped;
   }, [state.householdSetup]);
 
-  const currentCategory = categorizedTasks[currentCategoryIndex];
-  const currentCategoryTasks = currentCategory?.tasks || [];
+  const categoryData = [
+    // Physical task categories
+    { 
+      id: ALL_CATEGORIES.COOKING, 
+      label: "Cooking & Food Prep", 
+      icon: Calendar,
+      description: "Preparing meals and food-related tasks",
+      type: 'physical' as const
+    },
+    { 
+      id: ALL_CATEGORIES.CLEANING, 
+      label: "Cleaning & Housework", 
+      icon: Eye,
+      description: "Maintaining cleanliness and household spaces",
+      type: 'physical' as const
+    },
+    { 
+      id: ALL_CATEGORIES.LAUNDRY, 
+      label: "Laundry", 
+      icon: Brain,
+      description: "Washing, drying, and managing clothing",
+      type: 'physical' as const
+    },
+    { 
+      id: ALL_CATEGORIES.CHILDCARE_BASIC, 
+      label: "Basic Childcare", 
+      icon: Heart,
+      description: "Physical care and basic needs of children",
+      type: 'physical' as const
+    },
+    { 
+      id: ALL_CATEGORIES.CHILDCARE_EDUCATIONAL, 
+      label: "Educational Childcare", 
+      icon: Lightbulb,
+      description: "Learning activities and educational support",
+      type: 'physical' as const
+    },
+    { 
+      id: ALL_CATEGORIES.SHOPPING, 
+      label: "Shopping", 
+      icon: BarChart3,
+      description: "Purchasing household items and groceries",
+      type: 'physical' as const
+    },
+    { 
+      id: ALL_CATEGORIES.TRAVEL, 
+      label: "Family Travel", 
+      icon: UserCheck,
+      description: "Transportation for family activities",
+      type: 'physical' as const
+    },
+    // Cognitive task categories
+    { 
+      id: ALL_CATEGORIES.ANTICIPATION, 
+      label: "Anticipation", 
+      icon: Calendar,
+      description: "Planning ahead and thinking about what needs to happen",
+      type: 'cognitive' as const
+    },
+    { 
+      id: ALL_CATEGORIES.IDENTIFICATION, 
+      label: "Identification", 
+      icon: Eye,
+      description: "Noticing what needs attention or action",
+      type: 'cognitive' as const
+    },
+    { 
+      id: ALL_CATEGORIES.DECISION_MAKING, 
+      label: "Decision-making", 
+      icon: Brain,
+      description: "Making choices about household matters",
+      type: 'cognitive' as const
+    },
+    { 
+      id: ALL_CATEGORIES.MONITORING, 
+      label: "Monitoring", 
+      icon: BarChart3,
+      description: "Keeping track of progress and following up",
+      type: 'cognitive' as const
+    },
+    { 
+      id: ALL_CATEGORIES.EMOTIONAL_LABOUR, 
+      label: "Emotional Labour", 
+      icon: Heart,
+      description: "Managing emotions and relationships within the home",
+      type: 'cognitive' as const
+    }
+  ].filter(category => tasksByCategory[category.id]?.length > 0);
+
+  const currentCategory = categoryData[currentCategoryIndex];
+  const currentCategoryTasks = currentCategory ? tasksByCategory[currentCategory.id] || [] : [];
 
   const steps = [
     { title: "Setup", description: "Household info" },
@@ -141,69 +178,53 @@ const TaskQuestionnaire: React.FC = () => {
     { title: "Visualize", description: "Charts & insights" }
   ];
 
-  // Category information with icons and descriptions
-  const categoryInfo = {
-    [TASK_CATEGORIES.ANTICIPATION]: {
-      icon: <Calendar className="h-5 w-5" />,
-      description: "Planning ahead and thinking about future needs"
-    },
-    [TASK_CATEGORIES.IDENTIFICATION]: {
-      icon: <Eye className="h-5 w-5" />,
-      description: "Noticing what needs attention and when"
-    },
-    [TASK_CATEGORIES.DECISION_MAKING]: {
-      icon: <Lightbulb className="h-5 w-5" />,
-      description: "Making choices and evaluating options"
-    },
-    [TASK_CATEGORIES.MONITORING]: {
-      icon: <BarChart3 className="h-5 w-5" />,
-      description: "Keeping track of progress and ensuring completion"
-    },
-    [TASK_CATEGORIES.EMOTIONAL_LABOUR]: {
-      icon: <HeartHandshake className="h-5 w-5" />,
-      description: "Managing emotions and relationships"
-    }
-  };
-
   const updateResponse = (taskId: string, updates: Partial<TaskResponse>) => {
-    const allTasks = categorizedTasks.flatMap(cat => cat.tasks);
-    const task = allTasks.find(t => t.id === taskId);
+    const task = allTaskLookup[taskId];
     if (!task) return;
 
     const currentResponse = responses[taskId];
-    const timeAdjustment = updates.timeAdjustment || currentResponse?.timeAdjustment || 'about_right';
+    const isPhysical = isPhysicalTask(task);
     
-    const newResponse = {
-      ...currentResponse, // Preserve existing response data (like slider values)
+    const newResponse: TaskResponse = {
+      ...currentResponse,
       taskId,
       assignment: currentResponse?.assignment || 'me',
-      timeAdjustment,
-      estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, timeAdjustment),
-      frequency: task.default_frequency,
-      notApplicable: false,
+      measurementType: isPhysical ? 'time' : 'likert',
       ...updates
-    } as TaskResponse;
+    };
+
+    // Handle time-based tasks
+    if (isPhysical && updates.timeAdjustment) {
+      newResponse.timeAdjustment = updates.timeAdjustment;
+      newResponse.estimatedMinutes = calculateAdjustedTime(task.baseline_minutes_week, updates.timeAdjustment);
+      newResponse.frequency = task.default_frequency;
+    }
 
     setResponses(prev => ({ ...prev, [taskId]: newResponse }));
     setTaskResponse(newResponse);
   };
 
+  const updateLikertRating = (taskId: string, field: keyof LikertRating, value: number) => {
+    const currentResponse = responses[taskId];
+    const currentLikert = currentResponse?.likertRating || { burden: 3, fairness: 3 };
+    
+    const newLikert = { ...currentLikert, [field]: value };
+    updateResponse(taskId, { likertRating: newLikert });
+  };
+
   const handleNext = () => {
-    const isLastCategory = currentCategoryIndex >= categorizedTasks.length - 1;
+    const isLastCategory = currentCategoryIndex >= categoryData.length - 1;
     
     if (!isLastCategory) {
-      // Move to next category
       setCurrentCategoryIndex(prev => prev + 1);
       return;
     }
     
-    // In together mode, show insight capture phase before continuing
     if (isTogetherMode && !showInsightCapture) {
       setShowInsightCapture(true);
       return;
     }
     
-    // Continue to next phase
     if (isTogetherMode) {
       setCurrentStep(3);
       navigate('/perception-gap');
@@ -251,77 +272,10 @@ const TaskQuestionnaire: React.FC = () => {
     
     handleInsightAdded(insight);
   };
-  
-  // Development helper to fill sample data
-  const fillSampleData = (scenario: 'single' | 'couple' | 'family') => {
-    const sampleAssignments = {
-      single: ['me', 'me', 'shared', 'me'],
-      couple: ['me', 'partner', 'shared', 'me', 'partner'], 
-      family: ['me', 'partner', 'shared', 'me', 'shared']
-    };
-    
-    const sampleTimeAdjustments: TimeAdjustment[] = ['much_less', 'less', 'about_right', 'more', 'much_more'];
-    
-    const newResponses: Record<string, TaskResponse> = {};
-    
-    categorizedTasks.forEach(category => {
-      category.tasks.forEach((task, index) => {
-        const assignments = sampleAssignments[scenario];
-        const assignment = assignments[index % assignments.length] as 'me' | 'partner' | 'shared';
-        const timeAdjustment = sampleTimeAdjustments[index % sampleTimeAdjustments.length];
-        
-        const response: TaskResponse = {
-          taskId: task.id,
-          assignment,
-          timeAdjustment,
-          estimatedMinutes: calculateAdjustedTime(task.baseline_minutes_week, timeAdjustment),
-          frequency: task.default_frequency,
-          notApplicable: Math.random() < 0.05, // 5% chance of not applicable
-          mySharePercentage: assignment === 'me' ? 90 : assignment === 'partner' ? 10 : 50
-        };
-        
-        newResponses[task.id] = response;
-        setTaskResponse(response);
-      });
-    });
-    
-    setResponses(newResponses);
-    
-    // Add some sample insights if in together mode
-    if (isTogetherMode) {
-      const sampleInsights = [
-        {
-          id: 'insight-1',
-          type: 'breakthrough' as const,
-          taskId: categorizedTasks[0]?.tasks[0]?.id,
-          taskName: categorizedTasks[0]?.tasks[0]?.task_name,
-          description: "Wow, I never realized how much mental load meal planning actually involves!",
-          timestamp: new Date()
-        },
-        {
-          id: 'insight-2', 
-          type: 'disagreement' as const,
-          taskId: categorizedTasks[1]?.tasks[0]?.id,
-          taskName: categorizedTasks[1]?.tasks[0]?.task_name,
-          description: "We disagree on how long this takes - maybe we should time it next week",
-          timestamp: new Date()
-        }
-      ];
-      
-      sampleInsights.forEach(insight => {
-        if (insight.taskId) {
-          setInsights(prev => [...prev, insight]);
-          addInsight(insight);
-        }
-      });
-    }
-  };
 
   const handleInsightContinue = () => {
-    // Store insights in context for later use in results
     insights.forEach(insight => addInsight(insight));
     
-    // Continue to next phase
     if (isTogetherMode) {
       setCurrentStep(3);
       navigate('/perception-gap');
@@ -331,12 +285,10 @@ const TaskQuestionnaire: React.FC = () => {
     }
   };
 
-  // Scroll to top when category changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentCategoryIndex]);
 
-  // Simplified theme - no more responder switching
   const theme = {
     gradientClass: 'from-background via-background to-primary/5',
     cardGradient: 'from-card to-primary/5', 
@@ -351,13 +303,6 @@ const TaskQuestionnaire: React.FC = () => {
     responses[task.id]?.assignment || responses[task.id]?.notApplicable
   );
   const completedTasks = applicableTasks.filter(task => 
-    responses[task.id]?.assignment && !responses[task.id]?.notApplicable
-  ).length;
-
-  // Overall progress across all categories
-  const allTasks = categorizedTasks.flatMap(cat => cat.tasks);
-  const allApplicableTasks = allTasks.filter(task => !responses[task.id]?.notApplicable);
-  const totalCompletedTasks = allApplicableTasks.filter(task => 
     responses[task.id]?.assignment && !responses[task.id]?.notApplicable
   ).length;
 
@@ -422,49 +367,6 @@ const TaskQuestionnaire: React.FC = () => {
           <p className="text-muted-foreground mb-4">
             {isTogetherMode ? "Discuss and assign each task" : "Assign household tasks"}
           </p>
-          
-          {/* Insight Capture Explanation */}
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-4 max-w-2xl mx-auto">
-            <div className="flex items-center gap-2 mb-2">
-              <MessageCircle className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-foreground">Capture Your Insights</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              As you go through each task, use the <strong>Notes</strong> buttons to capture:
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2 text-xs">
-              <div className="flex items-center gap-1">
-                <Lightbulb className="h-3 w-3 text-primary" />
-                <span><strong>Insights:</strong> "I never realized..."</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3 text-destructive" />
-                <span><strong>Disagreements:</strong> "We see this differently"</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Heart className="h-3 w-3 text-secondary" />
-                <span><strong>Surprises:</strong> "Wow, didn't expect that"</span>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              These notes will be collected at the end to help you reflect on your mental load patterns.
-            </p>
-          </div>
-          
-          {/* DEV FEATURE: Prepopulate button */}
-          <div className="mt-4">
-            <Button 
-              onClick={prepopulateResponses}
-              variant="outline" 
-              size="sm"
-              className="bg-yellow-50 border-yellow-200 text-yellow-800 hover:bg-yellow-100"
-            >
-              🚧 DEV: Prepopulate (Women's Pattern)
-            </Button>
-            <p className="text-xs text-muted-foreground mt-1">
-              Research-based prepopulation reflecting typical gender patterns
-            </p>
-          </div>
         </div>
           
         {/* Category Header */}
@@ -472,29 +374,22 @@ const TaskQuestionnaire: React.FC = () => {
           <div className="mb-4">
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className={theme.accentColor}>
-                {categoryInfo[currentCategory.name]?.icon}
+                <currentCategory.icon className="h-5 w-5" />
               </div>
               <h2 className="text-xl font-semibold text-foreground">
-                {currentCategory.name}
+                {currentCategory.label}
               </h2>
               <InfoButton 
                 variant="tooltip" 
-                tooltipContent={`${categoryInfo[currentCategory.name]?.description}. Research shows these tasks often involve invisible cognitive work.`}
+                tooltipContent={`${currentCategory.description}. ${currentCategory.type === 'cognitive' ? 'Measured with burden and fairness ratings.' : 'Measured in time based on UK 2024 Time Use Survey.'}`}
               />
             </div>
             <div className="text-sm text-muted-foreground">
-              Category {currentCategoryIndex + 1} of {categorizedTasks.length} 
+              Category {currentCategoryIndex + 1} of {categoryData.length} 
               • {completedTasks} of {applicableTasks.length} tasks completed
             </div>
           </div>
         )}
-
-        {/* Minimal progress info */}
-        <div className="text-center mb-6">
-          <p className="text-sm text-muted-foreground">
-            {completedTasks} of {applicableTasks.length} tasks done
-          </p>
-        </div>
 
         <div className="space-y-4 mb-8">
           {currentCategoryTasks.map((task) => {
@@ -502,6 +397,8 @@ const TaskQuestionnaire: React.FC = () => {
             const showSlider = (response?.assignment === 'me' || response?.assignment === 'partner') && !response?.notApplicable;
             const isNotApplicable = response?.notApplicable;
             const taskInsights = insights.filter(insight => insight.taskId === task.id);
+            const isPhysical = isPhysicalTask(task);
+            const isCognitive = isCognitiveTask(task);
             
             return (
               <Card key={task.id} className={`transition-all border-0 ${
@@ -513,7 +410,7 @@ const TaskQuestionnaire: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-lg text-foreground flex items-center gap-2 mb-1">
-                        <Brain className="h-4 w-4 text-primary flex-shrink-0" />
+                        {isPhysical ? <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" /> : <Brain className="h-4 w-4 text-purple-500 flex-shrink-0" />}
                         <span className="leading-tight">{task.task_name}</span>
                         {isNotApplicable && <span className="text-muted-foreground text-sm">(Skipped)</span>}
                       </CardTitle>
@@ -522,20 +419,24 @@ const TaskQuestionnaire: React.FC = () => {
                           {task.description}
                         </p>
                       )}
-                       <div className="flex items-center gap-2 text-xs">
-                         <Clock className="h-3 w-3 text-muted-foreground" />
-                         <span className="text-muted-foreground">Research baseline: {formatTimeDisplay(task.baseline_minutes_week)}/week</span>
-                         {response?.timeAdjustment && (
-                           <span className="font-medium text-foreground bg-primary/10 px-2 py-0.5 rounded">
-                             Current: {getTimeAdjustmentShortLabel(response.timeAdjustment)} 
-                             ({formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))}/week)
-                           </span>
-                         )}
-                         <InfoButton 
-                           variant="tooltip" 
-                           tooltipContent={`Research Source: ${task.source}. Time range: ${task.time_range}. Mental load weight: ${task.mental_load_weight}x. This baseline comes from time-use studies and household labor research.`}
-                         />
-                       </div>
+                      {isPhysical && (
+                        <div className="flex items-center gap-2 text-xs">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">Research baseline: {formatTimeDisplay(task.baseline_minutes_week)}/week</span>
+                          {response?.timeAdjustment && (
+                            <span className="font-medium text-foreground bg-primary/10 px-2 py-0.5 rounded">
+                              Current: {getTimeAdjustmentShortLabel(response.timeAdjustment)} 
+                              ({formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))}/week)
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {isCognitive && (
+                        <div className="flex items-center gap-2 text-xs">
+                          <Brain className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">Cognitive/emotional task - rated by burden and fairness</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -606,12 +507,13 @@ const TaskQuestionnaire: React.FC = () => {
                         </div>
                       )}
 
-                        {/* Time Adjustment */}
-                         <div className="space-y-2">
-                           <Label className="text-sm font-medium flex items-center gap-1">
-                             <Clock className="h-3 w-3" />
-                             How long does this take you compared to research baseline?
-                           </Label>
+                      {/* Time Adjustment for Physical Tasks */}
+                      {isPhysical && response?.assignment && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            How long does this take you compared to research baseline?
+                          </Label>
                           
                           <div className="grid grid-cols-5 gap-1">
                             {(['much_less', 'less', 'about_right', 'more', 'much_more'] as TimeAdjustment[]).map((adjustment) => (
@@ -631,9 +533,49 @@ const TaskQuestionnaire: React.FC = () => {
                               </Button>
                             ))}
                           </div>
-                         </div>
+                        </div>
+                      )}
 
-                      {/* Per-task Insight Capture for All Users */}
+                      {/* Likert Rating for Cognitive Tasks */}
+                      {isCognitive && response?.assignment && (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">How burdensome is this task? (1 = Very Easy, 5 = Very Difficult)</Label>
+                            <Slider
+                              value={[response?.likertRating?.burden || 3]}
+                              onValueChange={([value]) => updateLikertRating(task.id, 'burden', value)}
+                              min={1}
+                              max={5}
+                              step={1}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Very Easy (1)</span>
+                              <span>Moderate (3)</span>
+                              <span>Very Difficult (5)</span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">How fairly acknowledged is this work? (1 = Not Acknowledged, 5 = Fully Acknowledged)</Label>
+                            <Slider
+                              value={[response?.likertRating?.fairness || 3]}
+                              onValueChange={([value]) => updateLikertRating(task.id, 'fairness', value)}
+                              min={1}
+                              max={5}
+                              step={1}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Not Acknowledged (1)</span>
+                              <span>Somewhat (3)</span>
+                              <span>Fully Acknowledged (5)</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Per-task Insight Capture */}
                       {response?.assignment && (
                         <div className="border-t pt-3 mt-3">
                           <div className="flex items-center justify-between mb-2">
@@ -733,7 +675,7 @@ const TaskQuestionnaire: React.FC = () => {
             disabled={!isCategoryComplete}
             className="flex items-center gap-2"
           >
-            {currentCategoryIndex >= categorizedTasks.length - 1 ? (
+            {currentCategoryIndex >= categoryData.length - 1 ? (
               isTogetherMode ? "Compare & Discuss" : "Continue"
             ) : (
               "Next Category"

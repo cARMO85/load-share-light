@@ -11,17 +11,26 @@ export interface HouseholdSetup {
 }
 
 export type TaskFrequency = 'weekly' | 'bi-weekly' | 'monthly' | 'yearly';
-
 export type TimeAdjustment = 'much_less' | 'less' | 'about_right' | 'more' | 'much_more';
+export type TaskMeasurementType = 'time' | 'likert';
+
+// Likert scale ratings for cognitive/emotional tasks
+export interface LikertRating {
+  burden: number; // 1-5 scale: perceived burden
+  fairness: number; // 1-5 scale: fairness/acknowledgement
+}
 
 export interface TaskResponse {
   taskId: string;
   assignment: 'me' | 'shared' | 'partner';
   mySharePercentage?: number; // 0-100 percentage when 'shared' selected
-  timeAdjustment: TimeAdjustment; // adjustment from research baseline
+  timeAdjustment?: TimeAdjustment; // adjustment from research baseline (for time-based tasks)
   estimatedMinutes?: number; // calculated from baseline + adjustment (for backward compatibility)
-  frequency: TaskFrequency; // how often this task occurs
+  frequency?: TaskFrequency; // how often this task occurs
   notApplicable?: boolean; // task not relevant to household
+  // New fields for hybrid measurement
+  measurementType?: TaskMeasurementType;
+  likertRating?: LikertRating;
 }
 
 export interface PerceptionGapResponse {

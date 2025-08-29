@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
-import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
+import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup } from '@/data/allTasks';
+import { calculatePersonLoad } from '@/lib/calculationUtils';
 import { formatTimeDisplay } from '@/lib/timeUtils';
 import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
 import {
