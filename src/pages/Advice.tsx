@@ -209,151 +209,166 @@ const Advice: React.FC = () => {
           </Card>
         </div>
 
-        {/* Conditional Advice Section - Different for Single Parents vs Couples */}
+        {/* Communication Strategies - Research-Based Approach */}
         <div className="mb-8">
           <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-accent/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-6 w-6 text-accent" />
-                {isSingleParent ? "Strategies for Managing Solo" : "Strategies for Better Balance"}
+                <Users className="h-6 w-6 text-accent" />
+                How to Have These Conversations Effectively
               </CardTitle>
               <CardDescription>
-                {isSingleParent 
-                  ? "Practical approaches to manage mental load as a single parent"
-                  : "Practical approaches to redistribute mental load with your partner"
-                }
+                Research-backed strategies for productive household discussions
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4">
-                {isSingleParent ? (
-                  <>
-                    {/* Single Parent Advice */}
-                    <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                      <h5 className="font-medium text-primary mb-2 flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Build Your Support Network
-                      </h5>
-                      <p className="text-sm text-muted-foreground">
-                        Connect with other single parents, family members, or trusted friends who can help with tasks. 
-                        Consider reciprocal arrangements - you help with their kids while they help with yours, 
-                        or share resources like carpools and meal prep.
-                      </p>
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
-                      <h5 className="font-medium text-secondary mb-2 flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Batch and Automate Everything
-                      </h5>
-                      <p className="text-sm text-muted-foreground">
-                        Batch similar tasks together (all errands in one trip, meal prep for the week). 
-                        Automate what you can: bill payments, grocery delivery, subscription services. 
-                        Every automated task is mental load you don't have to carry.
-                      </p>
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
-                      <h5 className="font-medium text-accent mb-2">Lower Your Standards Strategically</h5>
-                      <p className="text-sm text-muted-foreground">
-                        Identify which tasks really matter and which can be simplified. Perfect meals aren't necessary - 
-                        nutritious ones are. Kids can help with age-appropriate tasks, even if they don't do them perfectly. 
-                        Focus your energy on what truly impacts your family's wellbeing.
-                      </p>
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-success/5 border border-success/20">
-                      <h5 className="font-medium text-success mb-2">Invest in Time-Saving Services</h5>
-                      <p className="text-sm text-muted-foreground">
-                        When possible, invest in services that buy back your time and mental energy: 
-                        housekeeping, lawn care, grocery delivery, or even a monthly organizer. 
-                        Calculate the cost per hour vs. your peace of mind - often it's worth it.
-                      </p>
-                    </div>
+            <CardContent className="space-y-6">
+              <p className="text-sm text-muted-foreground">
+                The way you communicate is as important as what you discuss. Research shows that effective family 
+                communication is critical for managing mental load and household balance.
+              </p>
 
-                    <div className="p-4 rounded-lg bg-warning/5 border border-warning/20">
-                      <h5 className="font-medium text-warning mb-2">Co-parent Coordination (If Applicable)</h5>
-                      <p className="text-sm text-muted-foreground">
-                        If you share custody, establish clear systems for handoffs and communication. 
-                        Use shared calendars for activities and appointments. Coordinate on major decisions 
-                        to avoid duplicate mental work. Even if the relationship is strained, structured communication 
-                        reduces your cognitive load.
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* Couple Advice */}
-                    <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                      <h5 className="font-medium text-primary mb-2">Start with Awareness</h5>
-                      <p className="text-sm text-muted-foreground">
-                        Share your assessment results with your partner. Many people don't realize how much cognitive work 
-                        goes into household management. Use this as a starting point for discussion, not blame.
-                      </p>
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
-                      <h5 className="font-medium text-secondary mb-2">Transfer Ownership, Not Just Tasks</h5>
-                      <p className="text-sm text-muted-foreground">
-                        Instead of asking your partner to "help" with your tasks, transfer complete ownership of specific areas. 
-                        For example, one person owns all pet care (feeding, vet appointments, supplies) from start to finish.
-                      </p>
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
-                      <h5 className="font-medium text-accent mb-2">Create Systems and Routines</h5>
-                      <p className="text-sm text-muted-foreground">
-                        Reduce mental load through automation and systems. Use shared calendars, meal planning apps, 
-                        automatic bill payments, and regular household schedules to minimize decision fatigue.
-                      </p>
-                    </div>
-                    
-                    <div className="p-4 rounded-lg bg-success/5 border border-success/20">
-                      <h5 className="font-medium text-success mb-2">Practice Parallel Processing</h5>
-                      <p className="text-sm text-muted-foreground">
-                        Work on different household areas simultaneously rather than one person managing everything. 
-                        This prevents bottlenecks and reduces the feeling that one person is "in charge" of the household.
-                      </p>
-                    </div>
-                  </>
-                )}
+              <div className="grid gap-4">
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <h5 className="font-medium text-primary mb-2 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Hold Regular Family Meetings
+                  </h5>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Establish a consistent, dedicated time and space for these discussions. Research by Steve Marks and 
+                    Lynne Borden underscores the critical role of effective family communication, especially during 
+                    times of crisis and significant change.
+                  </p>
+                  <div className="text-xs text-muted-foreground italic bg-white/50 p-2 rounded">
+                    <strong>Using Your Tool:</strong> Schedule weekly 15-minute check-ins using your conversation report 
+                    as the agenda. Review one section at a time.
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
+                  <h5 className="font-medium text-secondary mb-2">Use "I"-Statements and Avoid Blame</h5>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Focus on personal feelings and needs ("I feel overwhelmed when...", "I need support with...") 
+                    rather than accusations ("You never..."). Research by Mary Omoboye et al. (2024) and Marks 
+                    and Boden emphasizes this approach for constructive dialogue.
+                  </p>
+                  <div className="text-xs text-muted-foreground italic bg-white/50 p-2 rounded">
+                    <strong>Using Your Tool:</strong> Reference specific data points from your assessment. 
+                    "I carry 75% of the anticipation work, which makes me feel..."
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
+                  <h5 className="font-medium text-accent mb-2">Practice Active and Empathetic Listening</h5>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Listen without interrupting or criticizing, seek to understand your partner's perspective, 
+                    and validate their emotions. This builds trust and openness (Mary Omoboye et al., 2024; 
+                    Marks and Boden).
+                  </p>
+                  <div className="text-xs text-muted-foreground italic bg-white/50 p-2 rounded">
+                    <strong>Using Your Tool:</strong> Ask your partner to complete their own assessment to compare 
+                    perspectives before discussing differences.
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-success/5 border border-success/20">
+                  <h5 className="font-medium text-success mb-2">Stick to One Topic at a Time</h5>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Summarize points to ensure clarity before moving on. This prevents overwhelming discussions 
+                    and ensures each issue gets proper attention (Marks and Boden).
+                  </p>
+                  <div className="text-xs text-muted-foreground italic bg-white/50 p-2 rounded">
+                    <strong>Using Your Tool:</strong> Use your conversation report sections as topic guides. 
+                    Discuss "Anticipation Work" in one session, "Decision-making" in another.
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-warning/5 border border-warning/20">
+                  <h5 className="font-medium text-warning mb-2">Manage Conflict Constructively</h5>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Take breaks if discussions become heated or tempers flare, and return when calmer. 
+                    This maintains productive dialogue (Mary Omoboye et al., 2024; Marks and Boden).
+                  </p>
+                  <div className="text-xs text-muted-foreground italic bg-white/50 p-2 rounded">
+                    <strong>Using Your Tool:</strong> If discussions get heated, pause and return to the objective 
+                    data in your report to refocus on facts rather than emotions.
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-info/5 border border-info/20">
+                  <h5 className="font-medium text-info mb-2">Be Honest with Care, Tact, and Courtesy</h5>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Communicate needs and thoughts respectfully. Think through problems and gather facts 
+                    before speaking to articulate concerns clearly.
+                  </p>
+                  <div className="text-xs text-muted-foreground italic bg-white/50 p-2 rounded">
+                    <strong>Using Your Tool:</strong> Use the specific insights and action plans from your 
+                    assessment to frame discussions with concrete examples.
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-purple/5 border border-purple/20">
+                  <h5 className="font-medium text-purple mb-2">Clearly State Needs and Contributions</h5>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Be explicit about what you need and what you can offer to help. Check for understanding 
+                    to confirm your message has been received as intended and prevent misunderstandings.
+                  </p>
+                  <div className="text-xs text-muted-foreground italic bg-white/50 p-2 rounded">
+                    <strong>Using Your Tool:</strong> Create specific action plans together using the 
+                    action planning feature to document agreements and next steps.
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-blue/5 border border-blue/20">
+                  <h5 className="font-medium text-blue mb-2">Aim for Consensus and Include Family</h5>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Decisions should be based on what everyone agrees to or can accept. If relevant, 
+                    include children in family meetings based on their age and ability to understand.
+                  </p>
+                  <div className="text-xs text-muted-foreground italic bg-white/50 p-2 rounded">
+                    <strong>Using Your Tool:</strong> Share appropriate sections of your results with older 
+                    children to help them understand their role in household tasks.
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
+                <p className="text-sm text-muted-foreground italic">
+                  <strong>Research Foundation:</strong> By addressing household mental load within this framework 
+                  of constructive dialogue, families can work towards a more equitable and satisfying distribution 
+                  of responsibilities, enhancing overall relationship quality and individual well-being 
+                  (Steve Marks and Lynne Borden; Mary Omoboye et al., 2024).
+                </p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Single Parent Specific Section */}
+        {/* Single Parent Acknowledgment */}
         {isSingleParent && (
           <div className="mb-8">
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-info/5">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-warning/10">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="h-6 w-6 text-info" />
-                  Single Parent Realities
+                  <User className="h-6 w-6 text-warning" />
+                  Your Mental Load is Valid
                 </CardTitle>
                 <CardDescription>
-                  Understanding and managing the unique challenges of solo parenting
+                  Recognition and self-care strategies for single parents
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 rounded-lg bg-info/5 border border-info/20">
-                  <h5 className="font-medium text-info mb-2">Your Mental Load is Valid</h5>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    As a single parent, you're managing 100% of the household mental load. This isn't about "efficiency" 
-                    or "getting help" - it's about recognizing the full scope of what you're handling and finding 
-                    sustainable ways to manage it.
-                  </p>
-                  <p className="text-xs text-muted-foreground italic">
-                    Remember: You're not doing this wrong if you feel overwhelmed. You're doing an enormous job.
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  As a single parent, you're managing the mental load that would typically be shared between partners. 
+                  These communication strategies can be adapted for discussions with support network members, 
+                  older children, or co-parents when applicable.
+                </p>
                 
-                <div className="p-4 rounded-lg bg-warning/5 border border-warning/20">
-                  <h5 className="font-medium text-warning mb-2">Burnout Prevention</h5>
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <h5 className="font-medium text-primary mb-2">Communicating Your Needs</h5>
                   <p className="text-sm text-muted-foreground">
-                    Schedule regular breaks, even if they're small. Ask for help when you need it. 
-                    Consider respite care options in your community. Your wellbeing directly impacts 
-                    your ability to care for your family.
+                    Use these same "I"-statement principles when asking for help from family, friends, or 
+                    your support network. Share your assessment results to help others understand the scope 
+                    of what you're managing.
                   </p>
                 </div>
               </CardContent>
