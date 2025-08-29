@@ -50,11 +50,11 @@ export const getTasksByCategory = () => {
   return tasksByCategory;
 };
 
-// Helper functions
+// Helper functions - All tasks now use Likert
 export const isPhysicalTask = (task: AllTask): task is PhysicalTask => {
-  return (task as PhysicalTask).measurementType === 'time';
+  return (task as PhysicalTask).measurementType === 'likert' && 'category' in task && Object.values(PHYSICAL_TASK_CATEGORIES).includes(task.category as any);
 };
 
 export const isCognitiveTask = (task: AllTask): task is CognitiveTask => {
-  return (task as CognitiveTask).measurementType === 'likert';
+  return (task as CognitiveTask).measurementType === 'likert' && 'category' in task && Object.values(COGNITIVE_CATEGORIES).includes(task.category as any);
 };

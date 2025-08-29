@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
-import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup, TASK_CATEGORIES } from '@/data/allTasks';
+import { allTaskLookup } from '@/data/allTasks';
 import { calculatePersonLoad } from '@/lib/calculationUtils';
-import { formatTimeDisplay } from '@/lib/timeUtils';
-import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
 import {
   BarChart,
   Bar,
@@ -26,107 +24,40 @@ const Dashboard: React.FC = () => {
   // Use the existing task lookups from allTasks
   const taskLookup = allTaskLookup;
 
+  // Calculate load data using the simplified system
+  const loadData = useMemo(() => {
+    return calculatePersonLoad(state.taskResponses, allTaskLookup);
+  }, [state.taskResponses]);
+
   // Chart data calculations
   const chartData = useMemo(() => {
-    let myVisibleTime = 0;
-    let myMentalLoad = 0;
-    let partnerVisibleTime = 0;
-    let partnerMentalLoad = 0;
-
-    // Category breakdown
-    const categoryBreakdown: Record<string, { visible: number; mental: number }> = {};
-    Object.values(TASK_CATEGORIES).forEach(category => {
-      categoryBreakdown[category] = { visible: 0, mental: 0 };
-    });
-
-    // Filter out not applicable tasks
-    const applicableResponses = state.taskResponses.filter(response => !response.notApplicable);
-
-    applicableResponses.forEach(response => {
-      const task = taskLookup[response.taskId];
-      if (!task) return;
-
-      // Handle different task types
-      const physicalTask = physicalTaskLookup[response.taskId];
-      const cognitiveTask = cognitiveTaskLookup[response.taskId];
-      
-      let minutes = 0;
-      let mentalWeight = 1;
-      
-      if (physicalTask) {
-        minutes = getEffectiveTaskTime(response, physicalTask.baseline_minutes_week);
-        mentalWeight = 1;
-      } else if (cognitiveTask && response.likertRating) {
-        minutes = response.likertRating.burden * 10; // Convert burden to time equivalent
-        mentalWeight = 2;
-      }
-
-      if (response.assignment === 'me') {
-        const visibleContrib = minutes;
-        const mentalContrib = minutes * mentalWeight;
-        
-        myVisibleTime += visibleContrib;
-        myMentalLoad += mentalContrib;
-        const category = physicalTask?.category || cognitiveTask?.category || 'Other';
-        categoryBreakdown[category].visible += visibleContrib;
-        categoryBreakdown[category].mental += mentalContrib;
-      } else if (response.assignment === 'partner') {
-        const visibleContrib = minutes;
-        const mentalContrib = minutes * mentalWeight;
-        
-        partnerVisibleTime += visibleContrib;
-        partnerMentalLoad += mentalContrib;
-      } else if (response.assignment === 'shared') {
-        const myShare = (response.mySharePercentage || 50) / 100;
-        const partnerShare = 1 - myShare;
-        
-        const myVisibleContrib = minutes * myShare;
-        const myMentalContrib = minutes * mentalWeight * myShare;
-        const partnerVisibleContrib = minutes * partnerShare;
-        const partnerMentalContrib = minutes * mentalWeight * partnerShare;
-        
-        myVisibleTime += myVisibleContrib;
-        myMentalLoad += myMentalContrib;
-        partnerVisibleTime += partnerVisibleContrib;
-        partnerMentalLoad += partnerMentalContrib;
-        const category = physicalTask?.category || cognitiveTask?.category || 'Other';
-        categoryBreakdown[category].visible += myVisibleContrib;
-        categoryBreakdown[category].mental += myMentalContrib;
-      }
-    });
-
     // Create bar chart data for categories
-    const barData = Object.values(TASK_CATEGORIES).map(category => ({
+    const barData = Object.entries(loadData.categoryScores).map(([category, score]) => ({
       category: category === 'Decision-making' ? 'Decisions' : 
                 category === 'Emotional Labour' ? 'Emotional' :
                 category,
-      'Visible Time (min)': Math.round(categoryBreakdown[category].visible),
-      'Mental Load': Math.round(categoryBreakdown[category].mental)
+      'Mental Load': Math.round(score * 100) // Convert to display scale
     }));
 
     // Create comparison data for both partners
     const comparisonData = [
       {
         partner: 'You',
-        'Visible Load': Math.round(myVisibleTime),
-        'Mental Load': Math.round(myMentalLoad)
+        'Mental Load': loadData.myMentalLoad
       },
       {
-        partner: 'Partner',
-        'Visible Load': Math.round(partnerVisibleTime),
-        'Mental Load': Math.round(partnerMentalLoad)
+        partner: 'Partner', 
+        'Mental Load': loadData.partnerMentalLoad
       }
     ];
 
     return {
       barData,
       comparisonData,
-      myVisibleTime: Math.round(myVisibleTime),
-      myMentalLoad: Math.round(myMentalLoad),
-      partnerVisibleTime: Math.round(partnerVisibleTime),
-      partnerMentalLoad: Math.round(partnerMentalLoad)
+      myMentalLoad: loadData.myMentalLoad,
+      partnerMentalLoad: loadData.partnerMentalLoad
     };
-  }, [state.taskResponses, taskLookup]);
+  }, [loadData]);
 
   const steps = [
     { title: 'Household Setup', description: 'Define your household composition' },
@@ -175,7 +106,7 @@ const Dashboard: React.FC = () => {
               </Button>
             </CardTitle>
             <CardDescription>
-              Comparison of visible work time vs mental load between partners (minutes per week)
+              Comparison of mental load between partners (load units)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -187,17 +118,16 @@ const Dashboard: React.FC = () => {
                     dataKey="partner" 
                     tick={{ fontSize: 12 }}
                   />
-                  <YAxis 
+                   <YAxis 
                     tick={{ fontSize: 11 }}
-                    label={{ value: 'Time (min/week)', angle: -90, position: 'insideLeft' }}
+                    label={{ value: 'Load Units', angle: -90, position: 'insideLeft' }}
                   />
                   <Tooltip 
                     formatter={(value, name) => [
-                      `${value} min/week`,
+                      `${value} load units`,
                       name
                     ]}
                   />
-                  <Bar dataKey="Visible Load" fill="hsl(var(--secondary))" radius={[2, 2, 0, 0]} />
                   <Bar dataKey="Mental Load" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -213,7 +143,7 @@ const Dashboard: React.FC = () => {
               Your Mental Load by Category
             </CardTitle>
             <CardDescription>
-              Your cognitive burden in minutes per week across different types of household work
+              Your mental load across different types of household work
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -230,12 +160,12 @@ const Dashboard: React.FC = () => {
                   />
                   <YAxis 
                     tick={{ fontSize: 11 }}
-                    label={{ value: 'Mental Load (min/week)', angle: -90, position: 'insideLeft' }}
+                    label={{ value: 'Mental Load', angle: -90, position: 'insideLeft' }}
                   />
                   <Tooltip 
                     formatter={(value, name) => [
-                      `${value} min/week`,
-                      name === 'Mental Load' ? 'Mental Load' : 'Visible Time'
+                      `${value} load units`,
+                      name
                     ]}
                   />
                   <Bar dataKey="Mental Load" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
@@ -259,9 +189,9 @@ const Dashboard: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <h4 className="font-semibold text-primary mb-2">Total Mental Load</h4>
+                <h4 className="font-semibold text-primary mb-2">Your Mental Load</h4>
                 <p className="text-sm text-muted-foreground">
-                  You're carrying {formatTimeDisplay(chartData.myMentalLoad)} of mental load per week.
+                  You're carrying {chartData.myMentalLoad} load units ({loadData.myMentalPercentage}% of total).
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
@@ -269,8 +199,8 @@ const Dashboard: React.FC = () => {
                 <p className="text-sm text-muted-foreground">
                   {(() => {
                     const highest = chartData.barData.reduce((max, cat) => 
-                      cat['Mental Load'] > max['Mental Load'] ? cat : max, chartData.barData[0]);
-                    return `${highest?.category} requires the most cognitive effort with ${formatTimeDisplay(highest?.['Mental Load'] || 0)} per week.`;
+                      cat['Mental Load'] > max['Mental Load'] ? cat : max, chartData.barData[0] || {category: 'None', 'Mental Load': 0});
+                    return `${highest?.category} requires the most effort with ${highest?.['Mental Load']} load units.`;
                   })()}
                 </p>
               </div>

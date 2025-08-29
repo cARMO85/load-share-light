@@ -47,23 +47,16 @@ const TaskQuestionnaire: React.FC = () => {
 
   // Organize tasks by category and filter by conditions
   const tasksByCategory = useMemo(() => {
+    // Filter tasks based on household setup - simplified for all tasks
     const filtered = allTasks.filter(task => {
-      const { householdType, adults, children, isEmployed } = state.householdSetup;
+      const { children } = state.householdSetup;
       
-      return task.condition_trigger.some(condition => {
-        switch (condition) {
-          case 'all':
-            return true;
-          case 'has_children':
-            return children > 0;
-          case 'two_adults':
-            return adults >= 2;
-          case 'is_employed':
-            return isEmployed;
-          default:
-            return false;
-        }
-      });
+      // Show childcare tasks only if there are children
+      if (task.category === "Childcare" && children === 0) {
+        return false;
+      }
+      
+      return true;
     });
 
     const grouped = filtered.reduce((acc, task) => {
@@ -101,17 +94,10 @@ const TaskQuestionnaire: React.FC = () => {
       type: 'physical' as const
     },
     { 
-      id: ALL_CATEGORIES.CHILDCARE_BASIC, 
-      label: "Basic Childcare", 
+      id: ALL_CATEGORIES.CHILDCARE, 
+      label: "Childcare", 
       icon: Heart,
-      description: "Physical care and basic needs of children",
-      type: 'physical' as const
-    },
-    { 
-      id: ALL_CATEGORIES.CHILDCARE_EDUCATIONAL, 
-      label: "Educational Childcare", 
-      icon: Lightbulb,
-      description: "Learning activities and educational support",
+      description: "Care and activities for children",
       type: 'physical' as const
     },
     { 
@@ -189,16 +175,11 @@ const TaskQuestionnaire: React.FC = () => {
       ...currentResponse,
       taskId,
       assignment: currentResponse?.assignment || 'me',
-      measurementType: isPhysical ? 'time' : 'likert',
+      measurementType: 'likert',
       ...updates
     };
 
-    // Handle time-based tasks
-    if (isPhysical && updates.timeAdjustment) {
-      newResponse.timeAdjustment = updates.timeAdjustment;
-      newResponse.estimatedMinutes = calculateAdjustedTime(task.baseline_minutes_week, updates.timeAdjustment);
-      newResponse.frequency = task.default_frequency;
-    }
+    // All tasks now use Likert - no time adjustments needed
 
     setResponses(prev => ({ ...prev, [taskId]: newResponse }));
     setTaskResponse(newResponse);
@@ -411,7 +392,7 @@ const TaskQuestionnaire: React.FC = () => {
                     <div className="flex-1">
                       <CardTitle className="text-lg text-foreground flex items-center gap-2 mb-1">
                         {isPhysical ? <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" /> : <Brain className="h-4 w-4 text-purple-500 flex-shrink-0" />}
-                        <span className="leading-tight">{task.task_name}</span>
+                        <span className="leading-tight">{'title' in task ? task.title : task.name}</span>
                         {isNotApplicable && <span className="text-muted-foreground text-sm">(Skipped)</span>}
                       </CardTitle>
                       {task.description && (
@@ -419,24 +400,10 @@ const TaskQuestionnaire: React.FC = () => {
                           {task.description}
                         </p>
                       )}
-                      {isPhysical && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">Research baseline: {formatTimeDisplay(task.baseline_minutes_week)}/week</span>
-                          {response?.timeAdjustment && (
-                            <span className="font-medium text-foreground bg-primary/10 px-2 py-0.5 rounded">
-                              Current: {getTimeAdjustmentShortLabel(response.timeAdjustment)} 
-                              ({formatTimeDisplay(calculateAdjustedTime(task.baseline_minutes_week, response.timeAdjustment))}/week)
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {isCognitive && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <Brain className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">Cognitive/emotional task - rated by burden and fairness</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 text-xs">
+                        <Brain className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Rated by burden and fairness</span>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -507,37 +474,8 @@ const TaskQuestionnaire: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Time Adjustment for Physical Tasks */}
-                      {isPhysical && response?.assignment && (
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            How long does this take you compared to research baseline?
-                          </Label>
-                          
-                          <div className="grid grid-cols-5 gap-1">
-                            {(['much_less', 'less', 'about_right', 'more', 'much_more'] as TimeAdjustment[]).map((adjustment) => (
-                              <Button
-                                key={adjustment}
-                                variant={response?.timeAdjustment === adjustment ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => updateResponse(task.id, { timeAdjustment: adjustment })}
-                                className="text-xs px-1 py-1 h-auto flex flex-col gap-0.5"
-                              >
-                                {adjustment === 'much_less' && <TrendingDown className="h-3 w-3" />}
-                                {adjustment === 'less' && <Minus className="h-3 w-3" />}
-                                {adjustment === 'about_right' && <span className="h-3 w-3 rounded-full bg-current" />}
-                                {adjustment === 'more' && <TrendingUp className="h-3 w-3" />}
-                                {adjustment === 'much_more' && <TrendingUp className="h-3 w-3" />}
-                                <span>{getTimeAdjustmentShortLabel(adjustment)}</span>
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Likert Rating for Cognitive Tasks */}
-                      {isCognitive && response?.assignment && (
+                      {/* Likert Ratings - All tasks now use this */}
+                      {response?.assignment && (
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">How burdensome is this task? (1 = Very Easy, 5 = Very Difficult)</Label>
@@ -594,7 +532,7 @@ const TaskQuestionnaire: React.FC = () => {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => handleQuickInsight('breakthrough', task.id, task.task_name)}
+                               onClick={() => handleQuickInsight('breakthrough', task.id, 'title' in task ? task.title : task.name)}
                                className="text-xs h-7 flex items-center gap-1 hover:bg-primary/10"
                              >
                                <Lightbulb className="h-3 w-3" />
@@ -603,7 +541,7 @@ const TaskQuestionnaire: React.FC = () => {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => handleQuickInsight('disagreement', task.id, task.task_name)}
+                               onClick={() => handleQuickInsight('disagreement', task.id, 'title' in task ? task.title : task.name)}
                                className="text-xs h-7 flex items-center gap-1 hover:bg-destructive/10"
                              >
                                <AlertTriangle className="h-3 w-3" />
@@ -612,7 +550,7 @@ const TaskQuestionnaire: React.FC = () => {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => handleQuickInsight('surprise', task.id, task.task_name)}
+                               onClick={() => handleQuickInsight('surprise', task.id, 'title' in task ? task.title : task.name)}
                                className="text-xs h-7 flex items-center gap-1 hover:bg-secondary/10"
                              >
                                <Heart className="h-3 w-3" />

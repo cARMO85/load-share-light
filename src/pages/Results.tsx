@@ -124,7 +124,7 @@ const Results: React.FC = () => {
 
   // Calculate results using new hybrid system
   const results = useMemo(() => {
-    const myCalculations = calculatePersonLoad(state.taskResponses, physicalTaskLookup, cognitiveTaskLookup);
+    const myCalculations = calculatePersonLoad(state.taskResponses, allTaskLookup);
     const hasTwoAdults = state.householdSetup.adults >= 2;
     
     // For together mode, calculate partner's perspective if available
