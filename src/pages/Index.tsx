@@ -59,8 +59,8 @@ const Index = () => {
               <CardTitle className="text-lg">Answer Questions</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-sm">
-                Rate each task on two scales: how much mental burden it creates (1-5) and how fairly it's shared (1-5)
+             <CardDescription className="text-sm">
+                Rate each task on two scales: how burdensome it feels (1-5) and how acknowledged the work is (1-5)
               </CardDescription>
             </CardContent>
           </Card>
@@ -119,37 +119,39 @@ const Index = () => {
             
             <div className="grid md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-primary">Mental Burden Scale (1-5)</h4>
+                <h4 className="text-lg font-semibold text-primary">Burden Scale (1-5)</h4>
+                <p className="text-sm text-muted-foreground mb-3">How demanding is this task mentally, emotionally, or physically?</p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="font-medium">1 - Very Low:</span>
-                    <span className="text-muted-foreground">Requires minimal thinking</span>
+                    <span className="font-medium">1 - Very Easy:</span>
+                    <span className="text-muted-foreground">Simple, low stress</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">3 - Moderate:</span>
-                    <span className="text-muted-foreground">Some planning needed</span>
+                    <span className="text-muted-foreground">Some effort required</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium">5 - Very High:</span>
-                    <span className="text-muted-foreground">Constant mental effort</span>
+                    <span className="font-medium">5 - Very Difficult:</span>
+                    <span className="text-muted-foreground">High stress, demanding</span>
                   </div>
                 </div>
               </div>
               
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-secondary">Fairness Scale (1-5)</h4>
+                <h4 className="text-lg font-semibold text-secondary">Acknowledgment Scale (1-5)</h4>
+                <p className="text-sm text-muted-foreground mb-3">How recognized, appreciated, or valued is this work?</p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="font-medium">1 - Very Unfair:</span>
-                    <span className="text-muted-foreground">One person does it all</span>
+                    <span className="font-medium">1 - Not Acknowledged:</span>
+                    <span className="text-muted-foreground">Invisible, unnoticed</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium">3 - Somewhat Fair:</span>
-                    <span className="text-muted-foreground">Mostly shared</span>
+                    <span className="font-medium">3 - Somewhat:</span>
+                    <span className="text-muted-foreground">Occasionally recognized</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium">5 - Very Fair:</span>
-                    <span className="text-muted-foreground">Equally distributed</span>
+                    <span className="font-medium">5 - Fully Acknowledged:</span>
+                    <span className="text-muted-foreground">Highly valued, appreciated</span>
                   </div>
                 </div>
               </div>

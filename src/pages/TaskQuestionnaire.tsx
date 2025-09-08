@@ -472,6 +472,7 @@ const TaskQuestionnaire: React.FC = () => {
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">How burdensome is this task? (1 = Very Easy, 5 = Very Difficult)</Label>
+                            <p className="text-xs text-muted-foreground">Consider mental, emotional, and physical demands</p>
                             <Slider
                               value={[response?.likertRating?.burden || 3]}
                               onValueChange={([value]) => updateLikertRating(task.id, 'burden', value)}
@@ -489,6 +490,7 @@ const TaskQuestionnaire: React.FC = () => {
                           
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">How fairly acknowledged is this work? (1 = Not Acknowledged, 5 = Fully Acknowledged)</Label>
+                            <p className="text-xs text-muted-foreground">How recognized, appreciated, or valued is this work by others?</p>
                             <Slider
                               value={[response?.likertRating?.fairness || 3]}
                               onValueChange={([value]) => updateLikertRating(task.id, 'fairness', value)}
