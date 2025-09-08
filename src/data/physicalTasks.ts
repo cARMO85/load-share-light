@@ -8,101 +8,56 @@ export interface PhysicalTask {
 }
 
 export const PHYSICAL_TASK_CATEGORIES = {
-  COOKING: "Cooking",
-  CLEANING: "Cleaning", 
-  LAUNDRY: "Laundry",
+  COOKING: "Cooking & Meals",
+  CLEANING: "Cleaning & Maintenance", 
+  LAUNDRY: "Laundry & Clothing",
   CHILDCARE: "Childcare",
-  SHOPPING: "Shopping",
-  TRAVEL: "Travel"
+  SHOPPING: "Shopping & Errands"
 } as const;
 
 export const physicalTasks: PhysicalTask[] = [
-  // COOKING
+  // COOKING & MEALS
   {
-    id: "cooking_meals",
-    title: "Cooking meals",
-    description: "Planning, preparing and cooking daily meals",
-    category: PHYSICAL_TASK_CATEGORIES.COOKING,
-    measurementType: 'likert'
-  },
-  {
-    id: "meal_planning",
-    title: "Meal planning",
-    description: "Planning weekly menus and deciding what to cook",
+    id: "meal_management",
+    title: "Meal planning and cooking",
+    description: "Planning menus, cooking meals, and kitchen management",
     category: PHYSICAL_TASK_CATEGORIES.COOKING,
     measurementType: 'likert'
   },
 
-  // CLEANING
+  // CLEANING & MAINTENANCE
   {
-    id: "general_cleaning",
-    title: "General cleaning",
-    description: "Regular house cleaning, tidying up, dusting",
-    category: PHYSICAL_TASK_CATEGORIES.CLEANING,
-    measurementType: 'likert'
-  },
-  {
-    id: "deep_cleaning",
-    title: "Deep cleaning",
-    description: "Thorough cleaning tasks like bathrooms, windows",
+    id: "house_cleaning",
+    title: "House cleaning and maintenance",
+    description: "Regular cleaning, tidying, and household upkeep",
     category: PHYSICAL_TASK_CATEGORIES.CLEANING,
     measurementType: 'likert'
   },
 
   // LAUNDRY
   {
-    id: "laundry_washing",
-    title: "Washing clothes",
-    description: "Washing, drying, and putting away laundry",
-    category: PHYSICAL_TASK_CATEGORIES.LAUNDRY,
-    measurementType: 'likert'
-  },
-  {
-    id: "ironing",
-    title: "Ironing and garment care",
-    description: "Ironing clothes and special garment care",
+    id: "laundry_management",
+    title: "Laundry and clothing care",
+    description: "Washing, drying, folding, and organizing clothes",
     category: PHYSICAL_TASK_CATEGORIES.LAUNDRY,
     measurementType: 'likert'
   },
 
   // CHILDCARE
   {
-    id: "childcare_basic",
-    title: "Basic childcare",
-    description: "Feeding, bathing, getting children ready",
-    category: PHYSICAL_TASK_CATEGORIES.CHILDCARE,
-    measurementType: 'likert'
-  },
-  {
-    id: "childcare_educational",
-    title: "Educational activities",
-    description: "Homework help, reading, educational play",
+    id: "childcare_overall",
+    title: "Childcare and supervision",
+    description: "Daily childcare, supervision, and child-related activities",
     category: PHYSICAL_TASK_CATEGORIES.CHILDCARE,
     measurementType: 'likert'
   },
 
-  // SHOPPING
+  // SHOPPING & ERRANDS
   {
-    id: "grocery_shopping",
-    title: "Grocery shopping",
-    description: "Weekly food shopping and meal supplies",
+    id: "shopping_errands",
+    title: "Shopping and errands",
+    description: "Grocery shopping, household shopping, and running errands",
     category: PHYSICAL_TASK_CATEGORIES.SHOPPING,
-    measurementType: 'likert'
-  },
-  {
-    id: "household_shopping",
-    title: "Household shopping",
-    description: "Shopping for household items, clothing, etc.",
-    category: PHYSICAL_TASK_CATEGORIES.SHOPPING,
-    measurementType: 'likert'
-  },
-
-  // TRAVEL
-  {
-    id: "family_travel",
-    title: "Family-related travel",
-    description: "Travel for shopping, appointments, family activities",
-    category: PHYSICAL_TASK_CATEGORIES.TRAVEL,
     measurementType: 'likert'
   }
 ];

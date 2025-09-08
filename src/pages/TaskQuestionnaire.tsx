@@ -107,13 +107,6 @@ const TaskQuestionnaire: React.FC = () => {
       description: "Purchasing household items and groceries",
       type: 'physical' as const
     },
-    { 
-      id: ALL_CATEGORIES.TRAVEL, 
-      label: "Family Travel", 
-      icon: UserCheck,
-      description: "Transportation for family activities",
-      type: 'physical' as const
-    },
     // Cognitive task categories
     { 
       id: ALL_CATEGORIES.ANTICIPATION, 
