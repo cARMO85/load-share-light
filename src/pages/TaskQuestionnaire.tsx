@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { Clock, Brain, Users, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus, MessageCircle, AlertTriangle } from 'lucide-react';
 import { InfoButton } from '@/components/InfoButton';
+import { createDemoResponses, isDevelopment } from '@/lib/devUtils';
 
 interface InsightEntry {
   id: string;
@@ -44,6 +45,34 @@ const TaskQuestionnaire: React.FC = () => {
   const [showInsightCapture, setShowInsightCapture] = useState(false);
   const [insights, setInsights] = useState<InsightEntry[]>([]);
   const [currentDiscussionTask, setCurrentDiscussionTask] = useState<{id: string; name: string} | null>(null);
+
+  // Dev function to auto-populate responses
+  const handleAutoPopulate = () => {
+    if (!isDevelopment) return;
+    
+    const { myResponses, partnerResponses, insights: demoInsights } = createDemoResponses();
+    
+    // Set responses in local state
+    const newResponses: Record<string, TaskResponse> = {};
+    myResponses.forEach(response => {
+      newResponses[response.taskId] = response;
+      setTaskResponse(response);
+    });
+    setResponses(newResponses);
+    
+    // Set partner responses if in together mode
+    if (isTogetherMode) {
+      partnerResponses.forEach(response => {
+        setPartnerTaskResponse(response);
+      });
+    }
+    
+    // Add insights
+    demoInsights.forEach(insight => {
+      addInsight(insight);
+    });
+    setInsights(demoInsights);
+  };
 
   // Organize tasks by category and filter by conditions
   const tasksByCategory = useMemo(() => {
@@ -338,6 +367,18 @@ const TaskQuestionnaire: React.FC = () => {
           <h1 className="text-2xl font-bold text-foreground mb-2">
             Who Does What?
           </h1>
+          {isDevelopment && (
+            <div className="mb-4">
+              <Button 
+                onClick={handleAutoPopulate} 
+                variant="outline" 
+                size="sm"
+                className="text-xs bg-yellow-100 border-yellow-300 hover:bg-yellow-200 text-yellow-800"
+              >
+                🔧 Dev: Auto-populate Demo Data
+              </Button>
+            </div>
+          )}
           <p className="text-muted-foreground mb-4">
             {isTogetherMode ? "Discuss and assign each task" : "Assign household tasks"}
           </p>
