@@ -59,8 +59,8 @@ const Results: React.FC = () => {
       let timeInMinutes = 0;
       let mentalLoadWeight = 1;
       
-      if (physicalTask) {
-        timeInMinutes = getEffectiveTaskTime(response, physicalTask.baseline_minutes_week);
+      if (physicalTask && response.likertRating) {
+        timeInMinutes = response.likertRating.burden * 10; // Convert burden to time equivalent
         mentalLoadWeight = 1; // Physical tasks have fixed weight
       } else if (cognitiveTask && response.likertRating) {
         timeInMinutes = response.likertRating.burden * 10; // Convert burden to time equivalent

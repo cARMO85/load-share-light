@@ -392,7 +392,7 @@ const TaskQuestionnaire: React.FC = () => {
                     <div className="flex-1">
                       <CardTitle className="text-lg text-foreground flex items-center gap-2 mb-1">
                         {isPhysical ? <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" /> : <Brain className="h-4 w-4 text-purple-500 flex-shrink-0" />}
-                        <span className="leading-tight">{'title' in task ? task.title : task.name}</span>
+                        <span className="leading-tight">{'title' in task ? task.title : task.task_name}</span>
                         {isNotApplicable && <span className="text-muted-foreground text-sm">(Skipped)</span>}
                       </CardTitle>
                       {task.description && (
@@ -532,7 +532,7 @@ const TaskQuestionnaire: React.FC = () => {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => handleQuickInsight('breakthrough', task.id, 'title' in task ? task.title : task.name)}
+                               onClick={() => handleQuickInsight('breakthrough', task.id, 'title' in task ? task.title : task.task_name)}
                                className="text-xs h-7 flex items-center gap-1 hover:bg-primary/10"
                              >
                                <Lightbulb className="h-3 w-3" />
@@ -541,7 +541,7 @@ const TaskQuestionnaire: React.FC = () => {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => handleQuickInsight('disagreement', task.id, 'title' in task ? task.title : task.name)}
+                               onClick={() => handleQuickInsight('disagreement', task.id, 'title' in task ? task.title : task.task_name)}
                                className="text-xs h-7 flex items-center gap-1 hover:bg-destructive/10"
                              >
                                <AlertTriangle className="h-3 w-3" />
@@ -550,7 +550,7 @@ const TaskQuestionnaire: React.FC = () => {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => handleQuickInsight('surprise', task.id, 'title' in task ? task.title : task.name)}
+                               onClick={() => handleQuickInsight('surprise', task.id, 'title' in task ? task.title : task.task_name)}
                                className="text-xs h-7 flex items-center gap-1 hover:bg-secondary/10"
                              >
                                <Heart className="h-3 w-3" />
