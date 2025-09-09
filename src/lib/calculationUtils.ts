@@ -38,24 +38,14 @@ export const calculateInvisibleTaskLoad = (
   wB: number = 0.5, // burden weight
   wF: number = 0.5  // fairness weight
 ): number => {
-  // Apply different mental load coefficients based on responsibility level
-  let mentalLoadCoefficient: number;
+  // Smooth intensity function: 10% passive awareness → 100% active responsibility
+  const intensity = 0.1 + 0.9 * R;
   
-  if (R === 0) {
-    // No responsibility = minimal passive mental load (10% of full intensity)
-    mentalLoadCoefficient = 0.1;
-  } else if (R <= 0.2) {
-    // Very low responsibility = low passive mental load (20% of full intensity)
-    mentalLoadCoefficient = 0.2;
-  } else if (R >= 0.8) {
-    // High responsibility = full active mental load (100% of full intensity)
-    mentalLoadCoefficient = 1.0;
-  } else {
-    // Shared responsibility = proportional mental load
-    mentalLoadCoefficient = 0.3 + (R * 0.7); // Scales from 30% to 100%
-  }
+  // Subjective strain from burden and fairness ratings
+  const subjectiveStrain = wB * b + wF * f;
   
-  return 100 * R * (wB * b + wF * f) * mentalLoadCoefficient;
+  // ITL = intensity × subjective strain × 100 (for 0-100 scale)
+  return 100 * intensity * subjectiveStrain;
 };
 
 // Convert all scores to 0-100 scale for visualization
