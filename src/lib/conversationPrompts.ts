@@ -79,38 +79,39 @@ export const generateConversationPrompts = (
     }
   });
 
-  // 3. Perception gaps (for together mode)
-  if (isTogetherMode && results.perceptionGaps) {
-    const { perceptionGaps } = results;
+  // 3. Workload imbalances (for together mode)
+  if (isTogetherMode && results.partnerMentalPercentage) {
+    const mentalLoadGap = Math.abs(results.myMentalPercentage - results.partnerMentalPercentage);
+    const visibleLoadGap = Math.abs(results.myVisiblePercentage - (results.partnerVisiblePercentage || 0));
     
-    if (Math.abs(perceptionGaps.myMentalLoadGap) > 50) {
+    if (mentalLoadGap > 20) {
       prompts.push({
-        id: 'perception-gap-mental',
-        category: 'perception',
+        id: 'mental-load-imbalance',
+        category: 'workload',
         priority: 'high',
-        title: 'Different Views on Mental Load',
-        question: `You have different perceptions of who carries the mental load. What might explain this difference?`,
-        context: `There's a ${Math.abs(perceptionGaps.myMentalLoadGap)} point difference in how you each see mental load distribution.`,
+        title: 'Mental Load Imbalance',
+        question: `There's a significant mental load imbalance. How does this feel for both of you?`,
+        context: `One person is carrying ${Math.max(results.myMentalPercentage, results.partnerMentalPercentage)}% of the mental load while the other carries ${Math.min(results.myMentalPercentage, results.partnerMentalPercentage)}%.`,
         followUp: [
-          'Are there "invisible" tasks that one person doesn\'t see?',
-          'Do you define mental load differently?',
-          'Which specific tasks are you seeing differently?'
+          'Which mental tasks feel most overwhelming?',
+          'How could we redistribute some of the mental load?',
+          'What systems could help reduce the total mental burden?'
         ]
       });
     }
 
-    if (Math.abs(perceptionGaps.myVisibleLoadGap) > 60) {
+    if (visibleLoadGap > 25) {
       prompts.push({
-        id: 'perception-gap-time',
-        category: 'perception',
+        id: 'visible-work-imbalance',
+        category: 'workload',
         priority: 'medium',
-        title: 'Different Views on Time Spent',
-        question: `You see different amounts of time being spent on household tasks. Why might this be?`,
-        context: `There's a ${Math.abs(perceptionGaps.myVisibleLoadGap)} percentage point difference in your perceptions.`,
+        title: 'Visible Work Imbalance',
+        question: `There's a significant imbalance in visible work. How could this be redistributed?`,
+        context: `One person is doing ${Math.max(results.myVisiblePercentage, results.partnerVisiblePercentage || 0)}% of the visible household work.`,
         followUp: [
-          'Are some tasks happening when the other person isn\'t around?',
-          'Do you count different activities as "household work"?',
-          'How could you get a more accurate picture together?'
+          'Which visible tasks could be shared or redistributed?',
+          'Are there tasks one person prefers doing?',
+          'How could we make the distribution feel more fair?'
         ]
       });
     }

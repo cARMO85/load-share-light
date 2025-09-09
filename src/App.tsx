@@ -7,7 +7,7 @@ import { AssessmentProvider } from "@/context/AssessmentContext";
 import Index from "./pages/Index";
 import HouseholdSetup from "./pages/HouseholdSetup";
 import TaskQuestionnaire from "./pages/TaskQuestionnaire";
-import PerceptionGap from "./pages/PerceptionGap";
+
 
 import Results from "./pages/Results";
 import Dashboard from "./pages/Dashboard";
@@ -29,7 +29,7 @@ const App = () => (
             <Route path="/learn-more" element={<LearnMore />} />
             <Route path="/setup" element={<HouseholdSetup />} />
             <Route path="/questionnaire" element={<TaskQuestionnaire />} />
-            <Route path="/perception-gap" element={<PerceptionGap />} />
+            
             <Route path="/results" element={<Results />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/advice" element={<Advice />} />

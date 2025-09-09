@@ -54,23 +54,24 @@ export const generateConversationPrompts = (
     });
   }
 
-  // Important: Perception gaps in together mode
-  if (isTogetherMode && results.perceptionGaps) {
-    const hasSignificantGaps = Math.abs(results.perceptionGaps.myVisibleLoadGap) > 20 || 
-                              Math.abs(results.perceptionGaps.myMentalLoadGap) > 20;
+  // Important: Workload imbalances in together mode
+  if (isTogetherMode && results.partnerMentalPercentage) {
+    const mentalLoadGap = Math.abs(results.myMentalPercentage - results.partnerMentalPercentage);
+    const visibleLoadGap = Math.abs(results.myVisiblePercentage - (results.partnerVisiblePercentage || 0));
+    const hasSignificantGaps = visibleLoadGap > 20 || mentalLoadGap > 20;
     
     if (hasSignificantGaps) {
       prompts.push({
-        id: 'perception_differences',
+        id: 'workload_imbalance',
         category: 'imbalance',
         priority: 'important',
-        title: 'Different Perspectives on Work',
-        question: 'You see your contributions differently. What might explain these different perspectives?',
-        context: 'When partners have different views of who does what, it often reveals invisible work or different values about tasks.',
+        title: 'Significant Workload Imbalance',
+        question: 'There\'s a significant imbalance in how work is distributed. How does this feel for both of you?',
+        context: 'When workload is significantly unbalanced, it often reveals opportunities for better distribution and support.',
         discussionStarters: [
-          'What work do you think the other person might not fully see?',
-          'Are there tasks that feel more burdensome to one person than the other?',
-          'What would help us both see the full picture of household work?'
+          'How does the current distribution feel for each of you?',
+          'What would need to change for this to feel more balanced?',
+          'Which tasks could be redistributed or shared differently?'
         ],
         sharedVocabulary: [
           'Invisible Work: Tasks that are done but not easily noticed by others',
@@ -78,8 +79,8 @@ export const generateConversationPrompts = (
           'Perception Gap: When partners see workload distribution differently'
         ],
         actionPrompts: [
-          'What\'s one invisible task that needs more recognition?',
-          'How could we make invisible work more visible to both of us?'
+          'What\'s one high-burden task that could be redistributed?',
+          'How could we better share the mental load of planning and organizing?'
         ]
       });
     }
@@ -142,11 +143,11 @@ ${results.partnerVisiblePercentage ? `- Partner's visible work: ${results.partne
 - Your mental load: ${results.myMentalPercentage}%
 ${results.partnerMentalPercentage ? `- Partner's mental load: ${results.partnerMentalPercentage}%` : ''}
 
-${results.perceptionGaps ? `
-### Perception Differences
-These differences in how you see the work division can be conversation starters:
-- Visible work perception gap: ${Math.abs(results.perceptionGaps.myVisibleLoadGap)}% difference
-- Mental load perception gap: ${Math.abs(results.perceptionGaps.myMentalLoadGap)}% difference
+${results.partnerMentalPercentage ? `
+### Workload Balance Analysis
+These imbalances can be conversation starters:
+- Mental load difference: ${Math.abs(results.myMentalPercentage - results.partnerMentalPercentage)}% gap
+- Visible work difference: ${Math.abs(results.myVisiblePercentage - (results.partnerVisiblePercentage || 0))}% gap
 ` : ''}
 
 ## Discussion Insights

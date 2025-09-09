@@ -60,18 +60,9 @@ const Results: React.FC = () => {
     
     // For together mode, calculate partner's perspective if available
     let partnerCalculations = null;
-    let perceptionGaps = null;
     
     if (state.partnerTaskResponses?.length) {
       partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses);
-      
-      // Calculate perception gaps
-      perceptionGaps = {
-        myVisibleLoadGap: myCalculations.myVisiblePercentage - partnerCalculations.partnerVisiblePercentage,
-        myMentalLoadGap: myCalculations.myMentalPercentage - partnerCalculations.partnerMentalPercentage,
-        partnerVisibleLoadGap: partnerCalculations.myVisiblePercentage - myCalculations.partnerVisiblePercentage,
-        partnerMentalLoadGap: partnerCalculations.myMentalPercentage - myCalculations.partnerMentalPercentage,
-      };
     }
 
     return {
@@ -79,14 +70,13 @@ const Results: React.FC = () => {
       partnerPerspectiveMyVisibleTime: partnerCalculations?.myVisibleTime,
       partnerPerspectiveMyMentalLoad: partnerCalculations?.myMentalLoad,
       partnerPerspectivePartnerVisibleTime: partnerCalculations?.partnerVisibleTime,
-      partnerPerspectivePartnerMentalLoad: partnerCalculations?.partnerMentalLoad,
-      perceptionGaps
+      partnerPerspectivePartnerMentalLoad: partnerCalculations?.partnerMentalLoad
     };
   }, [state.taskResponses, state.partnerTaskResponses]);
 
   const isSingleAdult = state.householdSetup.adults === 1;
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
-  const hasPartnerData = results.perceptionGaps && state.partnerTaskResponses?.length;
+  const hasPartnerData = state.partnerTaskResponses?.length;
 
   // Generate conversation prompts based on results
   const conversationPrompts = useMemo(() => {
@@ -97,9 +87,8 @@ const Results: React.FC = () => {
   const steps = [
     { id: 1, name: 'Household Setup', status: 'complete' as const },
     { id: 2, name: 'Task Assessment', status: 'complete' as const },
-    ...(isTogetherMode ? [{ id: 3, name: 'Perception Gap', status: 'complete' as const }] : []),
-    { id: isTogetherMode ? 4 : 3, name: 'Conversation', status: 'current' as const },
-    { id: isTogetherMode ? 5 : 4, name: 'Dashboard', status: 'upcoming' as const }
+    { id: 3, name: 'Conversation', status: 'current' as const },
+    { id: 4, name: 'Dashboard', status: 'upcoming' as const }
   ];
 
   const handleNext = () => {
@@ -273,44 +262,6 @@ const Results: React.FC = () => {
             </Card>
           </div>
 
-          {/* Perception Gaps for Together Mode */}
-          {isTogetherMode && hasPartnerData && results.perceptionGaps && (
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-orange/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-orange-600" />
-                  Different Perspectives
-                </CardTitle>
-                <CardDescription>
-                  How you each see the workload distribution
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="p-3 bg-muted/50 rounded">
-                      <h4 className="font-medium mb-2">Visible Work Gap</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {Math.abs(results.perceptionGaps.myVisibleLoadGap)}% difference in how you see your contributions
-                      </p>
-                    </div>
-                    <div className="p-3 bg-muted/50 rounded">
-                      <h4 className="font-medium mb-2">Mental Load Gap</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {Math.abs(results.perceptionGaps.myMentalLoadGap)}% difference in mental load perceptions
-                      </p>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-primary/5 rounded border border-primary/20">
-                    <p className="text-sm text-primary">
-                      <strong>Discussion Opportunity:</strong> These perception differences reveal important insights 
-                      about invisible work and different values around household tasks.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
         </TabsContent>
 

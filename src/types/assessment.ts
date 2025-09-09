@@ -33,20 +33,10 @@ export interface TaskResponse {
   likertRating?: LikertRating;
 }
 
-export interface PerceptionGapResponse {
-  workPercentageSelf: number; // 0-100: what % of total household work do you think you do?
-  workPercentagePartner: number; // 0-100: what % of total household work do you think your partner does?
-  mentalLoadPercentageSelf: number; // 0-100: how much of the mental planning/organisation do you think you do?
-  emotionalSupportPercentageSelf: number; // 0-100: how much of the emotional support work do you think you do?
-}
-
-
 export interface AssessmentData {
   householdSetup: HouseholdSetup;
   taskResponses: TaskResponse[];
   partnerTaskResponses?: TaskResponse[]; // For together mode
-  perceptionGapResponses?: PerceptionGapResponse; // Only for together mode
-  partnerPerceptionGapResponses?: PerceptionGapResponse; // Only for together mode
   currentStep: number;
   currentResponder?: 'me' | 'partner'; // Track who is currently answering
 }
@@ -67,10 +57,4 @@ export interface CalculatedResults {
   partnerPerspectiveMyMentalLoad?: number;
   partnerPerspectivePartnerVisibleLoad?: number;
   partnerPerspectivePartnerMentalLoad?: number;
-  perceptionGaps?: {
-    myVisibleLoadGap: number;
-    myMentalLoadGap: number;
-    partnerVisibleLoadGap: number;
-    partnerMentalLoadGap: number;
-  };
 }

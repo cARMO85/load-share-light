@@ -180,7 +180,6 @@ const TaskQuestionnaire: React.FC = () => {
   const steps = [
     { title: "Setup", description: "Household info" },
     { title: "Tasks", description: "Assign responsibilities" },
-    { title: "Perspectives", description: "Share your views" },
     { title: "Results", description: "View calculations" },
     { title: "Visualize", description: "Charts & insights" }
   ];
@@ -227,13 +226,8 @@ const TaskQuestionnaire: React.FC = () => {
       return;
     }
     
-    if (isTogetherMode) {
-      setCurrentStep(3);
-      navigate('/perception-gap');
-    } else {
-      setCurrentStep(4);
-      navigate('/results');
-    }
+    setCurrentStep(3);
+    navigate('/results');
   };
 
   const handlePrevious = () => {
@@ -278,13 +272,8 @@ const TaskQuestionnaire: React.FC = () => {
   const handleInsightContinue = () => {
     insights.forEach(insight => addInsight(insight));
     
-    if (isTogetherMode) {
-      setCurrentStep(3);
-      navigate('/perception-gap');
-    } else {
-      setCurrentStep(4);
-      navigate('/results');
-    }
+    setCurrentStep(3);
+    navigate('/results');
   };
 
   useEffect(() => {
@@ -330,7 +319,7 @@ const TaskQuestionnaire: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          <ProgressSteps currentStep={2} totalSteps={5} steps={steps} />
+        <ProgressSteps currentStep={2} totalSteps={4} steps={steps} />
           
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-4">
@@ -360,7 +349,7 @@ const TaskQuestionnaire: React.FC = () => {
   return (
     <div className={`min-h-screen bg-gradient-to-br ${theme.gradientClass || 'from-background via-background to-primary/5'} py-8 px-4`}>
       <div className="max-w-4xl mx-auto">
-        <ProgressSteps currentStep={2} totalSteps={5} steps={steps} />
+        <ProgressSteps currentStep={2} totalSteps={4} steps={steps} />
         
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-2">
