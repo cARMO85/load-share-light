@@ -8,13 +8,19 @@ export const calculateResponsibilityShare = (
   assignment: 'me' | 'partner' | 'shared',
   sharePercentage?: number
 ): number => {
+  // Always use sharePercentage when provided, allowing flexible responsibility sharing
+  if (sharePercentage !== undefined) {
+    return sharePercentage / 100;
+  }
+  
+  // Fallback to assignment type when no percentage specified
   switch (assignment) {
     case 'me':
       return 1.0;
     case 'partner':
       return 0.0;
     case 'shared':
-      return (sharePercentage ?? 50) / 100;
+      return 0.5;
     default:
       return 0.5;
   }
@@ -25,9 +31,11 @@ export const normalizeBurden = (burden: number): number => {
   return (burden - 1) / 4;
 };
 
-// Normalize fairness rating from 1-5 scale to 0-1 (1=fair, 5=unfair)
+// Normalize fairness rating from 1-5 scale to 0-1 (1=unacknowledged, 5=well acknowledged)
 export const normalizeFairness = (fairness: number): number => {
-  return (fairness - 1) / 4;
+  // Invert the scale: 1="Unacknowledged" should contribute high unfairness (1.0)
+  // 5="Well acknowledged" should contribute low unfairness (0.0)
+  return (5 - fairness) / 4;
 };
 
 // Calculate invisible task load (ITL) with proper active/passive mental load distinction
@@ -81,9 +89,22 @@ export const calculatePersonLoad = (
     const normalizedBurden = normalizeBurden(burden);
     const normalizedFairness = normalizeFairness(fairness);
     
+    // Debug logging to verify calculations
+    console.log(`Task ${response.taskId}:`, {
+      assignment: response.assignment,
+      sharePercentage: response.mySharePercentage,
+      myResponsibilityShare,
+      burden,
+      fairness,
+      normalizedBurden,
+      normalizedFairness
+    });
+    
     // Calculate invisible task loads for each person
     const myITL = calculateInvisibleTaskLoad(myResponsibilityShare, normalizedBurden, normalizedFairness);
     const partnerITL = calculateInvisibleTaskLoad(partnerResponsibilityShare, normalizedBurden, normalizedFairness);
+    
+    console.log(`  Mental loads: myITL=${myITL.toFixed(2)}, partnerITL=${partnerITL.toFixed(2)}`);
     
     myInvisibleLoadRaw += myITL;
     partnerInvisibleLoadRaw += partnerITL;
