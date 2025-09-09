@@ -141,7 +141,10 @@ export const createDemoResponses = (): {
 
 export const addSampleInsights = (addInsight: (insight: any) => void) => {
   sampleInsights.forEach(insight => {
-    addInsight(insight);
+    addInsight({
+      ...insight,
+      id: `${insight.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Generate unique ID
+    });
   });
 };
 

@@ -38,101 +38,32 @@ const Results: React.FC = () => {
   const [activeTab, setActiveTab] = useState('conversation');
   const [discussionNotes, setDiscussionNotes] = useState<Record<string, string>>({});
 
-  // Helper function to calculate loads using exact formula: Mental Load Score = (Time × Weight × Share%)
-  const calculateLoadFromResponses = (responses: typeof state.taskResponses, taskLookup: typeof allTaskLookup, hasTwoAdults: boolean) => {
-    let myVisibleTime = 0;
-    let myMentalLoad = 0;
-    let partnerVisibleTime = 0;
-    let partnerMentalLoad = 0;
-
-    // Filter out not applicable tasks
-    const applicableResponses = responses.filter(response => !response.notApplicable);
-
-    applicableResponses.forEach(response => {
-      const task = taskLookup[response.taskId];
-      if (!task) return;
-
-      // Handle different task types
-      const physicalTask = physicalTaskLookup[response.taskId];
-      const cognitiveTask = cognitiveTaskLookup[response.taskId];
-      
-      let timeInMinutes = 0;
-      let mentalLoadWeight = 1;
-      
-      if (physicalTask && response.likertRating) {
-        timeInMinutes = response.likertRating.burden * 10; // Convert burden to time equivalent
-        mentalLoadWeight = 1; // Physical tasks have fixed weight
-      } else if (cognitiveTask && response.likertRating) {
-        timeInMinutes = response.likertRating.burden * 10; // Convert burden to time equivalent
-        mentalLoadWeight = 2; // Cognitive tasks have higher mental weight
-      }
-
-      if (response.assignment === 'me') {
-        // Me: 100% share
-        const sharePercent = (response.mySharePercentage || 100) / 100;
-        myVisibleTime += timeInMinutes * sharePercent;
-        myMentalLoad += timeInMinutes * mentalLoadWeight * sharePercent;
-        
-        // Partner gets remainder
-        const partnerSharePercent = 1 - sharePercent;
-        if (hasTwoAdults && partnerSharePercent > 0) {
-          partnerVisibleTime += timeInMinutes * partnerSharePercent;
-          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
-        }
-      } else if (response.assignment === 'partner') {
-        // Partner: 100% share  
-        const sharePercent = (response.mySharePercentage || 0) / 100;
-        myVisibleTime += timeInMinutes * sharePercent;
-        myMentalLoad += timeInMinutes * mentalLoadWeight * sharePercent;
-        
-        // Partner gets remainder
-        const partnerSharePercent = (100 - (response.mySharePercentage || 0)) / 100;
-        if (hasTwoAdults) {
-          partnerVisibleTime += timeInMinutes * partnerSharePercent;
-          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerSharePercent;
-        }
-      } else if (response.assignment === 'shared') {
-        const myShare = (response.mySharePercentage || 50) / 100;
-        const partnerShare = hasTwoAdults ? (1 - myShare) : 0;
-
-        myVisibleTime += timeInMinutes * myShare;
-        myMentalLoad += timeInMinutes * mentalLoadWeight * myShare;
-        
-        if (hasTwoAdults) {
-          partnerVisibleTime += timeInMinutes * partnerShare;
-          partnerMentalLoad += timeInMinutes * mentalLoadWeight * partnerShare;
-        }
-      }
-    });
-
-    const totalVisibleTime = myVisibleTime + partnerVisibleTime;
-    const totalMentalLoad = myMentalLoad + partnerMentalLoad;
-    
+  const calculateLoadFromResponses = (responses: TaskResponse[]) => {
+    const result = calculatePersonLoad(responses, allTaskLookup);
     return {
-      myVisibleTime: Math.round(myVisibleTime),
-      myMentalLoad: Math.round(myMentalLoad * 10) / 10,
-      partnerVisibleTime: Math.round(partnerVisibleTime),
-      partnerMentalLoad: Math.round(partnerMentalLoad * 10) / 10,
-      totalVisibleTime: Math.round(totalVisibleTime),
-      totalMentalLoad: Math.round(totalMentalLoad * 10) / 10,
-      myVisiblePercentage: totalVisibleTime > 0 ? Math.round((myVisibleTime / totalVisibleTime) * 100) : 0,
-      myMentalPercentage: totalMentalLoad > 0 ? Math.round((myMentalLoad / totalMentalLoad) * 100) : 0,
-      partnerVisiblePercentage: totalVisibleTime > 0 ? Math.round((partnerVisibleTime / totalVisibleTime) * 100) : 0,
-      partnerMentalPercentage: totalMentalLoad > 0 ? Math.round((partnerMentalLoad / totalMentalLoad) * 100) : 0,
+      myVisibleTime: result.myVisibleTime,
+      myMentalLoad: result.myMentalLoad,
+      partnerVisibleTime: result.partnerVisibleTime,
+      partnerMentalLoad: result.partnerMentalLoad,
+      totalVisibleTime: result.totalVisibleTime,
+      totalMentalLoad: result.totalMentalLoad,
+      myVisiblePercentage: result.myVisiblePercentage,
+      myMentalPercentage: result.myMentalPercentage,
+      partnerVisiblePercentage: result.partnerVisiblePercentage,
+      partnerMentalPercentage: result.partnerMentalPercentage
     };
   };
 
-  // Calculate results using new hybrid system
+  // Calculate results using proper mental load formula
   const results = useMemo(() => {
     const myCalculations = calculatePersonLoad(state.taskResponses, allTaskLookup);
-    const hasTwoAdults = state.householdSetup.adults >= 2;
     
     // For together mode, calculate partner's perspective if available
     let partnerCalculations = null;
     let perceptionGaps = null;
     
     if (state.partnerTaskResponses?.length) {
-      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses, allTaskLookup, hasTwoAdults);
+      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses);
       
       // Calculate perception gaps
       perceptionGaps = {
@@ -151,7 +82,7 @@ const Results: React.FC = () => {
       partnerPerspectivePartnerMentalLoad: partnerCalculations?.partnerMentalLoad,
       perceptionGaps
     };
-  }, [state.taskResponses, state.partnerTaskResponses, state.householdSetup.adults]);
+  }, [state.taskResponses, state.partnerTaskResponses]);
 
   const isSingleAdult = state.householdSetup.adults === 1;
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
@@ -182,7 +113,7 @@ const Results: React.FC = () => {
   const handleInsightCapture = (insight: string) => {
     if (addInsight) {
       addInsight({
-        id: Date.now().toString(),
+        id: `insight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: 'breakthrough',
         description: insight,
         timestamp: new Date()
@@ -222,7 +153,7 @@ const Results: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="conversation">
             <MessageCircle className="h-4 w-4 mr-1" />
             Discussion
@@ -230,6 +161,10 @@ const Results: React.FC = () => {
           <TabsTrigger value="insights">
             <BarChart3 className="h-4 w-4 mr-1" />
             Your Data
+          </TabsTrigger>
+          <TabsTrigger value="visible-vs-mental">
+            <Clock className="h-4 w-4 mr-1" />
+            Visible vs Mental
           </TabsTrigger>
           <TabsTrigger value="vocabulary">
             <BookOpen className="h-4 w-4 mr-1" />
@@ -469,6 +404,70 @@ const Results: React.FC = () => {
                   sustainable for your specific relationship and circumstances.
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="visible-vs-mental" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Invisible Mental Load vs Visible Time</CardTitle>
+              <CardDescription>
+                Understanding the difference between time spent doing tasks (visible) and the cognitive burden of managing them (mental load)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Your Mental Load</h3>
+                  <div className="text-3xl font-bold text-primary">
+                    {results.myMentalLoad || 0}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Based on burden and fairness ratings across all tasks
+                  </p>
+                  <div className="text-sm">
+                    <strong>Percentage of household mental load:</strong> {results.myMentalPercentage || 0}%
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Your Visible Time</h3>
+                  <div className="text-3xl font-bold text-secondary">
+                    {results.myVisibleTime || 0} min/week
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Estimated time actually performing tasks
+                  </p>
+                  <div className="text-sm">
+                    <strong>Percentage of household visible work:</strong> {results.myVisiblePercentage || 0}%
+                  </div>
+                </div>
+              </div>
+              
+              {isTogetherMode && results.partnerMentalLoad !== undefined && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Partner's Mental Load</h3>
+                    <div className="text-3xl font-bold text-primary">
+                      {results.partnerMentalLoad}
+                    </div>
+                    <div className="text-sm">
+                      <strong>Percentage:</strong> {results.partnerMentalPercentage}%
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Partner's Visible Time</h3>
+                    <div className="text-3xl font-bold text-secondary">
+                      {results.partnerVisibleTime} min/week
+                    </div>
+                    <div className="text-sm">
+                      <strong>Percentage:</strong> {results.partnerVisiblePercentage}%
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -26,36 +26,54 @@ const Dashboard: React.FC = () => {
 
   // Calculate load data using the simplified system
   const loadData = useMemo(() => {
+    if (!state.taskResponses || state.taskResponses.length === 0) {
+      return {
+        categoryScores: {},
+        myMentalLoad: 0,
+        partnerMentalLoad: 0,
+        myVisibleTime: 0,
+        partnerVisibleTime: 0,
+        myMentalPercentage: 0,
+        partnerMentalPercentage: 0,
+        myVisiblePercentage: 0,
+        partnerVisiblePercentage: 0,
+        totalMentalLoad: 0,
+        totalVisibleTime: 0
+      };
+    }
+    
     return calculatePersonLoad(state.taskResponses, allTaskLookup);
   }, [state.taskResponses]);
 
   // Chart data calculations
   const chartData = useMemo(() => {
+    if (!loadData) return { barData: [], comparisonData: [] };
+    
     // Create bar chart data for categories
-    const barData = Object.entries(loadData.categoryScores).map(([category, score]) => ({
+    const barData = Object.entries(loadData.categoryScores || {}).map(([category, score]) => ({
       category: category === 'Decision-making' ? 'Decisions' : 
                 category === 'Emotional Labour' ? 'Emotional' :
                 category,
-      'Mental Load': Math.round(score * 100) // Convert to display scale
+      'Mental Load': Math.round(Number(score)) // Use the proper score with type conversion
     }));
 
     // Create comparison data for both partners
     const comparisonData = [
       {
         partner: 'You',
-        'Mental Load': loadData.myMentalLoad
+        'Mental Load': loadData.myMentalLoad || 0
       },
       {
         partner: 'Partner', 
-        'Mental Load': loadData.partnerMentalLoad
+        'Mental Load': loadData.partnerMentalLoad || 0
       }
     ];
 
     return {
       barData,
       comparisonData,
-      myMentalLoad: loadData.myMentalLoad,
-      partnerMentalLoad: loadData.partnerMentalLoad
+      myMentalLoad: loadData.myMentalLoad || 0,
+      partnerMentalLoad: loadData.partnerMentalLoad || 0
     };
   }, [loadData]);
 
@@ -191,15 +209,19 @@ const Dashboard: React.FC = () => {
               <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                 <h4 className="font-semibold text-primary mb-2">Your Mental Load</h4>
                 <p className="text-sm text-muted-foreground">
-                  You're carrying {chartData.myMentalLoad} load units ({loadData.myMentalPercentage}% of total).
+                  You're carrying {chartData.myMentalLoad} load units ({loadData?.myMentalPercentage || 0}% of total).
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
                 <h4 className="font-semibold text-secondary mb-2">Highest Category</h4>
                 <p className="text-sm text-muted-foreground">
                   {(() => {
+                    if (!chartData.barData || chartData.barData.length === 0) {
+                      return 'No data available';
+                    }
                     const highest = chartData.barData.reduce((max, cat) => 
-                      cat['Mental Load'] > max['Mental Load'] ? cat : max, chartData.barData[0] || {category: 'None', 'Mental Load': 0});
+                      (cat['Mental Load'] as number) > (max['Mental Load'] as number) ? cat : max, 
+                      chartData.barData[0]);
                     return `${highest?.category} requires the most effort with ${highest?.['Mental Load']} load units.`;
                   })()}
                 </p>

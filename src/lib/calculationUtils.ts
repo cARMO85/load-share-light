@@ -1,22 +1,44 @@
 import { TaskResponse, LikertRating } from '@/types/assessment';
 import { AllTask } from '@/data/allTasks';
 
-// Calculate Likert-based load score using simplified method
-export const calculateTaskScore = (
-  response: TaskResponse
+// Core formula functions for proper mental load calculation
+
+// Convert assignment to responsibility share (0-1)
+export const calculateResponsibilityShare = (
+  assignment: 'me' | 'partner' | 'shared',
+  sharePercentage?: number
 ): number => {
-  if (response.notApplicable || !response.likertRating) return 0;
-  
-  const { burden, fairness } = response.likertRating;
-  
-  // Convert 1-5 scale to unfairness factor
-  const unfairnessFactor = (5 - fairness) / 5;
-  
-  // Weighted Score = Burden Rating × (1 + Unfairness Factor)
-  const weightedScore = burden * (1 + unfairnessFactor);
-  
-  // Normalize to 0-1 scale (max possible score is 5 * (1 + 1) = 10)
-  return weightedScore / 10;
+  switch (assignment) {
+    case 'me':
+      return 1.0;
+    case 'partner':
+      return 0.0;
+    case 'shared':
+      return (sharePercentage || 50) / 100;
+    default:
+      return 0.5;
+  }
+};
+
+// Normalize burden rating from 1-5 scale to 0-1
+export const normalizeBurden = (burden: number): number => {
+  return (burden - 1) / 4;
+};
+
+// Normalize fairness rating from 1-5 scale to 0-1 (1=fair, 5=unfair)
+export const normalizeFairness = (fairness: number): number => {
+  return (fairness - 1) / 4;
+};
+
+// Calculate invisible task load (ITL) using proper formula
+export const calculateInvisibleTaskLoad = (
+  R: number, // responsibility share (0-1)
+  b: number, // normalized burden (0-1)
+  f: number, // normalized fairness (0-1)
+  wB: number = 0.5, // burden weight
+  wF: number = 0.5  // fairness weight
+): number => {
+  return 100 * R * (wB * b + wF * f);
 };
 
 // Convert all scores to 0-100 scale for visualization
@@ -24,78 +46,89 @@ export const normalizeToDisplayScale = (score: number): number => {
   return Math.round(score * 100);
 };
 
-// Calculate comprehensive load scores for a person
+// Calculate comprehensive load scores for a person using proper formula
 export const calculatePersonLoad = (
   responses: TaskResponse[],
   taskLookup: Record<string, AllTask>
 ) => {
-  let totalScore = 0;
-  let taskCount = 0;
-  let myLoad = 0;
-  let partnerLoad = 0;
+  let myInvisibleLoadRaw = 0;
+  let partnerInvisibleLoadRaw = 0;
+  let myVisibleTimeMinutes = 0;
+  let partnerVisibleTimeMinutes = 0;
   
   const categoryScores: Record<string, number> = {};
   
   responses.forEach(response => {
-    if (response.notApplicable) return;
+    if (response.notApplicable || !response.likertRating) return;
     
-    const taskScore = calculateTaskScore(response);
     const task = taskLookup[response.taskId];
-    
     if (!task) return;
     
-    const category = task.category;
+    const { burden, fairness } = response.likertRating;
     
-    // Calculate contributions based on assignment
-    if (response.assignment === 'me') {
-      myLoad += taskScore;
-    } else if (response.assignment === 'partner') {
-      partnerLoad += taskScore;
-    } else if (response.assignment === 'shared') {
-      const myShare = (response.mySharePercentage || 50) / 100;
-      const partnerShare = 1 - myShare;
-      
-      myLoad += taskScore * myShare;
-      partnerLoad += taskScore * partnerShare;
+    // Calculate responsibility shares
+    const myResponsibilityShare = calculateResponsibilityShare(response.assignment, response.mySharePercentage);
+    const partnerResponsibilityShare = 1 - myResponsibilityShare;
+    
+    // Normalize burden and fairness ratings
+    const normalizedBurden = normalizeBurden(burden);
+    const normalizedFairness = normalizeFairness(fairness);
+    
+    // Calculate invisible task loads for each person
+    const myITL = calculateInvisibleTaskLoad(myResponsibilityShare, normalizedBurden, normalizedFairness);
+    const partnerITL = calculateInvisibleTaskLoad(partnerResponsibilityShare, normalizedBurden, normalizedFairness);
+    
+    myInvisibleLoadRaw += myITL;
+    partnerInvisibleLoadRaw += partnerITL;
+    
+    // Calculate visible time (if available)
+    // For now, we'll use a baseline of 30 minutes per task as placeholder
+    const baselineMinutes = 30;
+    myVisibleTimeMinutes += myResponsibilityShare * baselineMinutes;
+    partnerVisibleTimeMinutes += partnerResponsibilityShare * baselineMinutes;
+    
+    // Category scores (using my responsibility share)
+    if (task.category) {
+      categoryScores[task.category] = (categoryScores[task.category] || 0) + myITL;
     }
-    
-    // Apply share percentage for category scores
-    const sharePercent = response.assignment === 'me' ? 1 :
-                        response.assignment === 'shared' ? (response.mySharePercentage || 50) / 100 :
-                        0;
-    
-    const adjustedScore = taskScore * sharePercent;
-    
-    if (category) {
-      categoryScores[category] = (categoryScores[category] || 0) + adjustedScore;
-    }
-    
-    totalScore += taskScore;
-    taskCount++;
   });
   
-  // Calculate totals and percentages
-  const totalLoad = myLoad + partnerLoad;
+  // Calculate household totals for percentage calculations
+  const totalInvisibleLoadRaw = myInvisibleLoadRaw + partnerInvisibleLoadRaw;
+  const totalVisibleTimeMinutes = myVisibleTimeMinutes + partnerVisibleTimeMinutes;
   
-  const myPercentage = totalLoad > 0 ? (myLoad / totalLoad) * 100 : 0;
-  const partnerPercentage = totalLoad > 0 ? (partnerLoad / totalLoad) * 100 : 0;
+  // Calculate percentages
+  const myMentalPercentage = totalInvisibleLoadRaw > 0 ? Math.round((myInvisibleLoadRaw / totalInvisibleLoadRaw) * 100) : 0;
+  const partnerMentalPercentage = totalInvisibleLoadRaw > 0 ? Math.round((partnerInvisibleLoadRaw / totalInvisibleLoadRaw) * 100) : 0;
   
-  const averageScore = taskCount > 0 ? totalScore / taskCount : 0;
+  const myVisiblePercentage = totalVisibleTimeMinutes > 0 ? Math.round((myVisibleTimeMinutes / totalVisibleTimeMinutes) * 100) : 0;
+  const partnerVisiblePercentage = totalVisibleTimeMinutes > 0 ? Math.round((partnerVisibleTimeMinutes / totalVisibleTimeMinutes) * 100) : 0;
+  
+  // Calculate display scores (0-100 scale)
+  const myDisplayScore = Math.round(myInvisibleLoadRaw);
+  const partnerDisplayScore = Math.round(partnerInvisibleLoadRaw);
   
   return {
-    totalScore: averageScore,
+    // Legacy compatibility
+    totalScore: myInvisibleLoadRaw / 100,
+    displayScore: myDisplayScore,
     categoryScores,
-    displayScore: normalizeToDisplayScale(averageScore),
-    myVisibleTime: Math.round(myLoad * 100), // Convert to display units
-    myMentalLoad: Math.round(myLoad * 100),
-    partnerVisibleTime: Math.round(partnerLoad * 100),
-    partnerMentalLoad: Math.round(partnerLoad * 100),
-    totalVisibleTime: Math.round(totalLoad * 100),
-    totalMentalLoad: Math.round(totalLoad * 100),
-    myVisiblePercentage: Math.round(myPercentage),
-    myMentalPercentage: Math.round(myPercentage),
-    partnerVisiblePercentage: Math.round(partnerPercentage),
-    partnerMentalPercentage: Math.round(partnerPercentage)
+    
+    // Proper separated metrics
+    myMentalLoad: Math.round(myInvisibleLoadRaw),
+    partnerMentalLoad: Math.round(partnerInvisibleLoadRaw),
+    myVisibleTime: Math.round(myVisibleTimeMinutes),
+    partnerVisibleTime: Math.round(partnerVisibleTimeMinutes),
+    
+    // Totals
+    totalMentalLoad: Math.round(totalInvisibleLoadRaw),
+    totalVisibleTime: Math.round(totalVisibleTimeMinutes),
+    
+    // Percentages
+    myMentalPercentage,
+    partnerMentalPercentage,
+    myVisiblePercentage,
+    partnerVisiblePercentage
   };
 };
 
