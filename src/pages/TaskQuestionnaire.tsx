@@ -362,9 +362,9 @@ const TaskQuestionnaire: React.FC = () => {
                       {/* Share Percentage for All Assignments */}
                       {response?.assignment && (
                         <div className="space-y-2 bg-muted/20 p-3 rounded">
-                          <Label className="text-sm font-medium">Your share: {response.mySharePercentage || 50}%</Label>
+                          <Label className="text-sm font-medium">Your share: {response.mySharePercentage ?? 50}%</Label>
                           <Slider
-                            value={[response.mySharePercentage || 50]}
+                            value={[response.mySharePercentage ?? 50]}
                             onValueChange={([value]) => updateResponse(task.id, { mySharePercentage: value })}
                             max={100}
                             min={0}
