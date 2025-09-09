@@ -233,9 +233,6 @@ const Results: React.FC = () => {
                   <div className="text-center">
                     <div className="text-3xl font-bold text-blue-600">{results.myVisiblePercentage}%</div>
                     <p className="text-sm text-muted-foreground">Your share of visible work</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {Math.round(results.myVisibleTime / 60 * 10) / 10} hours per week
-                    </p>
                   </div>
                   
                   {!isSingleAdult && (
@@ -315,93 +312,6 @@ const Results: React.FC = () => {
             </Card>
           )}
 
-          {/* Research Context with Benchmarks */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Research Context
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Here's how your results compare to recent research on household task distribution:
-                </p>
-                
-                {/* Research Comparisons */}
-                <div className="space-y-3">
-                  {(() => {
-                    const hasChildren = state.householdSetup.children > 0;
-                    const userGender = 'unknown' as 'women' | 'men' | 'unknown'; // TODO: Add gender field to household setup
-                    const researchComparison = getResearchComparison(
-                      results.myVisibleTime, 
-                      results.myVisiblePercentage, 
-                      userGender, 
-                      hasChildren
-                    );
-                    
-                    return (
-                      <>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="p-3 bg-muted/30 rounded border">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="font-medium text-sm mb-1">Your Time Load</h4>
-                                <p className="text-xs text-muted-foreground">{researchComparison.timeComparison}</p>
-                              </div>
-                              <InfoButton 
-                                variant="tooltip" 
-                                tooltipContent="Based on UN Women global data: women average 4.3 hours/day on unpaid care work, men average 1.6 hours/day" 
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="p-3 bg-muted/30 rounded border">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="font-medium text-sm mb-1">Your Share Percentage</h4>
-                                <p className="text-xs text-muted-foreground">{researchComparison.percentageComparison}</p>
-                              </div>
-                              <InfoButton 
-                                variant="tooltip" 
-                                tooltipContent={hasChildren 
-                                  ? "Research shows women perform ~80% of household tasks after having children (Régnier-Loilier, 2009)" 
-                                  : "Global research shows significant gender gaps in unpaid care work distribution"} 
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Key Research Findings */}
-                        <div className="space-y-2">
-                          <h4 className="font-medium text-sm">Related Research Findings:</h4>
-                          <div className="space-y-1">
-                            {researchComparison.relevantBenchmarks.slice(0, 2).map((benchmark) => (
-                              <div key={benchmark.id} className="flex items-start justify-between text-xs text-muted-foreground bg-muted/20 p-2 rounded">
-                                <div>
-                                  <span className="font-medium">{benchmark.description}:</span> {benchmark.finding}
-                                </div>
-                                <InfoButton 
-                                  variant="tooltip" 
-                                  tooltipContent={`Source: ${benchmark.source} (${benchmark.year})`} 
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-
-                <div className="text-xs text-muted-foreground bg-primary/5 p-3 rounded border border-primary/20">
-                  <strong>Important:</strong> These comparisons are contextual. What matters most is what feels fair and 
-                  sustainable for your specific relationship and circumstances.
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="visible-vs-mental" className="space-y-6">

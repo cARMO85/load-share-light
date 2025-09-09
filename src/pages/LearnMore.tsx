@@ -132,6 +132,79 @@ const LearnMore: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Research Statistics */}
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Research Statistics & Global Context
+              </CardTitle>
+              <CardDescription>
+                Key findings from recent research on household task distribution
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <h4 className="font-semibold text-primary mb-2">Global Gender Gap</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    UN Women data shows women globally spend an average of 4.3 hours per day on unpaid care work, 
+                    compared to men's 1.6 hours per day.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Source: UN Women Progress Report 2019-2020
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
+                  <h4 className="font-semibold text-secondary mb-2">Impact of Children</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Research shows women perform approximately 80% of household tasks after having children, 
+                    up from around 67% before children.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Source: Régnier-Loilier (2009), Stevens et al. (2001)
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
+                  <h4 className="font-semibold text-accent mb-2">Mental Load Recognition</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Studies indicate that cognitive and emotional labor (mental load) is often invisible 
+                    and disproportionately carried by women, leading to relationship stress.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Source: Ciciolla & Luthar (2019), Daminger (2019)
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-lg bg-muted/50 border">
+                  <h4 className="font-semibold mb-2">Economic Impact</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    If valued at minimum wage, unpaid care work represents trillions in global economic value, 
+                    yet remains largely unrecognized in economic measures.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Source: Holten (2025), ILO (2024)
+                  </p>
+                </div>
+              </div>
+              
+              <div className="p-4 rounded-lg bg-yellow-50 border border-yellow-200 dark:bg-yellow-900/10 dark:border-yellow-800">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">Important Context</h4>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      These statistics provide general context but every relationship is unique. 
+                      What matters most is finding a distribution that feels fair and sustainable for your specific circumstances.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* How We Calculate */}
           <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80">
             <CardHeader>

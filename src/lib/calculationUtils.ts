@@ -81,11 +81,8 @@ export const calculatePersonLoad = (
     myInvisibleLoadRaw += myITL;
     partnerInvisibleLoadRaw += partnerITL;
     
-    // Calculate visible time (if available)
-    // For now, we'll use a baseline of 30 minutes per task as placeholder
-    const baselineMinutes = 30;
-    myVisibleTimeMinutes += myResponsibilityShare * baselineMinutes;
-    partnerVisibleTimeMinutes += partnerResponsibilityShare * baselineMinutes;
+    // Note: No visible time calculation since questionnaire doesn't collect time data
+    // Visible work percentage is based purely on responsibility share distribution
     
     // Category scores (using my responsibility share)
     if (task.category) {
