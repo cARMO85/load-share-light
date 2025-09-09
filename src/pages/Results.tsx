@@ -12,8 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup } from '@/data/allTasks';
 import { calculatePersonLoad } from '@/lib/calculationUtils';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
-import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
-import { getResearchComparison, RESEARCH_BENCHMARKS } from '@/lib/researchBenchmarks';
 import { 
   AlertCircle, 
   BarChart3, 
@@ -34,7 +32,7 @@ import { addSampleInsights, isDevelopment } from '@/lib/devUtils';
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
-  const { state, addInsight } = useAssessment();
+  const { state } = useAssessment();
   const [activeTab, setActiveTab] = useState('conversation');
   const [discussionNotes, setDiscussionNotes] = useState<Record<string, string>>({});
 
@@ -87,28 +85,17 @@ const Results: React.FC = () => {
   const steps = [
     { id: 1, name: 'Household Setup', status: 'complete' as const },
     { id: 2, name: 'Task Assessment', status: 'complete' as const },
-    { id: 3, name: 'Conversation', status: 'current' as const },
-    { id: 4, name: 'Dashboard', status: 'upcoming' as const }
+    { id: 3, name: 'Results', status: 'current' as const }
   ];
 
   const handleNext = () => {
-    navigate('/dashboard');
+    navigate('/');
   };
 
   const handleNotesUpdate = (promptId: string, notes: string) => {
     setDiscussionNotes(prev => ({ ...prev, [promptId]: notes }));
   };
 
-  const handleInsightCapture = (insight: string) => {
-    if (addInsight) {
-      addInsight({
-        id: `insight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'breakthrough',
-        description: insight,
-        timestamp: new Date()
-      });
-    }
-  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -185,10 +172,10 @@ const Results: React.FC = () => {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => addSampleInsights(addInsight)}
+                    onClick={() => console.log('Demo functionality removed')}
                     className="border-yellow-300 text-yellow-800 hover:bg-yellow-100 dark:border-yellow-700 dark:text-yellow-200 dark:hover:bg-yellow-900/20"
                   >
-                    Add Sample Insights ({state.insights.length} current)
+                    Demo Button (Functionality Removed)
                   </Button>
                   <div className="text-sm text-muted-foreground flex items-center">
                     This will populate realistic sample comments from the questionnaire for testing
@@ -340,7 +327,7 @@ const Results: React.FC = () => {
           <ConversationReport
             results={results}
             assessmentData={state}
-            insights={state.insights || []}
+            insights={[]}
             discussionNotes={discussionNotes}
           />
         </TabsContent>
@@ -348,7 +335,7 @@ const Results: React.FC = () => {
 
       <div className="mt-8 flex justify-center">
         <Button onClick={handleNext} size="lg" className="px-8">
-          Continue to Dashboard
+          Start New Assessment
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </div>

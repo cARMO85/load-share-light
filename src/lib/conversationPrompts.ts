@@ -1,6 +1,5 @@
 import { mentalLoadTasks, TASK_CATEGORIES } from '@/data/tasks';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
-import { getEffectiveTaskTime } from '@/lib/timeAdjustmentUtils';
 
 interface ConversationPrompt {
   id: string;
@@ -187,7 +186,7 @@ const calculateCategoryAnalysis = (taskResponses: TaskResponse[], taskLookup: Re
       if (!task || task.category !== category || response.notApplicable) return;
 
       taskCount++;
-      const timeInMinutes = getEffectiveTaskTime(response, task.baseline_minutes_week);
+      const timeInMinutes = task.baseline_minutes_week; // Use baseline time
       const mentalLoadWeight = task.mental_load_weight;
 
       if (response.assignment === 'me') {

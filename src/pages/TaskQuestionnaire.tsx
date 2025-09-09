@@ -4,33 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { allTasks, ALL_CATEGORIES, isPhysicalTask, isCognitiveTask, allTaskLookup } from '@/data/allTasks';
-import { TaskResponse, TimeAdjustment, LikertRating } from '@/types/assessment';
-import { formatTimeDisplay, getFrequencyDisplayText } from '@/lib/timeUtils';
-import { calculateAdjustedTime, getTimeAdjustmentShortLabel } from '@/lib/timeAdjustmentUtils';
-import { CoupleInsightCapture } from '@/components/CoupleInsightCapture';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Clock, Brain, Users, X, UserCheck, Heart, Calendar, Eye, Lightbulb, BarChart3, HeartHandshake, TrendingUp, TrendingDown, Minus, MessageCircle, AlertTriangle } from 'lucide-react';
+import { TaskResponse, LikertRating } from '@/types/assessment';
+import { Clock, Brain, Users, UserCheck, Heart, Calendar, Eye, BarChart3 } from 'lucide-react';
 import { InfoButton } from '@/components/InfoButton';
 import { createDemoResponses, isDevelopment } from '@/lib/devUtils';
 
-interface InsightEntry {
-  id: string;
-  type: 'breakthrough' | 'disagreement' | 'surprise';
-  taskId?: string;
-  taskName?: string;
-  description: string;
-  timestamp: Date;
-}
-
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
-  const { state, setTaskResponse, setPartnerTaskResponse, setCurrentStep, setCurrentResponder, addInsight } = useAssessment();
+  const { state, setTaskResponse, setPartnerTaskResponse, setCurrentStep, setCurrentResponder } = useAssessment();
   
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
   
@@ -42,15 +27,12 @@ const TaskQuestionnaire: React.FC = () => {
   );
 
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
-  const [showInsightCapture, setShowInsightCapture] = useState(false);
-  const [insights, setInsights] = useState<InsightEntry[]>([]);
-  const [currentDiscussionTask, setCurrentDiscussionTask] = useState<{id: string; name: string} | null>(null);
 
   // Dev function to auto-populate responses
   const handleAutoPopulate = () => {
     if (!isDevelopment) return;
     
-    const { myResponses, partnerResponses, insights: demoInsights } = createDemoResponses();
+    const { myResponses, partnerResponses } = createDemoResponses();
     
     // Set responses in local state
     const newResponses: Record<string, TaskResponse> = {};
@@ -66,12 +48,6 @@ const TaskQuestionnaire: React.FC = () => {
         setPartnerTaskResponse(response);
       });
     }
-    
-    // Add insights
-    demoInsights.forEach(insight => {
-      addInsight(insight);
-    });
-    setInsights(demoInsights);
   };
 
   // Organize tasks by category and filter by conditions
@@ -180,8 +156,7 @@ const TaskQuestionnaire: React.FC = () => {
   const steps = [
     { title: "Setup", description: "Household info" },
     { title: "Tasks", description: "Assign responsibilities" },
-    { title: "Results", description: "View calculations" },
-    { title: "Visualize", description: "Charts & insights" }
+    { title: "Results", description: "View calculations" }
   ];
 
   const updateResponse = (taskId: string, updates: Partial<TaskResponse>) => {
@@ -189,7 +164,6 @@ const TaskQuestionnaire: React.FC = () => {
     if (!task) return;
 
     const currentResponse = responses[taskId];
-    const isPhysical = isPhysicalTask(task);
     
     const newResponse: TaskResponse = {
       ...currentResponse,
@@ -198,8 +172,6 @@ const TaskQuestionnaire: React.FC = () => {
       measurementType: 'likert',
       ...updates
     };
-
-    // All tasks now use Likert - no time adjustments needed
 
     setResponses(prev => ({ ...prev, [taskId]: newResponse }));
     setTaskResponse(newResponse);
@@ -221,11 +193,6 @@ const TaskQuestionnaire: React.FC = () => {
       return;
     }
     
-    if (isTogetherMode && !showInsightCapture) {
-      setShowInsightCapture(true);
-      return;
-    }
-    
     setCurrentStep(3);
     navigate('/results');
   };
@@ -234,46 +201,6 @@ const TaskQuestionnaire: React.FC = () => {
     if (currentCategoryIndex > 0) {
       setCurrentCategoryIndex(prev => prev - 1);
     }
-  };
-
-  const [showInsightModal, setShowInsightModal] = useState(false);
-  const [pendingInsightType, setPendingInsightType] = useState<'breakthrough' | 'disagreement' | 'surprise' | null>(null);
-  const [insightDescription, setInsightDescription] = useState('');
-  
-  const handleInsightAdded = (insight: InsightEntry) => {
-    setInsights(prev => [...prev, insight]);
-    addInsight(insight);
-    setShowInsightModal(false);
-    setPendingInsightType(null);
-    setInsightDescription('');
-  };
-
-  const handleQuickInsight = (type: 'breakthrough' | 'disagreement' | 'surprise', taskId: string, taskName: string) => {
-    setPendingInsightType(type);
-    setCurrentDiscussionTask({id: taskId, name: taskName});
-    setShowInsightModal(true);
-  };
-
-  const handleInsightSave = () => {
-    if (!insightDescription.trim() || !pendingInsightType || !currentDiscussionTask) return;
-    
-    const insight: InsightEntry = {
-      id: `${Date.now()}-${pendingInsightType}`,
-      type: pendingInsightType,
-      taskId: currentDiscussionTask.id,
-      taskName: currentDiscussionTask.name,
-      description: insightDescription.trim(),
-      timestamp: new Date()
-    };
-    
-    handleInsightAdded(insight);
-  };
-
-  const handleInsightContinue = () => {
-    insights.forEach(insight => addInsight(insight));
-    
-    setCurrentStep(3);
-    navigate('/results');
   };
 
   useEffect(() => {
@@ -314,42 +241,10 @@ const TaskQuestionnaire: React.FC = () => {
 
   const labels = getAssignmentLabels();
 
-  // Show insight capture phase if in together mode and both partners completed tasks
-  if (isTogetherMode && showInsightCapture) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-        <ProgressSteps currentStep={2} totalSteps={4} steps={steps} />
-          
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-4">
-              Compare & Discuss
-              <div className="flex items-center justify-center gap-3 text-lg font-normal mt-3">
-                <MessageCircle className="h-6 w-6 text-primary" />
-                <span className="text-primary">Capture Your Insights</span>
-              </div>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Now that you've both completed the assessment, discuss your responses together. 
-              This is where the real mental load conversation begins - capture breakthrough moments and disagreements.
-            </p>
-          </div>
-
-          <CoupleInsightCapture
-            onInsightAdded={handleInsightAdded}
-            onContinue={handleInsightContinue}
-            insights={insights}
-            currentTask={null}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={`min-h-screen bg-gradient-to-br ${theme.gradientClass || 'from-background via-background to-primary/5'} py-8 px-4`}>
       <div className="max-w-4xl mx-auto">
-        <ProgressSteps currentStep={2} totalSteps={4} steps={steps} />
+        <ProgressSteps currentStep={2} totalSteps={3} steps={steps} />
         
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -399,7 +294,6 @@ const TaskQuestionnaire: React.FC = () => {
             const response = responses[task.id];
             const showSlider = (response?.assignment === 'me' || response?.assignment === 'partner') && !response?.notApplicable;
             const isNotApplicable = response?.notApplicable;
-            const taskInsights = insights.filter(insight => insight.taskId === task.id);
             const isPhysical = isPhysicalTask(task);
             const isCognitive = isCognitiveTask(task);
             
@@ -463,247 +357,117 @@ const TaskQuestionnaire: React.FC = () => {
                             {labels.partner}
                           </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => updateResponse(task.id, { notApplicable: true })}
-                          className="w-full text-xs text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="h-3 w-3 mr-1" />
-                          Not applicable
-                        </Button>
                       </div>
 
-                      {/* Share Percentage - Only for individual assignments */}
-                      {showSlider && response?.assignment !== 'shared' && (
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">
-                            Your share: {response?.mySharePercentage || (response?.assignment === 'me' ? 100 : 0)}%
-                          </Label>
+                      {/* Share Percentage for Shared Tasks */}
+                      {response?.assignment === 'shared' && (
+                        <div className="space-y-2 bg-muted/20 p-3 rounded">
+                          <Label className="text-sm font-medium">Your share: {response.mySharePercentage || 50}%</Label>
                           <Slider
-                            value={[response?.mySharePercentage || (response?.assignment === 'me' ? 100 : 0)]}
+                            value={[response.mySharePercentage || 50]}
                             onValueChange={([value]) => updateResponse(task.id, { mySharePercentage: value })}
-                            min={0}
                             max={100}
+                            min={0}
                             step={10}
                             className="w-full"
                           />
                           <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Partner (0%)</span>
-                            <span>Equal (50%)</span>
-                            <span>Me (100%)</span>
+                            <span>Partner does more</span>
+                            <span>You do more</span>
                           </div>
                         </div>
                       )}
 
-                      {/* Likert Ratings - All tasks now use this */}
+                      {/* Likert Scale Ratings */}
                       {response?.assignment && (
-                        <div className="space-y-4">
+                        <div className="space-y-4 bg-muted/10 p-3 rounded">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">How burdensome is this task? (1 = Very Easy, 5 = Very Difficult)</Label>
-                            <p className="text-xs text-muted-foreground">Consider mental, emotional, and physical demands</p>
-                            <Slider
-                              value={[response?.likertRating?.burden || 3]}
-                              onValueChange={([value]) => updateLikertRating(task.id, 'burden', value)}
-                              min={1}
-                              max={5}
-                              step={1}
-                              className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>Very Easy (1)</span>
-                              <span>Moderate (3)</span>
-                              <span>Very Difficult (5)</span>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">How fairly acknowledged is this work? (1 = Not Acknowledged, 5 = Fully Acknowledged)</Label>
-                            <p className="text-xs text-muted-foreground">How recognized, appreciated, or valued is this work by others?</p>
-                            <Slider
-                              value={[response?.likertRating?.fairness || 3]}
-                              onValueChange={([value]) => updateLikertRating(task.id, 'fairness', value)}
-                              min={1}
-                              max={5}
-                              step={1}
-                              className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>Not Acknowledged (1)</span>
-                              <span>Somewhat (3)</span>
-                              <span>Fully Acknowledged (5)</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Per-task Insight Capture */}
-                      {response?.assignment && (
-                        <div className="border-t pt-3 mt-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <Label className="text-sm font-medium flex items-center gap-1">
-                              <MessageCircle className="h-3 w-3" />
-                              Notes
+                            <Label className="text-sm font-medium">
+                              How burdensome is this task? {response.likertRating?.burden || 3}/5
                             </Label>
-                            {taskInsights.length > 0 && (
-                              <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded">
-                                {taskInsights.length}
-                              </span>
-                            )}
-                          </div>
-                           
-                           <div className="grid grid-cols-3 gap-1 mb-2">
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => handleQuickInsight('breakthrough', task.id, 'title' in task ? task.title : task.task_name)}
-                               className="text-xs h-7 flex items-center gap-1 hover:bg-primary/10"
-                             >
-                               <Lightbulb className="h-3 w-3" />
-                               {isTogetherMode ? "Aha!" : "Insight"}
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => handleQuickInsight('disagreement', task.id, 'title' in task ? task.title : task.task_name)}
-                               className="text-xs h-7 flex items-center gap-1 hover:bg-destructive/10"
-                             >
-                               <AlertTriangle className="h-3 w-3" />
-                               {isTogetherMode ? "Disagree" : "Challenge"}
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               onClick={() => handleQuickInsight('surprise', task.id, 'title' in task ? task.title : task.task_name)}
-                               className="text-xs h-7 flex items-center gap-1 hover:bg-secondary/10"
-                             >
-                               <Heart className="h-3 w-3" />
-                               {isTogetherMode ? "Surprise" : "Surprise"}
-                             </Button>
-                           </div>
-
-                          {/* Show existing insights for this task */}
-                          {taskInsights.length > 0 && (
-                            <div className="space-y-1">
-                              {taskInsights.map((insight) => (
-                                <div key={insight.id} className="text-xs bg-muted/50 p-2 rounded flex items-start gap-2">
-                                  <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-0.5 ${
-                                    insight.type === 'breakthrough' ? 'bg-primary' :
-                                    insight.type === 'disagreement' ? 'bg-destructive' :
-                                    'bg-secondary'
-                                  }`} />
-                                  <span className="flex-1 text-foreground">{insight.description || `${insight.type} noted`}</span>
-                                </div>
-                              ))}
+                            <Slider
+                              value={[response.likertRating?.burden || 3]}
+                              onValueChange={([value]) => updateLikertRating(task.id, 'burden', value)}
+                              max={5}
+                              min={1}
+                              step={1}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Not burdensome</span>
+                              <span>Very burdensome</span>
                             </div>
-                          )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">
+                              How fairly acknowledged is this work? {response.likertRating?.fairness || 3}/5
+                            </Label>
+                            <Slider
+                              value={[response.likertRating?.fairness || 3]}
+                              onValueChange={([value]) => updateLikertRating(task.id, 'fairness', value)}
+                              max={5}
+                              min={1}
+                              step={1}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Unacknowledged</span>
+                              <span>Well acknowledged</span>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </>
                   ) : (
                     <div className="text-center py-4 text-muted-foreground">
-                      <X className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Not applicable to your household</p>
+                      This task doesn't apply to your household
                     </div>
                   )}
+
+                  {/* Not Applicable Toggle */}
+                  <div className="pt-2 border-t">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => updateResponse(task.id, { 
+                        notApplicable: !isNotApplicable,
+                        assignment: isNotApplicable ? 'me' : undefined,
+                        mySharePercentage: isNotApplicable ? 100 : undefined
+                      })}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {isNotApplicable ? 'Mark as applicable' : 'Not applicable to our household'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
           })}
         </div>
 
-        <div className="flex justify-between items-center mt-8">
+        {/* Navigation */}
+        <div className="flex justify-between items-center mt-8 pt-6 border-t">
           <Button
-            onClick={handlePrevious}
             variant="outline"
+            onClick={handlePrevious}
             disabled={currentCategoryIndex === 0}
-            className="flex items-center gap-2"
           >
             Previous Category
           </Button>
           
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              {isCategoryComplete ? (
-                <>✓ Category Complete ({completedTasks}/{applicableTasks.length} tasks)</>
-              ) : (
-                <>{completedTasks}/{applicableTasks.length} tasks completed</>
-              )}
-            </p>
+          <div className="text-sm text-muted-foreground">
+            {currentCategoryIndex + 1} of {categoryData.length} categories
           </div>
-          
+
           <Button
             onClick={handleNext}
             disabled={!isCategoryComplete}
-            className="flex items-center gap-2"
+            className="min-w-[120px]"
           >
-            {currentCategoryIndex >= categoryData.length - 1 ? (
-              isTogetherMode ? "Compare & Discuss" : "Continue"
-            ) : (
-              "Next Category"
-            )}
+            {currentCategoryIndex >= categoryData.length - 1 ? 'View Results' : 'Next Category'}
           </Button>
         </div>
-
-        {/* Insight Modal */}
-        <Dialog open={showInsightModal} onOpenChange={setShowInsightModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                {pendingInsightType === 'breakthrough' && <Lightbulb className="h-5 w-5 text-primary" />}
-                {pendingInsightType === 'disagreement' && <AlertTriangle className="h-5 w-5 text-destructive" />}
-                {pendingInsightType === 'surprise' && <Heart className="h-5 w-5 text-secondary" />}
-                {pendingInsightType === 'breakthrough' && 'Breakthrough Moment'}
-                {pendingInsightType === 'disagreement' && 'Disagreement to Resolve'}
-                {pendingInsightType === 'surprise' && 'Surprising Discovery'}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {currentDiscussionTask && (
-                <div className="bg-muted/30 p-3 rounded-md">
-                  <div className="text-xs text-muted-foreground">About task:</div>
-                  <div className="font-medium">{currentDiscussionTask.name}</div>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label className="text-sm">What did you discover?</Label>
-                <Textarea
-                  value={insightDescription}
-                  onChange={(e) => setInsightDescription(e.target.value)}
-                  placeholder={
-                    pendingInsightType === 'breakthrough' 
-                      ? "e.g., 'I never realized how much mental load this actually involves...'"
-                      : pendingInsightType === 'disagreement'
-                      ? "e.g., 'We disagree on how much time this really takes - need to track it'"
-                      : "e.g., 'Surprised that we both thought the other was handling this!'"
-                  }
-                  className="min-h-[80px]"
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleInsightSave}
-                  disabled={!insightDescription.trim()}
-                  className="flex-1"
-                >
-                  Save Insight
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowInsightModal(false);
-                    setInsightDescription('');
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

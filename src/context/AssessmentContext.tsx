@@ -1,45 +1,7 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { AssessmentData, HouseholdSetup, TaskResponse } from '@/types/assessment';
 
-interface InsightEntry {
-  id: string;
-  type: 'breakthrough' | 'disagreement' | 'surprise';
-  taskId?: string;
-  taskName?: string;
-  description: string;
-  timestamp: Date;
-  starred?: boolean;
-  followUpAction?: string;
-}
-
-interface ConversationPrompt {
-  id: string;
-  category: 'workload' | 'perception' | 'emotion' | 'planning';
-  priority: 'high' | 'medium' | 'low';
-  title: string;
-  question: string;
-  context: string;
-  followUp?: string[];
-  discussed?: boolean;
-  notes?: string;
-}
-
-interface ActionItem {
-  id: string;
-  title: string;
-  description: string;
-  owner: 'me' | 'partner' | 'both';
-  timeline: 'immediate' | 'week' | 'month' | 'ongoing';
-  category: 'redistribute' | 'system' | 'conversation' | 'experiment';
-  completed?: boolean;
-  createdAt: Date;
-}
-
-interface AssessmentState extends AssessmentData {
-  insights: InsightEntry[];
-  discussionPrompts: ConversationPrompt[];
-  actionPlan: ActionItem[];
-}
+interface AssessmentState extends AssessmentData {}
 
 type AssessmentAction = 
   | { type: 'SET_HOUSEHOLD_SETUP'; payload: HouseholdSetup }
@@ -47,12 +9,6 @@ type AssessmentAction =
   | { type: 'SET_PARTNER_TASK_RESPONSE'; payload: TaskResponse }
   | { type: 'SET_CURRENT_STEP'; payload: number }
   | { type: 'SET_CURRENT_RESPONDER'; payload: 'me' | 'partner' }
-  | { type: 'ADD_INSIGHT'; payload: InsightEntry }
-  | { type: 'UPDATE_INSIGHT'; payload: InsightEntry }
-  | { type: 'DELETE_INSIGHT'; payload: string }
-  | { type: 'SET_DISCUSSION_PROMPTS'; payload: ConversationPrompt[] }
-  | { type: 'UPDATE_DISCUSSION_PROMPT'; payload: { promptId: string; notes: string } }
-  | { type: 'SET_ACTION_PLAN'; payload: ActionItem[] }
   | { type: 'RESET_ASSESSMENT' };
 
 const initialState: AssessmentState = {
@@ -66,10 +22,7 @@ const initialState: AssessmentState = {
   taskResponses: [],
   partnerTaskResponses: [],
   currentStep: 1,
-  currentResponder: 'me',
-  insights: [],
-  discussionPrompts: [],
-  actionPlan: []
+  currentResponder: 'me'
 };
 
 const assessmentReducer = (state: AssessmentState, action: AssessmentAction): AssessmentState => {
@@ -98,33 +51,6 @@ const assessmentReducer = (state: AssessmentState, action: AssessmentAction): As
       return { ...state, currentStep: action.payload };
     case 'SET_CURRENT_RESPONDER':
       return { ...state, currentResponder: action.payload };
-    case 'ADD_INSIGHT':
-      return { ...state, insights: [...state.insights, action.payload] };
-    case 'UPDATE_INSIGHT':
-      return { 
-        ...state, 
-        insights: state.insights.map(insight => 
-          insight.id === action.payload.id ? action.payload : insight
-        ) 
-      };
-    case 'DELETE_INSIGHT':
-      return { 
-        ...state, 
-        insights: state.insights.filter(insight => insight.id !== action.payload) 
-      };
-    case 'SET_DISCUSSION_PROMPTS':
-      return { ...state, discussionPrompts: action.payload };
-    case 'UPDATE_DISCUSSION_PROMPT':
-      return {
-        ...state,
-        discussionPrompts: state.discussionPrompts.map(prompt =>
-          prompt.id === action.payload.promptId 
-            ? { ...prompt, discussed: true, notes: action.payload.notes }
-            : prompt
-        )
-      };
-    case 'SET_ACTION_PLAN':
-      return { ...state, actionPlan: action.payload };
     case 'RESET_ASSESSMENT':
       return initialState;
     default:
@@ -140,12 +66,6 @@ interface AssessmentContextType {
   setPartnerTaskResponse: (response: TaskResponse) => void;
   setCurrentStep: (step: number) => void;
   setCurrentResponder: (responder: 'me' | 'partner') => void;
-  addInsight: (insight: InsightEntry) => void;
-  updateInsight: (insight: InsightEntry) => void;
-  deleteInsight: (insightId: string) => void;
-  setDiscussionPrompts: (prompts: ConversationPrompt[]) => void;
-  updateDiscussionPrompt: (promptId: string, notes: string) => void;
-  setActionPlan: (actions: ActionItem[]) => void;
   resetAssessment: () => void;
 }
 
@@ -176,30 +96,6 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     dispatch({ type: 'SET_CURRENT_RESPONDER', payload: responder });
   };
 
-  const addInsight = (insight: InsightEntry) => {
-    dispatch({ type: 'ADD_INSIGHT', payload: insight });
-  };
-
-  const updateInsight = (updatedInsight: InsightEntry) => {
-    dispatch({ type: 'UPDATE_INSIGHT', payload: updatedInsight });
-  };
-
-  const deleteInsight = (insightId: string) => {
-    dispatch({ type: 'DELETE_INSIGHT', payload: insightId });
-  };
-
-  const setDiscussionPrompts = (prompts: ConversationPrompt[]) => {
-    dispatch({ type: 'SET_DISCUSSION_PROMPTS', payload: prompts });
-  };
-
-  const updateDiscussionPrompt = (promptId: string, notes: string) => {
-    dispatch({ type: 'UPDATE_DISCUSSION_PROMPT', payload: { promptId, notes } });
-  };
-
-  const setActionPlan = (actions: ActionItem[]) => {
-    dispatch({ type: 'SET_ACTION_PLAN', payload: actions });
-  };
-
   const resetAssessment = () => {
     dispatch({ type: 'RESET_ASSESSMENT' });
   };
@@ -213,12 +109,6 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       setPartnerTaskResponse,
       setCurrentStep,
       setCurrentResponder,
-      addInsight,
-      updateInsight,
-      deleteInsight,
-      setDiscussionPrompts,
-      updateDiscussionPrompt,
-      setActionPlan,
       resetAssessment
     }}>
       {children}
