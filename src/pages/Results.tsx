@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
-import { DialogueFacilitator } from '@/components/DialogueFacilitator';
+import { DiscussionNotes } from '@/components/DiscussionNotes';
 import { ConversationReport } from '@/components/ConversationReport';
 import { SharedVocabulary } from '@/components/SharedVocabulary';
 import { generateConversationPrompts } from '@/lib/conversationEngine';
@@ -209,13 +209,9 @@ const Results: React.FC = () => {
             </Card>
           )}
           
-          <DialogueFacilitator
-            prompts={conversationPrompts}
-            onNotesUpdate={handleNotesUpdate}
-            onInsightCapture={handleInsightCapture}
-            existingNotes={discussionNotes}
+          <DiscussionNotes 
+            notes={discussionNotes}
             isTogetherMode={isTogetherMode}
-            existingInsights={state.insights}
           />
         </TabsContent>
 
