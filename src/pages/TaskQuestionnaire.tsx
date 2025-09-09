@@ -359,8 +359,8 @@ const TaskQuestionnaire: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Share Percentage for Shared Tasks */}
-                      {response?.assignment === 'shared' && (
+                      {/* Share Percentage for All Assignments */}
+                      {response?.assignment && (
                         <div className="space-y-2 bg-muted/20 p-3 rounded">
                           <Label className="text-sm font-medium">Your share: {response.mySharePercentage || 50}%</Label>
                           <Slider
