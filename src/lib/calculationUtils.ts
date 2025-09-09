@@ -14,7 +14,7 @@ export const calculateResponsibilityShare = (
     case 'partner':
       return 0.0;
     case 'shared':
-      return (sharePercentage || 50) / 100;
+      return (sharePercentage ?? 50) / 100;
     default:
       return 0.5;
   }
@@ -30,7 +30,7 @@ export const normalizeFairness = (fairness: number): number => {
   return (fairness - 1) / 4;
 };
 
-// Calculate invisible task load (ITL) using proper formula
+// Calculate invisible task load (ITL) with proper active/passive mental load distinction
 export const calculateInvisibleTaskLoad = (
   R: number, // responsibility share (0-1)
   b: number, // normalized burden (0-1)
@@ -38,7 +38,24 @@ export const calculateInvisibleTaskLoad = (
   wB: number = 0.5, // burden weight
   wF: number = 0.5  // fairness weight
 ): number => {
-  return 100 * R * (wB * b + wF * f);
+  // Apply different mental load coefficients based on responsibility level
+  let mentalLoadCoefficient: number;
+  
+  if (R === 0) {
+    // No responsibility = minimal passive mental load (10% of full intensity)
+    mentalLoadCoefficient = 0.1;
+  } else if (R <= 0.2) {
+    // Very low responsibility = low passive mental load (20% of full intensity)
+    mentalLoadCoefficient = 0.2;
+  } else if (R >= 0.8) {
+    // High responsibility = full active mental load (100% of full intensity)
+    mentalLoadCoefficient = 1.0;
+  } else {
+    // Shared responsibility = proportional mental load
+    mentalLoadCoefficient = 0.3 + (R * 0.7); // Scales from 30% to 100%
+  }
+  
+  return 100 * R * (wB * b + wF * f) * mentalLoadCoefficient;
 };
 
 // Convert all scores to 0-100 scale for visualization
