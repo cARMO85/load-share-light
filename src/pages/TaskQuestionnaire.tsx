@@ -393,28 +393,34 @@ const TaskQuestionnaire: React.FC = () => {
                               step={1}
                               className="w-full"
                             />
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>Not burdensome</span>
-                              <span>Very burdensome</span>
-                            </div>
-                          </div>
+                           <div className="flex justify-between text-xs text-muted-foreground">
+                             <span>Not burdensome</span>
+                             <span>Very burdensome</span>
+                           </div>
+                           <p className="text-xs text-muted-foreground mt-2 italic">
+                             A task may take a long time but not be a big burden, and vice versa.
+                           </p>
+                         </div>
 
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">
-                              How fairly acknowledged is this work? {response.likertRating?.fairness || 3}/5
-                            </Label>
-                            <Slider
-                              value={[response.likertRating?.fairness || 3]}
-                              onValueChange={([value]) => updateLikertRating(task.id, 'fairness', value)}
-                              max={5}
-                              min={1}
-                              step={1}
-                              className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>Unacknowledged</span>
-                              <span>Well acknowledged</span>
-                            </div>
+                         <div className="space-y-2">
+                           <Label className="text-sm font-medium">
+                             How fairly acknowledged is this work? {response.likertRating?.fairness || 3}/5
+                           </Label>
+                           <Slider
+                             value={[response.likertRating?.fairness || 3]}
+                             onValueChange={([value]) => updateLikertRating(task.id, 'fairness', value)}
+                             max={5}
+                             min={1}
+                             step={1}
+                             className="w-full"
+                           />
+                           <div className="flex justify-between text-xs text-muted-foreground">
+                             <span>Unacknowledged</span>
+                             <span>Well acknowledged</span>
+                           </div>
+                           <p className="text-xs text-muted-foreground mt-2 italic">
+                             A task may happen often and you think it was never truly acknowledged and given the respect it deserves.
+                           </p>
                           </div>
                         </div>
                       )}
