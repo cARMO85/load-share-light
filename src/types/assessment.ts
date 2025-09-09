@@ -60,25 +60,25 @@ export interface AssessmentData {
 }
 
 export interface CalculatedResults {
-  myVisibleTime: number;
+  myVisibleLoad: number;
   myMentalLoad: number;
-  partnerVisibleTime?: number;
+  partnerVisibleLoad?: number;
   partnerMentalLoad?: number;
-  totalVisibleTime: number;
+  totalVisibleLoad: number;
   totalMentalLoad: number;
   myVisiblePercentage: number;
   myMentalPercentage: number;
   partnerVisiblePercentage?: number;
   partnerMentalPercentage?: number;
   // For together mode comparison
-  partnerPerspectiveMyVisibleTime?: number;
+  partnerPerspectiveMyVisibleLoad?: number;
   partnerPerspectiveMyMentalLoad?: number;
-  partnerPerspectivePartnerVisibleTime?: number;
+  partnerPerspectivePartnerVisibleLoad?: number;
   partnerPerspectivePartnerMentalLoad?: number;
   perceptionGaps?: {
-    myVisibleTimeGap: number;
+    myVisibleLoadGap: number;
     myMentalLoadGap: number;
-    partnerVisibleTimeGap: number;
+    partnerVisibleLoadGap: number;
     partnerMentalLoadGap: number;
   };
 }

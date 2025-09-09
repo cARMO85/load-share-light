@@ -53,8 +53,8 @@ export const calculatePersonLoad = (
 ) => {
   let myInvisibleLoadRaw = 0;
   let partnerInvisibleLoadRaw = 0;
-  let myVisibleTimeMinutes = 0;
-  let partnerVisibleTimeMinutes = 0;
+  let myVisibleLoadRaw = 0;
+  let partnerVisibleLoadRaw = 0;
   
   const categoryScores: Record<string, number> = {};
   
@@ -81,8 +81,9 @@ export const calculatePersonLoad = (
     myInvisibleLoadRaw += myITL;
     partnerInvisibleLoadRaw += partnerITL;
     
-    // Note: No visible time calculation since questionnaire doesn't collect time data
-    // Visible work percentage is based purely on responsibility share distribution
+    // Calculate visible workload based on responsibility share (without time data)
+    myVisibleLoadRaw += myResponsibilityShare;
+    partnerVisibleLoadRaw += partnerResponsibilityShare;
     
     // Category scores (using my responsibility share)
     if (task.category) {
@@ -92,14 +93,14 @@ export const calculatePersonLoad = (
   
   // Calculate household totals for percentage calculations
   const totalInvisibleLoadRaw = myInvisibleLoadRaw + partnerInvisibleLoadRaw;
-  const totalVisibleTimeMinutes = myVisibleTimeMinutes + partnerVisibleTimeMinutes;
+  const totalVisibleLoadRaw = myVisibleLoadRaw + partnerVisibleLoadRaw;
   
   // Calculate percentages
   const myMentalPercentage = totalInvisibleLoadRaw > 0 ? Math.round((myInvisibleLoadRaw / totalInvisibleLoadRaw) * 100) : 0;
   const partnerMentalPercentage = totalInvisibleLoadRaw > 0 ? Math.round((partnerInvisibleLoadRaw / totalInvisibleLoadRaw) * 100) : 0;
   
-  const myVisiblePercentage = totalVisibleTimeMinutes > 0 ? Math.round((myVisibleTimeMinutes / totalVisibleTimeMinutes) * 100) : 0;
-  const partnerVisiblePercentage = totalVisibleTimeMinutes > 0 ? Math.round((partnerVisibleTimeMinutes / totalVisibleTimeMinutes) * 100) : 0;
+  const myVisiblePercentage = totalVisibleLoadRaw > 0 ? Math.round((myVisibleLoadRaw / totalVisibleLoadRaw) * 100) : 0;
+  const partnerVisiblePercentage = totalVisibleLoadRaw > 0 ? Math.round((partnerVisibleLoadRaw / totalVisibleLoadRaw) * 100) : 0;
   
   // Calculate display scores (0-100 scale)
   const myDisplayScore = Math.round(myInvisibleLoadRaw);
@@ -114,12 +115,12 @@ export const calculatePersonLoad = (
     // Proper separated metrics
     myMentalLoad: Math.round(myInvisibleLoadRaw),
     partnerMentalLoad: Math.round(partnerInvisibleLoadRaw),
-    myVisibleTime: Math.round(myVisibleTimeMinutes),
-    partnerVisibleTime: Math.round(partnerVisibleTimeMinutes),
+    myVisibleLoad: Math.round(myVisibleLoadRaw),
+    partnerVisibleLoad: Math.round(partnerVisibleLoadRaw),
     
     // Totals
     totalMentalLoad: Math.round(totalInvisibleLoadRaw),
-    totalVisibleTime: Math.round(totalVisibleTimeMinutes),
+    totalVisibleLoad: Math.round(totalVisibleLoadRaw),
     
     // Percentages
     myMentalPercentage,

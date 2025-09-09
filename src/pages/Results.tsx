@@ -41,11 +41,11 @@ const Results: React.FC = () => {
   const calculateLoadFromResponses = (responses: TaskResponse[]) => {
     const result = calculatePersonLoad(responses, allTaskLookup);
     return {
-      myVisibleTime: result.myVisibleTime,
+      myVisibleLoad: result.myVisibleLoad,
       myMentalLoad: result.myMentalLoad,
-      partnerVisibleTime: result.partnerVisibleTime,
+      partnerVisibleLoad: result.partnerVisibleLoad,
       partnerMentalLoad: result.partnerMentalLoad,
-      totalVisibleTime: result.totalVisibleTime,
+      totalVisibleLoad: result.totalVisibleLoad,
       totalMentalLoad: result.totalMentalLoad,
       myVisiblePercentage: result.myVisiblePercentage,
       myMentalPercentage: result.myMentalPercentage,
@@ -67,9 +67,9 @@ const Results: React.FC = () => {
       
       // Calculate perception gaps
       perceptionGaps = {
-        myVisibleTimeGap: myCalculations.myVisiblePercentage - partnerCalculations.partnerVisiblePercentage,
+        myVisibleLoadGap: myCalculations.myVisiblePercentage - partnerCalculations.partnerVisiblePercentage,
         myMentalLoadGap: myCalculations.myMentalPercentage - partnerCalculations.partnerMentalPercentage,
-        partnerVisibleTimeGap: partnerCalculations.myVisiblePercentage - myCalculations.partnerVisiblePercentage,
+        partnerVisibleLoadGap: partnerCalculations.myVisiblePercentage - myCalculations.partnerVisiblePercentage,
         partnerMentalLoadGap: partnerCalculations.myMentalPercentage - myCalculations.partnerMentalPercentage,
       };
     }
@@ -291,7 +291,7 @@ const Results: React.FC = () => {
                     <div className="p-3 bg-muted/50 rounded">
                       <h4 className="font-medium mb-2">Visible Work Gap</h4>
                       <p className="text-sm text-muted-foreground">
-                        {Math.abs(results.perceptionGaps.myVisibleTimeGap)}% difference in how you see your contributions
+                        {Math.abs(results.perceptionGaps.myVisibleLoadGap)}% difference in how you see your contributions
                       </p>
                     </div>
                     <div className="p-3 bg-muted/50 rounded">
@@ -340,11 +340,11 @@ const Results: React.FC = () => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Your Visible Time</h3>
                   <div className="text-3xl font-bold text-secondary">
-                    {results.myVisibleTime || 0} min/week
+                    {results.myVisibleLoad || 0} tasks
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Estimated time actually performing tasks
-                  </p>
+                   <p className="text-sm text-muted-foreground">
+                     Your share of visible household tasks
+                   </p>
                   <div className="text-sm">
                     <strong>Percentage of household visible work:</strong> {results.myVisiblePercentage || 0}%
                   </div>
@@ -366,7 +366,7 @@ const Results: React.FC = () => {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Partner's Visible Time</h3>
                     <div className="text-3xl font-bold text-secondary">
-                      {results.partnerVisibleTime} min/week
+                      {results.partnerVisibleLoad} tasks
                     </div>
                     <div className="text-sm">
                       <strong>Percentage:</strong> {results.partnerVisiblePercentage}%

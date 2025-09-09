@@ -56,7 +56,7 @@ export const generateConversationPrompts = (
 
   // Important: Perception gaps in together mode
   if (isTogetherMode && results.perceptionGaps) {
-    const hasSignificantGaps = Math.abs(results.perceptionGaps.myVisibleTimeGap) > 20 || 
+    const hasSignificantGaps = Math.abs(results.perceptionGaps.myVisibleLoadGap) > 20 || 
                               Math.abs(results.perceptionGaps.myMentalLoadGap) > 20;
     
     if (hasSignificantGaps) {
@@ -145,7 +145,7 @@ ${results.partnerMentalPercentage ? `- Partner's mental load: ${results.partnerM
 ${results.perceptionGaps ? `
 ### Perception Differences
 These differences in how you see the work division can be conversation starters:
-- Visible work perception gap: ${Math.abs(results.perceptionGaps.myVisibleTimeGap)}% difference
+- Visible work perception gap: ${Math.abs(results.perceptionGaps.myVisibleLoadGap)}% difference
 - Mental load perception gap: ${Math.abs(results.perceptionGaps.myMentalLoadGap)}% difference
 ` : ''}
 

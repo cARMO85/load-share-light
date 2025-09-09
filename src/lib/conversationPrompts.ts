@@ -99,14 +99,14 @@ export const generateConversationPrompts = (
       });
     }
 
-    if (Math.abs(perceptionGaps.myVisibleTimeGap) > 60) {
+    if (Math.abs(perceptionGaps.myVisibleLoadGap) > 60) {
       prompts.push({
         id: 'perception-gap-time',
         category: 'perception',
         priority: 'medium',
         title: 'Different Views on Time Spent',
         question: `You see different amounts of time being spent on household tasks. Why might this be?`,
-        context: `There's a ${Math.abs(perceptionGaps.myVisibleTimeGap)} minute per week difference in your perceptions.`,
+        context: `There's a ${Math.abs(perceptionGaps.myVisibleLoadGap)} percentage point difference in your perceptions.`,
         followUp: [
           'Are some tasks happening when the other person isn\'t around?',
           'Do you count different activities as "household work"?',
