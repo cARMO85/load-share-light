@@ -8,7 +8,7 @@ import Index from "./pages/Index";
 import HouseholdSetup from "./pages/HouseholdSetup";
 import TaskQuestionnaire from "./pages/TaskQuestionnaire";
 import PerceptionGap from "./pages/PerceptionGap";
-import EmotionalImpact from "./pages/EmotionalImpact";
+
 import Results from "./pages/Results";
 import Dashboard from "./pages/Dashboard";
 import LearnMore from "./pages/LearnMore";
@@ -30,7 +30,6 @@ const App = () => (
             <Route path="/setup" element={<HouseholdSetup />} />
             <Route path="/questionnaire" element={<TaskQuestionnaire />} />
             <Route path="/perception-gap" element={<PerceptionGap />} />
-            <Route path="/emotional-impact" element={<EmotionalImpact />} />
             <Route path="/results" element={<Results />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/advice" element={<Advice />} />

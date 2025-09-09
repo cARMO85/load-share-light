@@ -35,7 +35,6 @@ const PerceptionGap: React.FC = () => {
     { title: "Setup", description: "Household info" },
     { title: "Tasks", description: "Assign responsibilities" },
     { title: "Perspectives", description: "Share your views" },
-    { title: "Impact", description: "Emotional insights" },
     { title: "Results", description: "View calculations" },
     { title: "Visualize", description: "Charts & insights" }
   ];
@@ -44,7 +43,7 @@ const PerceptionGap: React.FC = () => {
     if (isPartnerTurn) {
       setPartnerPerceptionGapResponses(responses);
       setCurrentStep(4);
-      navigate('/emotional-impact');
+      navigate('/results');
     } else if (isTogetherMode) {
       setPerceptionGapResponses(responses);
       setCurrentResponder('partner');
@@ -58,12 +57,12 @@ const PerceptionGap: React.FC = () => {
     } else {
       setPerceptionGapResponses(responses);
       setCurrentStep(4);
-      navigate('/emotional-impact');
+      navigate('/results');
     }
   };
 
   const handleSkip = () => {
-    setCurrentStep(5);
+    setCurrentStep(4);
     navigate('/results');
   };
 
@@ -94,7 +93,7 @@ const PerceptionGap: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <ProgressSteps currentStep={3} totalSteps={6} steps={steps} />
+        <ProgressSteps currentStep={3} totalSteps={5} steps={steps} />
         
         <div className="text-center mb-8">
           <div className={`inline-flex items-center gap-3 mb-4 p-3 rounded-xl bg-gradient-to-r ${theme.gradient} text-white`}>
@@ -243,10 +242,10 @@ const PerceptionGap: React.FC = () => {
                 className="w-full"
               >
                 {isPartnerTurn 
-                  ? "Continue to Emotional Impact" 
+                  ? "View Results" 
                   : isTogetherMode 
                     ? "Partner's Turn" 
-                    : "Continue to Emotional Impact"
+                    : "View Results"
                 }
               </Button>
               

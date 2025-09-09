@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AssessmentData, HouseholdSetup, TaskResponse, PerceptionGapResponse, EmotionalImpactResponse } from '@/types/assessment';
+import { AssessmentData, HouseholdSetup, TaskResponse, PerceptionGapResponse } from '@/types/assessment';
 
 interface InsightEntry {
   id: string;
@@ -47,8 +47,6 @@ type AssessmentAction =
   | { type: 'SET_PARTNER_TASK_RESPONSE'; payload: TaskResponse }
   | { type: 'SET_PERCEPTION_GAP_RESPONSES'; payload: PerceptionGapResponse }
   | { type: 'SET_PARTNER_PERCEPTION_GAP_RESPONSES'; payload: PerceptionGapResponse }
-  | { type: 'SET_EMOTIONAL_IMPACT_RESPONSES'; payload: EmotionalImpactResponse }
-  | { type: 'SET_PARTNER_EMOTIONAL_IMPACT_RESPONSES'; payload: EmotionalImpactResponse }
   | { type: 'SET_CURRENT_STEP'; payload: number }
   | { type: 'SET_CURRENT_RESPONDER'; payload: 'me' | 'partner' }
   | { type: 'ADD_INSIGHT'; payload: InsightEntry }
@@ -71,8 +69,6 @@ const initialState: AssessmentState = {
   partnerTaskResponses: [],
   perceptionGapResponses: undefined,
   partnerPerceptionGapResponses: undefined,
-  emotionalImpactResponses: undefined,
-  partnerEmotionalImpactResponses: undefined,
   currentStep: 1,
   currentResponder: 'me',
   insights: [],
@@ -106,10 +102,6 @@ const assessmentReducer = (state: AssessmentState, action: AssessmentAction): As
       return { ...state, perceptionGapResponses: action.payload };
     case 'SET_PARTNER_PERCEPTION_GAP_RESPONSES':
       return { ...state, partnerPerceptionGapResponses: action.payload };
-    case 'SET_EMOTIONAL_IMPACT_RESPONSES':
-      return { ...state, emotionalImpactResponses: action.payload };
-    case 'SET_PARTNER_EMOTIONAL_IMPACT_RESPONSES':
-      return { ...state, partnerEmotionalImpactResponses: action.payload };
     case 'SET_CURRENT_STEP':
       return { ...state, currentStep: action.payload };
     case 'SET_CURRENT_RESPONDER':
@@ -156,8 +148,6 @@ interface AssessmentContextType {
   setPartnerTaskResponse: (response: TaskResponse) => void;
   setPerceptionGapResponses: (responses: PerceptionGapResponse) => void;
   setPartnerPerceptionGapResponses: (responses: PerceptionGapResponse) => void;
-  setEmotionalImpactResponses: (responses: EmotionalImpactResponse) => void;
-  setPartnerEmotionalImpactResponses: (responses: EmotionalImpactResponse) => void;
   setCurrentStep: (step: number) => void;
   setCurrentResponder: (responder: 'me' | 'partner') => void;
   addInsight: (insight: InsightEntry) => void;
@@ -194,13 +184,6 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     dispatch({ type: 'SET_PARTNER_PERCEPTION_GAP_RESPONSES', payload: responses });
   };
 
-  const setEmotionalImpactResponses = (responses: EmotionalImpactResponse) => {
-    dispatch({ type: 'SET_EMOTIONAL_IMPACT_RESPONSES', payload: responses });
-  };
-
-  const setPartnerEmotionalImpactResponses = (responses: EmotionalImpactResponse) => {
-    dispatch({ type: 'SET_PARTNER_EMOTIONAL_IMPACT_RESPONSES', payload: responses });
-  };
 
   const setCurrentStep = (step: number) => {
     dispatch({ type: 'SET_CURRENT_STEP', payload: step });
@@ -247,8 +230,6 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       setPartnerTaskResponse,
       setPerceptionGapResponses,
       setPartnerPerceptionGapResponses,
-      setEmotionalImpactResponses,
-      setPartnerEmotionalImpactResponses,
       setCurrentStep,
       setCurrentResponder,
       addInsight,
