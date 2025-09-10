@@ -3,78 +3,62 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ProgressSteps } from '@/components/ui/progress-steps';
-import { useAssessment } from '@/context/AssessmentContext';
-import { DiscussionNotes } from '@/components/DiscussionNotes';
-import { ConversationReport } from '@/components/ConversationReport';
-import { SharedVocabulary } from '@/components/SharedVocabulary';
-import { generateConversationPrompts } from '@/lib/conversationEngine';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup } from '@/data/allTasks';
-import { calculatePersonLoad, calculateWMLI } from '@/lib/calculationUtils';
-import { CalculatedResults, TaskResponse } from '@/types/assessment';
-import HouseholdInsights from '@/components/HouseholdInsights';
-import { WMLIBreakdown } from '@/components/WMLIBreakdown';
-import { 
-  AlertCircle, 
-  BarChart3, 
-  BookOpen, 
-  Clock, 
-  Heart, 
-  Lightbulb, 
-  MessageCircle, 
-  TrendingUp, 
-  Users, 
-  UserCheck, 
-  Brain,
-  ArrowRight 
-} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { InfoButton } from '@/components/InfoButton';
-import { addSampleInsights, isDevelopment } from '@/lib/devUtils';
+import { useAssessment } from '@/context/AssessmentContext';
+import { allTaskLookup } from '@/data/allTasks';
+import { calculatePersonLoad, calculateWMLI } from '@/lib/calculationUtils';
+import { 
+  ChevronDown,
+  ChevronUp,
+  TrendingUp,
+  Users,
+  Brain,
+  Clock,
+  MessageCircle,
+  FileText,
+  AlertTriangle,
+  CheckCircle,
+  Download,
+  Plus,
+  Calendar,
+  HelpCircle
+} from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useAssessment();
-  const [activeTab, setActiveTab] = useState('insights');
-  const [discussionNotes, setDiscussionNotes] = useState<Record<string, string>>({});
+  
+  // Collapsible states
+  const [openSections, setOpenSections] = useState({
+    overview: true,
+    drivers: false,
+    comparison: false,
+    intensity: false,
+    nextSteps: false
+  });
 
-  const calculateLoadFromResponses = (responses: TaskResponse[]) => {
-    const result = calculatePersonLoad(responses, allTaskLookup);
-    return {
-      myVisibleLoad: result.myVisibleLoad,
-      myMentalLoad: result.myMentalLoad,
-      partnerVisibleLoad: result.partnerVisibleLoad,
-      partnerMentalLoad: result.partnerMentalLoad,
-      totalVisibleLoad: result.totalVisibleLoad,
-      totalMentalLoad: result.totalMentalLoad,
-      myVisiblePercentage: result.myVisiblePercentage,
-      myMentalPercentage: result.myMentalPercentage,
-      partnerVisiblePercentage: result.partnerVisiblePercentage,
-      partnerMentalPercentage: result.partnerMentalPercentage
-    };
-  };
+  // Action items state
+  const [actionItems, setActionItems] = useState<Array<{id: string, text: string, owner: string, date: string}>>([]);
+  const [summary, setSummary] = useState('');
 
   const isSingleAdult = state.householdSetup.adults === 1;
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
-  const hasPartnerData = state.partnerTaskResponses?.length;
 
-  // Calculate WMLI and evidence-based insights
+  // Calculate WMLI results
   const wmliResults = useMemo(() => {
-    // If in together mode but no separate partner responses, split the combined responses
     if (isTogetherMode && (!state.partnerTaskResponses || state.partnerTaskResponses.length === 0)) {
-      // Split combined responses into separate perspectives
       const myResponses = state.taskResponses.map(response => ({
         ...response,
-        // Adjust share percentage to be from "my" perspective
         mySharePercentage: response.mySharePercentage || 50
       }));
       
       const partnerResponses = state.taskResponses.map(response => ({
         ...response,
-        // Flip the perspective for partner - if I have 30%, partner has 70%
         mySharePercentage: 100 - (response.mySharePercentage || 50),
-        // Flip assignment perspective
         assignment: response.assignment === 'me' ? 'partner' as const : 
                    response.assignment === 'partner' ? 'me' as const : 
                    'shared' as const
@@ -90,537 +74,531 @@ const Results: React.FC = () => {
     );
   }, [state.taskResponses, state.partnerTaskResponses, isTogetherMode]);
 
-  // Calculate results using proper mental load formula (legacy compatibility)
-  const results = useMemo(() => {
-    const myCalculations = calculatePersonLoad(state.taskResponses, allTaskLookup);
-    
-    // For together mode, calculate partner's perspective if available
-    let partnerCalculations = null;
-    
-    if (state.partnerTaskResponses?.length) {
-      partnerCalculations = calculateLoadFromResponses(state.partnerTaskResponses);
+  // Calculate visible work shares
+  const visibleResults = useMemo(() => {
+    return calculatePersonLoad(state.taskResponses, allTaskLookup);
+  }, [state.taskResponses]);
+
+  // Status determination
+  const getStatusInfo = () => {
+    if (isSingleAdult) {
+      return { status: 'Single Household', color: 'bg-blue-500', description: 'Individual assessment complete' };
     }
 
-    return {
-      ...myCalculations,
-      partnerPerspectiveMyVisibleTime: partnerCalculations?.myVisibleTime,
-      partnerPerspectiveMyMentalLoad: partnerCalculations?.myMentalLoad,
-      partnerPerspectivePartnerVisibleTime: partnerCalculations?.partnerVisibleTime,
-      partnerPerspectivePartnerMentalLoad: partnerCalculations?.partnerMentalLoad
-    };
-  }, [state.taskResponses, state.partnerTaskResponses]);
+    const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
+    const hasHighBurden = wmliResults.myFlags.highSubjectiveStrain || wmliResults.partnerFlags?.highSubjectiveStrain;
+    const hasFairnessRisk = wmliResults.myFlags.fairnessRisk || wmliResults.partnerFlags?.fairnessRisk;
 
-
-  // Generate conversation prompts based on results
-  const conversationPrompts = useMemo(() => {
-    return generateConversationPrompts(results, state);
-  }, [results, state]);
-
-  // Define steps for progress indicator
-  const steps = [
-    { id: 1, name: 'Household Setup', status: 'complete' as const },
-    { id: 2, name: 'Task Assessment', status: 'complete' as const },
-    { id: 3, name: 'Results', status: 'current' as const }
-  ];
-
-  const handleNext = () => {
-    navigate('/');
+    if (mentalGap < 10 && !hasHighBurden) {
+      return { status: 'Balanced', color: 'bg-green-500', description: 'Mental load well distributed' };
+    } else if (mentalGap <= 20 || (hasHighBurden && !hasFairnessRisk)) {
+      return { status: 'Needs Conversation', color: 'bg-yellow-500', description: 'Some imbalance detected' };
+    } else {
+      return { status: 'Urgent Imbalance', color: 'bg-red-500', description: 'Significant disparity requiring attention' };
+    }
   };
 
-  const handleNotesUpdate = (promptId: string, notes: string) => {
-    setDiscussionNotes(prev => ({ ...prev, [promptId]: notes }));
+  // Top 3 hotspots calculation
+  const getHotspots = () => {
+    const taskScores = state.taskResponses
+      .filter(r => !r.notApplicable && r.likertRating)
+      .map(response => {
+        const responsibility = response.mySharePercentage ? response.mySharePercentage / 100 : 0.5;
+        const burden = response.likertRating!.burden;
+        const fairness = response.likertRating!.fairness;
+        const unfairness = (5 - fairness) / 4; // Convert to 0-1 scale
+        const normalizedBurden = (burden - 1) / 4; // Convert to 0-1 scale
+        
+        const driverScore = responsibility * ((normalizedBurden + unfairness) / 2);
+        
+        const task = allTaskLookup[response.taskId];
+        return {
+          taskId: response.taskId,
+          taskName: (task && 'title' in task) ? task.title : (task && 'task_name' in task) ? task.task_name : response.taskId,
+          driverScore,
+          responsibility,
+          burden,
+          fairness,
+          tags: [
+            ...(burden >= 4 && responsibility >= 0.6 ? ['High burden'] : []),
+            ...(fairness <= 2 && responsibility >= 0.6 ? ['Unfairness concern'] : [])
+          ]
+        };
+      })
+      .sort((a, b) => b.driverScore - a.driverScore)
+      .slice(0, 3);
+
+    return taskScores;
   };
 
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const scrollToSection = (section: string) => {
+    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const statusInfo = getStatusInfo();
+  const hotspots = getHotspots();
+
+  const ConversationPrompts = ({ taskName }: { taskName: string }) => (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <MessageCircle className="h-4 w-4 mr-1" />
+          Talk about this
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Conversation Prompts: {taskName}</DialogTitle>
+          <DialogDescription>
+            Use these prompts to discuss this task with your partner
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="p-3 bg-muted rounded-lg">
+            <p className="text-sm">"How do you feel about how we currently handle {taskName}?"</p>
+          </div>
+          <div className="p-3 bg-muted rounded-lg">
+            <p className="text-sm">"What would make {taskName} feel more balanced between us?"</p>
+          </div>
+          <div className="p-3 bg-muted rounded-lg">
+            <p className="text-sm">"Are there specific aspects of {taskName} that feel overwhelming or underappreciated?"</p>
+          </div>
+          <Button 
+            onClick={() => setSummary(prev => prev + `\n• Discussed ${taskName} - [Add your notes here]`)}
+            variant="outline"
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add to Summary
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Progress</h2>
-        <div className="flex items-center gap-4">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step.status === 'complete' ? 'bg-green-500 text-white' :
-                step.status === 'current' ? 'bg-primary text-white' :
-                'bg-muted text-muted-foreground'
-              }`}>
-                {step.id}
-              </div>
-              <span className="ml-2 text-sm">{step.name}</span>
-              {index < steps.length - 1 && <div className="w-8 h-px bg-border mx-4" />}
+    <div className="min-h-screen bg-background">
+      {/* Sticky Navigation */}
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+        <div className="container mx-auto px-4 py-3">
+          <nav className="flex items-center justify-between">
+            <div className="flex items-center space-x-6 text-sm">
+              <button onClick={() => scrollToSection('overview')} className="hover:text-primary transition-colors">
+                Overview
+              </button>
+              <button onClick={() => scrollToSection('drivers')} className="hover:text-primary transition-colors">
+                Drivers
+              </button>
+              <button onClick={() => scrollToSection('comparison')} className="hover:text-primary transition-colors">
+                Visible vs Mental
+              </button>
+              <button onClick={() => scrollToSection('intensity')} className="hover:text-primary transition-colors">
+                Intensity
+              </button>
+              <button onClick={() => scrollToSection('next-steps')} className="hover:text-primary transition-colors">
+                Next Steps
+              </button>
             </div>
-          ))}
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-1" />
+              Export Report
+            </Button>
+          </nav>
         </div>
       </div>
-      
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-4">
-          {isSingleAdult ? "Your Household Work Assessment" : "Your Household Work Assessment"}
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          {isTogetherMode 
-            ? "Explore your results together and use these insights to strengthen your partnership"
-            : isSingleAdult 
-              ? "Reflect on these insights about your household work patterns"
-              : "Share these insights with your partner and plan improvements together"
-          }
-        </p>
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="conversation">
-            <MessageCircle className="h-4 w-4 mr-1" />
-            Discussion
-          </TabsTrigger>
-          <TabsTrigger value="insights">
-            <BarChart3 className="h-4 w-4 mr-1" />
-            Your Data
-          </TabsTrigger>
-          <TabsTrigger value="wmli">
-            <Brain className="h-4 w-4 mr-1" />
-            WMLI Analysis
-          </TabsTrigger>
-          <TabsTrigger value="visible-vs-mental">
-            <Clock className="h-4 w-4 mr-1" />
-            Visible vs Mental
-          </TabsTrigger>
-          <TabsTrigger value="vocabulary">
-            <BookOpen className="h-4 w-4 mr-1" />
-            Key Terms
-          </TabsTrigger>
-          <TabsTrigger value="report">
-            <TrendingUp className="h-4 w-4 mr-1" />
-            Summary
-          </TabsTrigger>
-        </TabsList>
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+        
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold">Your Household Work Assessment</h1>
+          <p className="text-lg text-muted-foreground">
+            {isTogetherMode 
+              ? "Explore your results together and strengthen your partnership"
+              : isSingleAdult 
+                ? "Insights about your household work patterns"
+                : "Share these insights with your partner"
+            }
+          </p>
+        </div>
 
-        <TabsContent value="conversation" className="space-y-6">
-          {/* Development Panel - Only visible in dev mode */}
-          {isDevelopment && (
-            <Card className="bg-yellow-50 border-yellow-200 dark:bg-yellow-900/10 dark:border-yellow-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-                  <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                    DEV
-                  </Badge>
-                  Development Testing Tools
-                </CardTitle>
-                <CardDescription>
-                  Tools for testing the conversation facilitator with sample data
-                </CardDescription>
+        {/* 1. Overview Card */}
+        <Card id="overview" className="border-2">
+          <Collapsible open={openSections.overview} onOpenChange={() => toggleSection('overview')}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Big Numbers & Status
+                    </CardTitle>
+                    <CardDescription>Your key metrics at a glance</CardDescription>
+                  </div>
+                  {openSections.overview ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
               </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                {/* Big Numbers */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{visibleResults.myVisiblePercentage}%</div>
+                    <div className="text-sm font-medium">Visible Share (%)</div>
+                    {!isSingleAdult && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        You {visibleResults.myVisiblePercentage}% • Partner {visibleResults.partnerVisiblePercentage}%
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">{wmliResults.myWMLI_Intensity}/100</div>
+                    <div className="text-sm font-medium">WMLI Intensity (0-100)</div>
+                    {!isSingleAdult && wmliResults.partnerWMLI_Intensity !== undefined && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        You {wmliResults.myWMLI_Intensity} • Partner {wmliResults.partnerWMLI_Intensity}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{wmliResults.myWMLI_Share || 50}%</div>
+                    <div className="text-sm font-medium">WMLI Share (%)</div>
+                    {!isSingleAdult && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        You {wmliResults.myWMLI_Share}% • Partner {wmliResults.partnerWMLI_Share}%
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status Chip */}
+                <div className="flex justify-center">
+                  <div className="flex items-center space-x-3">
+                    <Badge className={`${statusInfo.color} text-white px-4 py-2 text-sm`}>
+                      {statusInfo.status === 'Balanced' && <CheckCircle className="h-4 w-4 mr-1" />}
+                      {statusInfo.status === 'Needs Conversation' && <MessageCircle className="h-4 w-4 mr-1" />}
+                      {statusInfo.status === 'Urgent Imbalance' && <AlertTriangle className="h-4 w-4 mr-1" />}
+                      {statusInfo.status}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">{statusInfo.description}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
+        {/* 2. Top 3 Hotspots */}
+        <Card id="drivers" className="border-2">
+          <Collapsible open={openSections.drivers} onOpenChange={() => toggleSection('drivers')}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5" />
+                      What's Driving Your Score
+                    </CardTitle>
+                    <CardDescription>Top 3 tasks needing attention</CardDescription>
+                  </div>
+                  {openSections.drivers ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
               <CardContent>
-                <div className="flex gap-3">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => addSampleInsights((insight) => console.log('Added insight:', insight))}
-                    className="border-yellow-300 text-yellow-800 hover:bg-yellow-100 dark:border-yellow-700 dark:text-yellow-200 dark:hover:bg-yellow-900/20"
-                  >
-                    <Lightbulb className="h-4 w-4 mr-2" />
-                    Add Sample Insights
+                <div className="space-y-4">
+                  {hotspots.map((hotspot, index) => (
+                    <div key={hotspot.taskId} className="p-4 border rounded-lg space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">#{index + 1} {hotspot.taskName}</span>
+                            {hotspot.tags.map(tag => (
+                              <Badge key={tag} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            High {hotspot.burden >= 4 ? 'burden' : 'responsibility'} ({hotspot.burden}/5) on you; 
+                            Responsibility: {Math.round(hotspot.responsibility * 100)}%
+                            {hotspot.fairness <= 2 && '; feels unacknowledged'}
+                          </p>
+                        </div>
+                        <ConversationPrompts taskName={hotspot.taskName} />
+                      </div>
+                    </div>
+                  ))}
+                  {hotspots.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <CheckCircle className="h-8 w-8 mx-auto mb-2" />
+                      <p>No significant hotspots detected. Your workload appears well-managed!</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
+        {/* 3. Visible vs Mental */}
+        <Card id="comparison" className="border-2">
+          <Collapsible open={openSections.comparison} onOpenChange={() => toggleSection('comparison')}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Visible vs Mental Load
+                    </CardTitle>
+                    <CardDescription>How time and cognitive work compare</CardDescription>
+                  </div>
+                  {openSections.comparison ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Visible Time */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span className="font-medium">Visible Time Share</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>You: {visibleResults.myVisiblePercentage}%</span>
+                        {!isSingleAdult && <span>Partner: {visibleResults.partnerVisiblePercentage}%</span>}
+                      </div>
+                      <Progress value={visibleResults.myVisiblePercentage} className="h-3" />
+                    </div>
+                  </div>
+
+                  {/* Mental Load */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4" />
+                      <span className="font-medium">Mental Load Share</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>You: {wmliResults.myWMLI_Share || 50}%</span>
+                        {!isSingleAdult && <span>Partner: {wmliResults.partnerWMLI_Share || 50}%</span>}
+                      </div>
+                      <Progress value={wmliResults.myWMLI_Share || 50} className="h-3" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pattern Analysis */}
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm">
+                    <strong>Pattern: </strong>
+                    {(() => {
+                      const visibleShare = visibleResults.myVisiblePercentage;
+                      const mentalShare = wmliResults.myWMLI_Share || 50;
+                      const diff = Math.abs(visibleShare - mentalShare);
+                      
+                      if (diff <= 10) {
+                        return `Aligned - You carry ${visibleShare}% of time and ${mentalShare}% of mental load.`;
+                      } else if (mentalShare > visibleShare) {
+                        return `Cognitive load exceeds time - You carry ${visibleShare}% time but ${mentalShare}% mental load (planning/monitoring).`;
+                      } else {
+                        return `Time exceeds cognitive load - You carry ${visibleShare}% time but ${mentalShare}% mental load.`;
+                      }
+                    })()}
+                  </p>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
+        {/* 4. WMLI Intensity */}
+        <Card id="intensity" className="border-2">
+          <Collapsible open={openSections.intensity} onOpenChange={() => toggleSection('intensity')}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      WMLI Intensity Explanation
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <HelpCircle className="h-4 w-4" />
+                      </Button>
+                    </CardTitle>
+                    <CardDescription>Understanding your mental workload level</CardDescription>
+                  </div>
+                  {openSections.intensity ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                {/* Gauge */}
+                <div className="text-center space-y-4">
+                  <div className="relative w-48 h-24 mx-auto">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded-t-full"></div>
+                    <div 
+                      className="absolute w-1 h-12 bg-primary rounded-full origin-bottom"
+                      style={{
+                        left: '50%',
+                        bottom: '0',
+                        transform: `translateX(-50%) rotate(${(wmliResults.myWMLI_Intensity - 50) * 1.8}deg)`,
+                        transformOrigin: 'center bottom'
+                      }}
+                    ></div>
+                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full"></div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-primary">{wmliResults.myWMLI_Intensity}/100</div>
+                    <div className="text-sm text-muted-foreground">
+                      {wmliResults.myWMLI_Intensity <= 30 ? 'Light subjective workload' :
+                       wmliResults.myWMLI_Intensity <= 60 ? 'Moderate subjective workload' :
+                       'Heavy subjective workload'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interpretation */}
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm">
+                      <strong>WMLI (0–100):</strong> Average subjective workload across tasks (burden + unfairness, weighted by responsibility). 
+                      Higher = heavier mental load.
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded">
+                      <div className="font-medium">0–30</div>
+                      <div>Light</div>
+                    </div>
+                    <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded">
+                      <div className="font-medium">31–60</div>
+                      <div>Moderate</div>
+                    </div>
+                    <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded">
+                      <div className="font-medium">61–100</div>
+                      <div>Heavy</div>
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground text-center">
+                    Interpretation bands (provisional). Will be replaced by pilot percentiles.
+                  </p>
+                </div>
+
+                {/* Evidence Flags */}
+                {(wmliResults.myFlags.highSubjectiveStrain || wmliResults.myFlags.fairnessRisk) && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Evidence Flags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {wmliResults.myFlags.highSubjectiveStrain && (
+                        <Badge variant="destructive">High subjective strain</Badge>
+                      )}
+                      {wmliResults.myFlags.fairnessRisk && (
+                        <Badge variant="outline" className="border-orange-500 text-orange-600">Fairness risk</Badge>
+                      )}
+                      {wmliResults.myFlags.equityPriority && (
+                        <Badge variant="outline" className="border-purple-500 text-purple-600">Equity priority</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
+        {/* 5. Next Steps */}
+        <Card id="next-steps" className="border-2">
+          <Collapsible open={openSections.nextSteps} onOpenChange={() => toggleSection('nextSteps')}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Next Steps
+                    </CardTitle>
+                    <CardDescription>Action planning and follow-up</CardDescription>
+                  </div>
+                  {openSections.nextSteps ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                {/* Action Items */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Action Items</h4>
+                  {actionItems.length > 0 && (
+                    <div className="space-y-2">
+                      {actionItems.map(item => (
+                        <div key={item.id} className="p-3 border rounded-lg">
+                          <div className="text-sm">{item.text}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Owner: {item.owner} | Due: {item.date}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Action Item
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      Set Check-in
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Summary */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Discussion Summary</h4>
+                  <Textarea 
+                    placeholder="Add notes from your conversation, key insights, or agreements..."
+                    value={summary}
+                    onChange={(e) => setSummary(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Export Options */}
+                <div className="flex gap-2">
+                  <Button>
+                    <Download className="h-4 w-4 mr-1" />
+                    Export Summary
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate('/')}>
+                    Start New Assessment
                   </Button>
                 </div>
               </CardContent>
-            </Card>
-          )}
-          
-          <DiscussionNotes 
-            notes={discussionNotes}
-            isTogetherMode={isTogetherMode}
-          />
-        </TabsContent>
-
-        <TabsContent value="insights" className="space-y-6">
-          {/* Partner Comparison Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-blue/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  Visible Work Load
-                </CardTitle>
-                <CardDescription>
-                  The actual time spent on household tasks
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">{results.myVisiblePercentage}%</div>
-                    <p className="text-sm text-muted-foreground">
-                      {isSingleAdult ? "Your visible work" : "Your share of visible work"}
-                    </p>
-                  </div>
-                  
-                  {!isSingleAdult && (
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span>You: {results.myVisiblePercentage}%</span>
-                        <span>Partner: {results.partnerVisiblePercentage}%</span>
-                      </div>
-                      <Progress value={results.myVisiblePercentage} className="h-2" />
-                      <p className="text-xs text-muted-foreground text-center">
-                        Distribution of household visible work
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-purple/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-purple-600" />
-                  Mental Load (WMLI)
-                </CardTitle>
-                <CardDescription>
-                  The cognitive work of planning and managing
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600">{wmliResults.myWMLI_Intensity || 0}/100</div>
-                    <p className="text-sm text-muted-foreground">Your WMLI Intensity</p>
-                    <p className="text-xs text-muted-foreground">
-                      {isSingleAdult ? "Your mental load intensity" : `Your share: ${wmliResults.myWMLI_Share || 0}%`}
-                    </p>
-                  </div>
-                  
-                  {!isSingleAdult && wmliResults.partnerWMLI_Intensity !== undefined && (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="text-center p-2 bg-primary/10 rounded">
-                          <div className="font-semibold">You</div>
-                          <div>{wmliResults.myWMLI_Intensity || 0}/100 intensity</div>
-                          <div>{wmliResults.myWMLI_Share || 0}% of load</div>
-                        </div>
-                        <div className="text-center p-2 bg-secondary/10 rounded">
-                          <div className="font-semibold">Partner</div>
-                          <div>{wmliResults.partnerWMLI_Intensity || 0}/100 intensity</div>
-                          <div>{wmliResults.partnerWMLI_Share || 0}% of load</div>
-                        </div>
-                      </div>
-                      
-                      {wmliResults.disparity && (
-                        <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-                          <p className="text-xs text-muted-foreground">
-                            <strong>Mental Load Gap:</strong> {Math.round(wmliResults.disparity.mentalLoadGap)}% difference
-                          </p>
-                          {wmliResults.disparity.highEquityRisk && (
-                            <p className="text-xs text-orange-600 mt-1">
-                              ⚠️ Significant imbalance detected - good topic for discussion
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {isSingleAdult && (
-                    <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-                      <p className="text-xs text-muted-foreground">
-                        <strong>WMLI {wmliResults.myWMLI_Intensity || 0}:</strong> {wmliResults.interpretationContext}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Discussion Insights for Partners */}
-          {!isSingleAdult && (
-            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  For Your Discussion
-                </CardTitle>
-                <CardDescription>
-                  Key insights both partners should know
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* My Flags */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-primary">Your Experience</h4>
-                    <div className="space-y-2">
-                      {wmliResults.myFlags.highSubjectiveStrain ? (
-                        <Badge variant="destructive" className="text-xs">
-                          Feeling overwhelmed by some tasks
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          Managing workload well
-                        </Badge>
-                      )}
-                      {wmliResults.myFlags.fairnessRisk ? (
-                        <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
-                          Contributions feel unrecognized
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs border-green-500 text-green-600">
-                          Feeling appreciated
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Partner Flags */}
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-secondary">Partner's Experience</h4>
-                    <div className="space-y-2">
-                      {wmliResults.partnerFlags?.highSubjectiveStrain ? (
-                        <Badge variant="destructive" className="text-xs">
-                          Feeling overwhelmed by some tasks
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          Managing workload well
-                        </Badge>
-                      )}
-                      {wmliResults.partnerFlags?.fairnessRisk ? (
-                        <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
-                          Contributions feel unrecognized
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs border-green-500 text-green-600">
-                          Feeling appreciated
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Overall Household Status */}
-                <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                  <h4 className="font-medium mb-2">Household Status</h4>
-                  {wmliResults.disparity?.highEquityRisk ? (
-                    <p className="text-sm text-orange-700 dark:text-orange-300">
-                      ⚠️ There's a significant imbalance in mental load distribution. This is a great opportunity to discuss how to better share responsibilities.
-                    </p>
-                  ) : wmliResults.disparity && wmliResults.disparity.mentalLoadGap >= 15 ? (
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      📊 There's some difference in mental load distribution ({Math.round(wmliResults.disparity.mentalLoadGap)}% gap). Consider discussing if this feels right for both of you.
-                    </p>
-                  ) : (
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      ✅ Your mental load distribution appears fairly balanced. Great work!
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="wmli" className="space-y-6">
-          <WMLIBreakdown 
-            wmliResults={wmliResults}
-            taskResponses={state.taskResponses}
-            isSingleAdult={isSingleAdult}
-          />
-        </TabsContent>
-
-        <TabsContent value="visible-vs-mental" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Invisible Mental Load vs Visible Time</CardTitle>
-              <CardDescription>
-                Understanding the difference between time spent doing tasks (visible) and the cognitive burden of managing them (mental load)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">
-                      {isSingleAdult ? "Your Mental Load Analysis" : "My Mental Load Analysis"}
-                    </h3>
-                    <div className="text-3xl font-bold text-primary">
-                      WMLI {wmliResults.myWMLI}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Research-based Weighted Mental Load Index
-                    </p>
-                    
-                    {/* Evidence-Based Context */}
-                    <div className="space-y-3">
-                      <div className="text-sm">
-                        <p className="font-medium mb-2">Evidence-Based Assessment:</p>
-                        <div className="space-y-1">
-                          {wmliResults.myFlags.highSubjectiveStrain && (
-                            <div className="flex items-center gap-2 text-red-600">
-                              <AlertCircle className="h-4 w-4" />
-                              <span className="text-xs">High burden on tasks you primarily own</span>
-                            </div>
-                          )}
-                          {wmliResults.myFlags.fairnessRisk && (
-                            <div className="flex items-center gap-2 text-orange-600">
-                              <AlertCircle className="h-4 w-4" />
-                              <span className="text-xs">Unfairness concerns detected</span>
-                            </div>
-                          )}
-                          {wmliResults.myFlags.equityPriority && (
-                            <div className="flex items-center gap-2 text-red-700">
-                              <AlertCircle className="h-4 w-4" />
-                              <span className="text-xs">Priority for equity conversation</span>
-                            </div>
-                          )}
-                          {!wmliResults.myFlags.highSubjectiveStrain && !wmliResults.myFlags.fairnessRisk && (
-                            <div className="flex items-center gap-2 text-green-600">
-                              <UserCheck className="h-4 w-4" />
-                              <span className="text-xs">No major strain indicators detected</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="p-3 bg-muted/50 rounded-lg">
-                        <p className="text-xs text-muted-foreground">
-                          <strong>Interpretation:</strong> {wmliResults.interpretationContext}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Scores combine burden and fairness ratings weighted by responsibility. Population benchmarks will be established from pilot data.
-                        </p>
-                      </div>
-                    </div>
-                  
-                  {!isSingleAdult && (
-                    <>
-                      <div className="text-sm">
-                        <strong>Percentage of household mental load:</strong> {results.myMentalPercentage || 0}%
-                      </div>
-                      
-                      {/* Visual percentage bar */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span>Mine</span>
-                          <span>Partner</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-                          <div className="h-full flex">
-                            <div 
-                              className="bg-purple-500 transition-all duration-500" 
-                              style={{ width: `${results.myMentalPercentage}%` }}
-                            />
-                            <div 
-                              className="bg-purple-300" 
-                              style={{ width: `${results.partnerMentalPercentage}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex justify-between text-xs font-medium">
-                          <span>{results.myMentalPercentage}%</span>
-                          <span>{results.partnerMentalPercentage}%</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-                
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    {isSingleAdult ? "Your Visible Work" : "My Visible Work"}
-                  </h3>
-                  <div className="text-3xl font-bold text-secondary">
-                    {results.myVisibleLoad || 0} tasks
-                  </div>
-                   <p className="text-sm text-muted-foreground">
-                     Your share of visible household tasks
-                   </p>
-                  
-                  {!isSingleAdult && (
-                    <>
-                      <div className="text-sm">
-                        <strong>Percentage of household visible work:</strong> {results.myVisiblePercentage || 0}%
-                      </div>
-                      
-                      {/* Visual percentage bar */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span>Mine</span>
-                          <span>Partner</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-                          <div className="h-full flex">
-                            <div 
-                              className="bg-blue-500 transition-all duration-500" 
-                              style={{ width: `${results.myVisiblePercentage}%` }}
-                            />
-                            <div 
-                              className="bg-blue-300" 
-                              style={{ width: `${results.partnerVisiblePercentage}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex justify-between text-xs font-medium">
-                          <span>{results.myVisiblePercentage}%</span>
-                          <span>{results.partnerVisiblePercentage}%</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  
-                  <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
-                    <strong>What this means:</strong> This is the actual time spent doing tasks - the visible work that's easy to see and measure.
-                  </div>
-                </div>
-              </div>
-              
-              {isTogetherMode && results.partnerMentalLoad !== undefined && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Partner's Mental Load</h3>
-                    <div className="text-3xl font-bold text-primary">
-                      {results.partnerMentalLoad}
-                    </div>
-                    <div className="text-sm">
-                      <strong>Percentage:</strong> {results.partnerMentalPercentage}%
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Partner's Visible Time</h3>
-                    <div className="text-3xl font-bold text-secondary">
-                      {results.partnerVisibleLoad} tasks
-                    </div>
-                    <div className="text-sm">
-                      <strong>Percentage:</strong> {results.partnerVisiblePercentage}%
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="vocabulary" className="space-y-6">
-          <SharedVocabulary 
-            highlightTerms={['mental load', 'invisible work', 'emotional labour']}
-            showExamples={true}
-          />
-        </TabsContent>
-
-        <TabsContent value="report" className="space-y-6">
-          <ConversationReport
-            results={results}
-            assessmentData={state}
-            insights={[]}
-            discussionNotes={discussionNotes}
-          />
-        </TabsContent>
-      </Tabs>
-
-      <div className="mt-8 flex justify-center">
-        <Button onClick={handleNext} size="lg" className="px-8">
-          Start New Assessment
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
       </div>
     </div>
   );
