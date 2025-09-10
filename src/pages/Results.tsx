@@ -787,10 +787,29 @@ const Results: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>You: {visibleResults.myVisiblePercentage}%</span>
-                        {!isSingleAdult && <span>Partner: {visibleResults.partnerVisiblePercentage}%</span>}
+                        {isSingleAdult ? (
+                          <span>You: 100%</span>
+                        ) : (
+                          <>
+                            <span>You: {visibleResults.myVisiblePercentage}%</span>
+                            <span>Partner: {100 - visibleResults.myVisiblePercentage}%</span>
+                          </>
+                        )}
                       </div>
-                      <Progress value={visibleResults.myVisiblePercentage} className="h-3" />
+                      {isSingleAdult ? (
+                        <Progress value={100} className="h-3" />
+                      ) : (
+                        <div className="flex h-3 rounded-full overflow-hidden bg-muted border">
+                          <div 
+                            className="bg-blue-500"
+                            style={{ width: `${visibleResults.myVisiblePercentage}%` }}
+                          ></div>
+                          <div 
+                            className="bg-orange-500"
+                            style={{ width: `${100 - visibleResults.myVisiblePercentage}%` }}
+                          ></div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -802,10 +821,29 @@ const Results: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>You: {wmliResults.myWMLI_Share || 50}%</span>
-                        {!isSingleAdult && <span>Partner: {wmliResults.partnerWMLI_Share || 50}%</span>}
+                        {isSingleAdult ? (
+                          <span>You: 100%</span>
+                        ) : (
+                          <>
+                            <span>You: {wmliResults.myWMLI_Share || 50}%</span>
+                            <span>Partner: {100 - (wmliResults.myWMLI_Share || 50)}%</span>
+                          </>
+                        )}
                       </div>
-                      <Progress value={wmliResults.myWMLI_Share || 50} className="h-3" />
+                      {isSingleAdult ? (
+                        <Progress value={100} className="h-3" />
+                      ) : (
+                        <div className="flex h-3 rounded-full overflow-hidden bg-muted border">
+                          <div 
+                            className="bg-blue-500"
+                            style={{ width: `${wmliResults.myWMLI_Share || 50}%` }}
+                          ></div>
+                          <div 
+                            className="bg-orange-500"
+                            style={{ width: `${100 - (wmliResults.myWMLI_Share || 50)}%` }}
+                          ></div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -820,13 +858,13 @@ const Results: React.FC = () => {
                           className="bg-blue-500 flex items-center justify-center text-white text-xs font-medium"
                           style={{ width: `${wmliResults.myWMLI_Share || 50}%` }}
                         >
-                          You {wmliResults.myWMLI_Share}%
+                          You {wmliResults.myWMLI_Share || 50}%
                         </div>
                         <div 
                           className="bg-orange-500 flex items-center justify-center text-white text-xs font-medium"
-                          style={{ width: `${wmliResults.partnerWMLI_Share || 50}%` }}
+                          style={{ width: `${100 - (wmliResults.myWMLI_Share || 50)}%` }}
                         >
-                          Partner {wmliResults.partnerWMLI_Share}%
+                          Partner {100 - (wmliResults.myWMLI_Share || 50)}%
                         </div>
                       </div>
                       <div className="text-center mt-2">
