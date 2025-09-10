@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { AssessmentData, HouseholdSetup, TaskResponse } from '@/types/assessment';
 
-interface AssessmentState extends AssessmentData {}
+interface AssessmentState extends AssessmentData {
+  discussionNotes?: Record<string, string>;
+}
 
 type AssessmentAction = 
   | { type: 'SET_HOUSEHOLD_SETUP'; payload: HouseholdSetup }
@@ -9,6 +11,7 @@ type AssessmentAction =
   | { type: 'SET_PARTNER_TASK_RESPONSE'; payload: TaskResponse }
   | { type: 'SET_CURRENT_STEP'; payload: number }
   | { type: 'SET_CURRENT_RESPONDER'; payload: 'me' | 'partner' }
+  | { type: 'ADD_DISCUSSION_NOTE'; payload: { taskId: string; note: string } }
   | { type: 'RESET_ASSESSMENT' };
 
 const initialState: AssessmentState = {
@@ -22,7 +25,8 @@ const initialState: AssessmentState = {
   taskResponses: [],
   partnerTaskResponses: [],
   currentStep: 1,
-  currentResponder: 'me'
+  currentResponder: 'me',
+  discussionNotes: {}
 };
 
 const assessmentReducer = (state: AssessmentState, action: AssessmentAction): AssessmentState => {
@@ -51,6 +55,14 @@ const assessmentReducer = (state: AssessmentState, action: AssessmentAction): As
       return { ...state, currentStep: action.payload };
     case 'SET_CURRENT_RESPONDER':
       return { ...state, currentResponder: action.payload };
+    case 'ADD_DISCUSSION_NOTE':
+      return { 
+        ...state, 
+        discussionNotes: { 
+          ...state.discussionNotes, 
+          [action.payload.taskId]: action.payload.note 
+        } 
+      };
     case 'RESET_ASSESSMENT':
       return initialState;
     default:
@@ -66,6 +78,7 @@ interface AssessmentContextType {
   setPartnerTaskResponse: (response: TaskResponse) => void;
   setCurrentStep: (step: number) => void;
   setCurrentResponder: (responder: 'me' | 'partner') => void;
+  addDiscussionNote: (taskId: string, note: string) => void;
   resetAssessment: () => void;
 }
 
@@ -96,6 +109,10 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
     dispatch({ type: 'SET_CURRENT_RESPONDER', payload: responder });
   };
 
+  const addDiscussionNote = (taskId: string, note: string) => {
+    dispatch({ type: 'ADD_DISCUSSION_NOTE', payload: { taskId, note } });
+  };
+
   const resetAssessment = () => {
     dispatch({ type: 'RESET_ASSESSMENT' });
   };
@@ -109,6 +126,7 @@ export const AssessmentProvider: React.FC<{ children: ReactNode }> = ({ children
       setPartnerTaskResponse,
       setCurrentStep,
       setCurrentResponder,
+      addDiscussionNote,
       resetAssessment
     }}>
       {children}

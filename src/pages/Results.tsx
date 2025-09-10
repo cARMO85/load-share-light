@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { useAssessment } from '@/context/AssessmentContext';
 import { allTaskLookup } from '@/data/allTasks';
 import { calculatePersonLoad, calculateWMLI } from '@/lib/calculationUtils';
@@ -30,7 +31,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
-  const { state } = useAssessment();
+  const { state, addDiscussionNote } = useAssessment();
   
   // Collapsible states
   const [openSections, setOpenSections] = useState({
@@ -214,107 +215,126 @@ const Results: React.FC = () => {
     taskName: string; 
     isCouple?: boolean;
     imbalanceData?: any;
-  }) => (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <MessageCircle className="h-4 w-4 mr-1" />
-          Talk about this
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Conversation Prompts: {taskName}</DialogTitle>
-          <DialogDescription>
-            {isCouple 
-              ? 'Use these prompts to discuss this imbalance with your partner'
-              : 'Reflection prompts for managing this task'
-            }
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          {isCouple && imbalanceData ? (
-            // Couple-focused prompts based on imbalance data
-            <>
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">
-                  "I noticed we have different levels of responsibility for {taskName}. 
-                  {imbalanceData.whoDoesMore === 'me' 
-                    ? " I'm handling more of this - how do you see it?"
-                    : " You're handling more of this - how does that feel for you?"
-                  }"
-                </p>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">
-                  "How could we redistribute {taskName} so it feels more balanced for both of us?"
-                </p>
-              </div>
-              {Math.abs(imbalanceData.myBurden - imbalanceData.partnerBurden) > 1 && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm">
-                    "We seem to experience different levels of burden with {taskName}. 
-                    Can we talk about what makes this feel {imbalanceData.myBurden > imbalanceData.partnerBurden ? 'harder for me' : 'easier for me'}?"
-                  </p>
-                </div>
-              )}
-              {Math.abs(imbalanceData.myFairness - imbalanceData.partnerFairness) > 1 && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm">
-                    "We have different perceptions about fairness around {taskName}. 
-                    What would help us both feel better about how this is handled?"
-                  </p>
-                </div>
-              )}
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">
-                  "What support would help the person doing {taskName} feel more appreciated?"
-                </p>
-              </div>
-            </>
-          ) : isCouple ? (
-            // General couple prompts
-            <>
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">"How do you feel about how we currently handle {taskName}?"</p>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">"What would make {taskName} feel more balanced between us?"</p>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">"Are there specific aspects of {taskName} that feel overwhelming or underappreciated?"</p>
-              </div>
-            </>
-          ) : (
-            // Individual/single parent prompts
-            <>
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">"What makes {taskName} feel particularly burdensome right now?"</p>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">"What systems or support could help make {taskName} more manageable?"</p>
-              </div>
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm">"How could I simplify or delegate parts of {taskName}?"</p>
-              </div>
-            </>
-          )}
-          <Button 
-            onClick={() => {
-              setSummary(prev => prev + `\n• Discussed ${taskName} - [Add your notes here]`);
-              // Auto-open the Next Steps section when notes are added
-              setOpenSections(prev => ({ ...prev, nextSteps: true }));
-            }}
-            variant="outline"
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add to Summary
+  }) => {
+    const [noteText, setNoteText] = useState('');
+    const taskId = `task_${taskName.toLowerCase().replace(/\s+/g, '_')}`;
+    
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <MessageCircle className="h-4 w-4 mr-1" />
+            Talk about this
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Discussion: {taskName}</DialogTitle>
+            <DialogDescription>
+              {isCouple 
+                ? 'Use these prompts to discuss this imbalance with your partner'
+                : 'Reflection prompts for managing this task'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {isCouple && imbalanceData ? (
+              // Couple-focused prompts based on imbalance data
+              <>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">
+                    "I noticed we have different levels of responsibility for {taskName}. 
+                    {imbalanceData.whoDoesMore === 'me' 
+                      ? " I'm handling more of this - how do you see it?"
+                      : " You're handling more of this - how does that feel for you?"
+                    }"
+                  </p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">
+                    "How could we redistribute {taskName} so it feels more balanced for both of us?"
+                  </p>
+                </div>
+                {Math.abs(imbalanceData.myBurden - imbalanceData.partnerBurden) > 1 && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm">
+                      "We seem to experience different levels of burden with {taskName}. 
+                      Can we talk about what makes this feel {imbalanceData.myBurden > imbalanceData.partnerBurden ? 'harder for me' : 'easier for me'}?"
+                    </p>
+                  </div>
+                )}
+                {Math.abs(imbalanceData.myFairness - imbalanceData.partnerFairness) > 1 && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm">
+                      "We have different perceptions about fairness around {taskName}. 
+                      What would help us both feel better about how this is handled?"
+                    </p>
+                  </div>
+                )}
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">
+                    "What support would help the person doing {taskName} feel more appreciated?"
+                  </p>
+                </div>
+              </>
+            ) : isCouple ? (
+              // General couple prompts
+              <>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">"How do you feel about how we currently handle {taskName}?"</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">"What would make {taskName} feel more balanced between us?"</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">"Are there specific aspects of {taskName} that feel overwhelming or underappreciated?"</p>
+                </div>
+              </>
+            ) : (
+              // Individual/single parent prompts
+              <>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">"What makes {taskName} feel particularly burdensome right now?"</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">"What systems or support could help make {taskName} more manageable?"</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">"How could I simplify or delegate parts of {taskName}?"</p>
+                </div>
+              </>
+            )}
+            
+            {/* Note-taking area */}
+            <div className="space-y-3 border-t pt-4">
+              <Label className="text-sm font-medium">Discussion Notes</Label>
+              <Textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Capture key insights from your discussion about this task..."
+                className="min-h-[100px]"
+              />
+              <Button 
+                onClick={() => {
+                  if (noteText.trim()) {
+                    addDiscussionNote(taskId, noteText.trim());
+                    setNoteText('');
+                    // Auto-open the Next Steps section when notes are added
+                    setOpenSections(prev => ({ ...prev, nextSteps: true }));
+                  }
+                }}
+                disabled={!noteText.trim()}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Save Discussion Notes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -927,11 +947,44 @@ const Results: React.FC = () => {
 
                 <Separator />
 
-                {/* Summary */}
+                {/* Discussion Notes Display */}
                 <div className="space-y-4">
-                  <h4 className="font-medium">Discussion Summary</h4>
+                  <h4 className="font-medium flex items-center gap-2">
+                    Discussion Notes
+                    {Object.keys(state.discussionNotes || {}).length > 0 && (
+                      <Badge variant="secondary">
+                        {Object.keys(state.discussionNotes || {}).length} task{Object.keys(state.discussionNotes || {}).length !== 1 ? 's' : ''} discussed
+                      </Badge>
+                    )}
+                  </h4>
+                  
+                  {Object.keys(state.discussionNotes || {}).length > 0 ? (
+                    <div className="space-y-3">
+                      {Object.entries(state.discussionNotes || {}).map(([taskId, note]) => (
+                        <div key={taskId} className="p-3 border rounded-lg bg-muted/30">
+                          <div className="text-sm font-medium mb-1 capitalize">
+                            {taskId.replace('task_', '').replace(/_/g, ' ')}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{note}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No discussion notes yet</p>
+                      <p className="text-xs">Use the "Talk about this" buttons above to add notes from your conversations</p>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Additional Summary */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Additional Notes</h4>
                   <Textarea 
-                    placeholder="Add notes from your conversation, key insights, or agreements..."
+                    placeholder="Add any additional insights, agreements, or follow-up thoughts..."
                     value={summary}
                     onChange={(e) => setSummary(e.target.value)}
                     className="min-h-[100px]"
