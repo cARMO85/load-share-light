@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup } from '@/data/allTasks';
 import { calculatePersonLoad, calculateWMLI } from '@/lib/calculationUtils';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
+import { HouseholdInsights } from '@/components/HouseholdInsights';
+import { WMLIBreakdown } from '@/components/WMLIBreakdown';
 import { 
   AlertCircle, 
   BarChart3, 
@@ -28,7 +30,6 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { InfoButton } from '@/components/InfoButton';
-import { WMLIBreakdown } from '@/components/WMLIBreakdown';
 import { addSampleInsights, isDevelopment } from '@/lib/devUtils';
 
 const Results: React.FC = () => {
@@ -152,11 +153,15 @@ const Results: React.FC = () => {
       </div>
       
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-4">Understanding Your Household Work</h1>
+        <h1 className="text-3xl font-bold mb-4">
+          {isSingleAdult ? "Your Household Work Assessment" : "Your Household Work Assessment"}
+        </h1>
         <p className="text-lg text-muted-foreground">
           {isTogetherMode 
-            ? "Use this space to discuss your findings and plan next steps together"
-            : "Reflect on these insights and consider how to discuss them with your household"
+            ? "Explore your results together and use these insights to strengthen your partnership"
+            : isSingleAdult 
+              ? "Reflect on these insights about your household work patterns"
+              : "Share these insights with your partner and plan improvements together"
           }
         </p>
       </div>
@@ -168,8 +173,8 @@ const Results: React.FC = () => {
             Discussion
           </TabsTrigger>
           <TabsTrigger value="insights">
-            <BarChart3 className="h-4 w-4 mr-1" />
-            Your Data
+            <Users className="h-4 w-4 mr-1" />
+            {isSingleAdult ? "Your Data" : "Household Overview"}
           </TabsTrigger>
           <TabsTrigger value="wmli">
             <Brain className="h-4 w-4 mr-1" />
@@ -229,114 +234,12 @@ const Results: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">
-          {/* Data Overview Cards */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-blue/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-blue-600" />
-                  Visible Work Load
-                </CardTitle>
-                <CardDescription>
-                  The actual time spent on household tasks
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">{results.myVisiblePercentage}%</div>
-                    <p className="text-sm text-muted-foreground">
-                      {isSingleAdult ? "Your visible work" : "Your share of visible work"}
-                    </p>
-                  </div>
-                  
-                  {!isSingleAdult && (
-                    <div className="flex justify-between text-sm">
-                      <span>Mine: {results.myVisiblePercentage}%</span>
-                      <span>Partner: {results.partnerVisiblePercentage}%</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-purple/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-purple-600" />
-                  Mental Load
-                </CardTitle>
-                <CardDescription>
-                  The cognitive work of planning and managing
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-purple-600">{wmliResults.myWMLI}</div>
-                      <p className="text-sm text-muted-foreground">WMLI Score</p>
-                      <p className="text-xs text-muted-foreground">
-                        {isSingleAdult ? "Your weighted mental load index" : "Your share: " + results.myMentalPercentage + "%"}
-                      </p>
-                    </div>
-                    
-                    {/* Evidence-based flags */}
-                    <div className="flex flex-wrap gap-2">
-                      {wmliResults.myFlags.highSubjectiveStrain && (
-                        <Badge variant="destructive" className="text-xs">
-                          High Subjective Strain
-                        </Badge>
-                      )}
-                      {wmliResults.myFlags.fairnessRisk && (
-                        <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
-                          Fairness Risk
-                        </Badge>
-                      )}
-                      {wmliResults.myFlags.equityPriority && (
-                        <Badge variant="secondary" className="text-xs bg-red-100 text-red-700">
-                          Equity Priority
-                        </Badge>
-                      )}
-                      {wmliResults.disparity?.highEquityRisk && (
-                        <Badge variant="destructive" className="text-xs">
-                          High Equity Risk
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    {!isSingleAdult && wmliResults.partnerWMLI && (
-                      <>
-                        <div className="flex justify-between text-sm">
-                          <span>Mine: {results.myMentalPercentage}%</span>
-                          <span>Partner: {results.partnerMentalPercentage}%</span>
-                        </div>
-                        
-                        {wmliResults.disparity && (
-                          <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground">
-                              <strong>Disparity Gap:</strong> {wmliResults.disparity.mentalLoadGap.toFixed(1)} percentage points
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {wmliResults.interpretationContext}
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    )}
-                    
-                    {isSingleAdult && (
-                      <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-                        <p className="text-xs text-muted-foreground">
-                          <strong>WMLI {wmliResults.myWMLI}:</strong> {wmliResults.interpretationContext}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-              </CardContent>
-            </Card>
-          </div>
-
-
+          <HouseholdInsights 
+            wmliResults={wmliResults}
+            taskResponses={state.taskResponses}
+            results={results}
+            isSingleAdult={isSingleAdult}
+          />
         </TabsContent>
 
         <TabsContent value="wmli" className="space-y-6">
