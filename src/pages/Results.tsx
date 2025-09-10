@@ -638,14 +638,55 @@ const Results: React.FC = () => {
                     </div>
                   ))}
                   {hotspots.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <CheckCircle className="h-8 w-8 mx-auto mb-2" />
-                      <p>
-                        {isSingleAdult 
-                          ? 'No significant hotspots detected. Your workload appears well-managed!'
-                          : 'No major imbalances detected. Your household workload distribution looks fairly balanced!'
-                        }
-                      </p>
+                    <div className="py-8 space-y-4">
+                      {isSingleAdult ? (
+                        <div className="text-center text-muted-foreground">
+                          <CheckCircle className="h-8 w-8 mx-auto mb-2" />
+                          <p>No significant hotspots detected. Your workload appears well-managed!</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="text-center mb-6">
+                            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                            <p className="text-lg font-medium">Great news! No major imbalances detected.</p>
+                            <p className="text-muted-foreground">Here are some areas you can focus on to maintain and improve your balance:</p>
+                          </div>
+                          
+                          <div className="grid gap-4">
+                            <div className="p-4 border rounded-lg border-blue-200 bg-blue-50/50">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                <h4 className="font-medium text-blue-900">Communication & Check-ins</h4>
+                              </div>
+                              <p className="text-sm text-blue-800">Schedule regular conversations about workload to prevent imbalances from developing. Discuss what's working and what could be improved.</p>
+                            </div>
+                            
+                            <div className="p-4 border rounded-lg border-purple-200 bg-purple-50/50">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                                <h4 className="font-medium text-purple-900">Invisible Labor Recognition</h4>
+                              </div>
+                              <p className="text-sm text-purple-800">Acknowledge and appreciate the mental load tasks like planning, organizing, and remembering. Consider rotating responsibility for these tasks.</p>
+                            </div>
+                            
+                            <div className="p-4 border rounded-lg border-green-200 bg-green-50/50">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                                <h4 className="font-medium text-green-900">Efficiency & Systems</h4>
+                              </div>
+                              <p className="text-sm text-green-800">Create shared systems and routines that reduce overall household burden. Consider tools, schedules, or delegation strategies.</p>
+                            </div>
+                            
+                            <div className="p-4 border rounded-lg border-amber-200 bg-amber-50/50">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-2 h-2 bg-amber-600 rounded-full"></div>
+                                <h4 className="font-medium text-amber-900">Individual Well-being</h4>
+                              </div>
+                              <p className="text-sm text-amber-800">Ensure both partners have time for self-care and personal interests. A balanced household supports individual thriving.</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
