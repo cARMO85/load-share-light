@@ -506,15 +506,23 @@ const Results: React.FC = () => {
                         </div>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span>Visible work gap:</span>
+                            <span>Visible work:</span>
                             <span className={Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'text-green-600' : 'text-amber-600'}>
-                              {Math.abs(visibleResults.myVisiblePercentage - 50)}% difference
+                              {Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 
+                                ? 'Balanced' 
+                                : visibleResults.myVisiblePercentage > 50 
+                                  ? `You do ${Math.abs(visibleResults.myVisiblePercentage - 50)}% more`
+                                  : `Partner does ${Math.abs(visibleResults.myVisiblePercentage - 50)}% more`}
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Mental load gap:</span>
+                            <span>Mental load:</span>
                             <span className={Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'text-green-600' : 'text-amber-600'}>
-                              {Math.abs((wmliResults.myWMLI_Share || 50) - 50)}% difference
+                              {Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 
+                                ? 'Balanced' 
+                                : (wmliResults.myWMLI_Share || 50) > 50
+                                  ? `You carry ${Math.abs((wmliResults.myWMLI_Share || 50) - 50)}% more`
+                                  : `Partner carries ${Math.abs((wmliResults.myWMLI_Share || 50) - 50)}% more`}
                             </span>
                           </div>
                         </div>
