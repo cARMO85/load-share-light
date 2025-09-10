@@ -29,7 +29,7 @@ const TaskQuestionnaire: React.FC = () => {
   );
 
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
-  const [selectedProfile, setSelectedProfile] = useState<string>('');
+  const [selectedProfile, setSelectedProfile] = useState<string>('default');
 
   // Dev function to auto-populate responses
   const handleAutoPopulate = () => {
@@ -261,7 +261,7 @@ const TaskQuestionnaire: React.FC = () => {
                     <SelectValue placeholder="Choose test profile..." />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-gray-800 z-50">
-                    <SelectItem value="">Default Demo Data</SelectItem>
+                    <SelectItem value="default">Default Demo Data</SelectItem>
                     {testProfiles.map(profile => {
                       const IconComponent = profile.icon;
                       return (
@@ -282,11 +282,11 @@ const TaskQuestionnaire: React.FC = () => {
                   size="sm"
                   className="text-xs bg-yellow-100 border-yellow-300 hover:bg-yellow-200 text-yellow-800"
                 >
-                  🔧 {selectedProfile ? 'Apply Profile' : 'Auto-populate Demo'}
+                  🔧 {selectedProfile && selectedProfile !== 'default' ? 'Apply Profile' : 'Auto-populate Demo'}
                 </Button>
               </div>
               
-              {selectedProfile && (
+              {selectedProfile && selectedProfile !== 'default' && (
                 <div className="text-xs text-yellow-700 bg-yellow-50 p-2 rounded border border-yellow-200">
                   <strong>{testProfiles.find(p => p.id === selectedProfile)?.name}:</strong>{' '}
                   {testProfiles.find(p => p.id === selectedProfile)?.description}
