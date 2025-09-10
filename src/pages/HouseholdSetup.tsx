@@ -36,12 +36,10 @@ const HouseholdSetup: React.FC = () => {
       if (updates.householdType === 'single') {
         newSetup.adults = 1;
         newSetup.partnerEmployed = undefined;
-        newSetup.assessmentMode = 'solo';
         newSetup.children = 0; // Individual has no children
       } else if (updates.householdType === 'single_parent') {
         newSetup.adults = 1;
         newSetup.partnerEmployed = undefined;
-        newSetup.assessmentMode = 'solo';
         if (newSetup.children === 0) newSetup.children = 1; // Default to 1 child if not set
       } else if (updates.householdType === 'couple') {
         newSetup.adults = 2;
@@ -121,47 +119,12 @@ const HouseholdSetup: React.FC = () => {
               </div>
             </div>
 
-            {/* Assessment Mode for Couples */}
-            {setup.householdType === 'couple' && (
-              <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <div className="text-center">
-                  <Label className="text-lg font-semibold text-primary">How would you like to take this assessment?</Label>
-                  <p className="text-sm text-muted-foreground mt-1">Choose your preferred approach</p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Button
-                    variant={setup.assessmentMode === 'solo' ? "default" : "outline"}
-                    onClick={() => updateSetup({ assessmentMode: 'solo' })}
-                    className="h-auto p-4 flex flex-col items-center gap-2"
-                  >
-                    <UserCheck className="h-5 w-5" />
-                    <div className="text-center">
-                      <div className="font-medium">Just Me</div>
-                      <div className="text-xs text-muted-foreground">I'll complete this on my own</div>
-                    </div>
-                  </Button>
-                  
-                  <Button
-                    variant={setup.assessmentMode === 'together' ? "default" : "outline"}
-                    onClick={() => updateSetup({ assessmentMode: 'together' })}
-                    className="h-auto p-4 flex flex-col items-center gap-2"
-                  >
-                    <Users className="h-5 w-5" />
-                    <div className="text-center">
-                      <div className="font-medium">Together</div>
-                      <div className="text-xs text-muted-foreground">We'll work on this together</div>
-                    </div>
-                  </Button>
-                </div>
-                
-                {setup.assessmentMode === 'together' && (
-                  <div className="p-3 rounded-lg bg-secondary/10 border border-secondary/20">
-                    <p className="text-xs text-muted-foreground text-center">
-                      💡 <strong>Together Mode:</strong> You'll work through tasks collaboratively, then capture insights and discuss differences together.
-                    </p>
-                  </div>
-                )}
+            {/* Tip for couples and parents */}
+            {(setup.householdType === 'couple' || setup.householdType === 'single_parent') && (
+              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-sm text-muted-foreground text-center">
+                  💡 <strong>Tip:</strong> For the best results, try completing this assessment together as a pair. If you do it alone, you can still share your results afterwards.
+                </p>
               </div>
             )}
 
