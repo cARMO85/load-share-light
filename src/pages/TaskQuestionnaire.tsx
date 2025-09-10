@@ -35,6 +35,31 @@ const TaskQuestionnaire: React.FC = () => {
   const handleAutoPopulate = () => {
     if (!isDevelopment) return;
     
+    if (selectedProfile !== 'default') {
+      // Apply selected profile
+      const profile = testProfiles.find(p => p.id === selectedProfile);
+      if (profile) {
+        const { myResponses, partnerResponses } = profile.generateResponses();
+        
+        // Set responses in local state
+        const newResponses: Record<string, TaskResponse> = {};
+        myResponses.forEach(response => {
+          newResponses[response.taskId] = response;
+          setTaskResponse(response);
+        });
+        setResponses(newResponses);
+        
+        // Set partner responses if in together mode
+        if (isTogetherMode) {
+          partnerResponses.forEach(response => {
+            setPartnerTaskResponse(response);
+          });
+        }
+        return;
+      }
+    }
+    
+    // Default demo data
     const { myResponses, partnerResponses } = createDemoResponses();
     
     // Set responses in local state
