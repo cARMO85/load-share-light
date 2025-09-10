@@ -298,21 +298,64 @@ const Results: React.FC = () => {
                   <p className="text-sm text-muted-foreground">
                     Based on burden and fairness ratings across all tasks
                   </p>
-                  <div className="text-sm">
-                    <strong>Percentage of household mental load:</strong> {results.myMentalPercentage || 0}%
+                  
+                  {/* Mental Load Benchmark */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Low (0-100)</span>
+                      <span>Moderate (100-200)</span>
+                      <span>High (200-300)</span>
+                      <span>Very High (300+)</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-500 ${
+                          results.myMentalLoad < 100 ? 'bg-green-500' :
+                          results.myMentalLoad < 200 ? 'bg-yellow-500' :
+                          results.myMentalLoad < 300 ? 'bg-orange-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${Math.min((results.myMentalLoad / 400) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-xs font-medium">
+                      {results.myMentalLoad < 100 ? '✓ Low mental load - manageable' :
+                       results.myMentalLoad < 200 ? '⚠️ Moderate mental load - monitor stress' :
+                       results.myMentalLoad < 300 ? '⚠️ High mental load - consider redistributing tasks' :
+                       '🚨 Very high mental load - urgent attention needed'}
+                    </div>
                   </div>
-                  <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
-                    <strong>What this means:</strong> 
-                    {isSingleAdult ? (
-                      `Your mental load score is ${results.myMentalLoad}. This reflects how cognitively demanding your household tasks feel.`
-                    ) : (
-                      results.myMentalPercentage > 65 ? 
-                        "⚠️ You're carrying significantly more mental load than your partner - this may feel unfair and exhausting." :
-                      results.myMentalPercentage < 35 ?
-                        "✓ Your partner is carrying more of the mental load. Consider if this feels fair to both of you." :
-                      "✓ Mental load is fairly balanced between you and your partner - this is healthy!"
-                    )}
-                  </div>
+                  
+                  {!isSingleAdult && (
+                    <>
+                      <div className="text-sm">
+                        <strong>Percentage of household mental load:</strong> {results.myMentalPercentage || 0}%
+                      </div>
+                      
+                      {/* Visual percentage bar */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span>Mine</span>
+                          <span>Partner</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                          <div className="h-full flex">
+                            <div 
+                              className="bg-purple-500 transition-all duration-500" 
+                              style={{ width: `${results.myMentalPercentage}%` }}
+                            />
+                            <div 
+                              className="bg-purple-300" 
+                              style={{ width: `${results.partnerMentalPercentage}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-between text-xs font-medium">
+                          <span>{results.myMentalPercentage}%</span>
+                          <span>{results.partnerMentalPercentage}%</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
                 
                 <div className="space-y-4">
@@ -325,9 +368,39 @@ const Results: React.FC = () => {
                    <p className="text-sm text-muted-foreground">
                      Your share of visible household tasks
                    </p>
-                  <div className="text-sm">
-                    <strong>Percentage of household visible work:</strong> {results.myVisiblePercentage || 0}%
-                  </div>
+                  
+                  {!isSingleAdult && (
+                    <>
+                      <div className="text-sm">
+                        <strong>Percentage of household visible work:</strong> {results.myVisiblePercentage || 0}%
+                      </div>
+                      
+                      {/* Visual percentage bar */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span>Mine</span>
+                          <span>Partner</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                          <div className="h-full flex">
+                            <div 
+                              className="bg-blue-500 transition-all duration-500" 
+                              style={{ width: `${results.myVisiblePercentage}%` }}
+                            />
+                            <div 
+                              className="bg-blue-300" 
+                              style={{ width: `${results.partnerVisiblePercentage}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-between text-xs font-medium">
+                          <span>{results.myVisiblePercentage}%</span>
+                          <span>{results.partnerVisiblePercentage}%</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
                   <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
                     <strong>What this means:</strong> This is the actual time spent doing tasks - the visible work that's easy to see and measure.
                   </div>
