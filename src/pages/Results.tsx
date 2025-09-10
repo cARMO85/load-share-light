@@ -10,7 +10,7 @@ import { SharedVocabulary } from '@/components/SharedVocabulary';
 import { generateConversationPrompts } from '@/lib/conversationEngine';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup } from '@/data/allTasks';
-import { calculatePersonLoad } from '@/lib/calculationUtils';
+import { calculatePersonLoad, calculateWMLI } from '@/lib/calculationUtils';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
 import { 
   AlertCircle, 
@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { InfoButton } from '@/components/InfoButton';
+import { WMLIBreakdown } from '@/components/WMLIBreakdown';
 import { addSampleInsights, isDevelopment } from '@/lib/devUtils';
 
 const Results: React.FC = () => {
@@ -52,7 +53,20 @@ const Results: React.FC = () => {
     };
   };
 
-  // Calculate results using proper mental load formula
+  const isSingleAdult = state.householdSetup.adults === 1;
+  const isTogetherMode = state.householdSetup.assessmentMode === 'together';
+  const hasPartnerData = state.partnerTaskResponses?.length;
+
+  // Calculate WMLI and evidence-based insights
+  const wmliResults = useMemo(() => {
+    return calculateWMLI(
+      state.taskResponses,
+      allTaskLookup,
+      isTogetherMode ? state.partnerTaskResponses : undefined
+    );
+  }, [state.taskResponses, state.partnerTaskResponses, isTogetherMode]);
+
+  // Calculate results using proper mental load formula (legacy compatibility)
   const results = useMemo(() => {
     const myCalculations = calculatePersonLoad(state.taskResponses, allTaskLookup);
     
@@ -72,9 +86,6 @@ const Results: React.FC = () => {
     };
   }, [state.taskResponses, state.partnerTaskResponses]);
 
-  const isSingleAdult = state.householdSetup.adults === 1;
-  const isTogetherMode = state.householdSetup.assessmentMode === 'together';
-  const hasPartnerData = state.partnerTaskResponses?.length;
 
   // Generate conversation prompts based on results
   const conversationPrompts = useMemo(() => {
@@ -129,7 +140,7 @@ const Results: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="conversation">
             <MessageCircle className="h-4 w-4 mr-1" />
             Discussion
@@ -137,6 +148,10 @@ const Results: React.FC = () => {
           <TabsTrigger value="insights">
             <BarChart3 className="h-4 w-4 mr-1" />
             Your Data
+          </TabsTrigger>
+          <TabsTrigger value="wmli">
+            <Brain className="h-4 w-4 mr-1" />
+            WMLI Analysis
           </TabsTrigger>
           <TabsTrigger value="visible-vs-mental">
             <Clock className="h-4 w-4 mr-1" />
@@ -234,48 +249,80 @@ const Results: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-purple-600">{results.myMentalPercentage}%</div>
-                    <p className="text-sm text-muted-foreground">
-                      {isSingleAdult ? "Your mental load" : "Your share of mental load"}
-                    </p>
-                  </div>
-                  
-                  {!isSingleAdult && (
-                    <>
-                      <div className="flex justify-between text-sm">
-                        <span>Mine: {results.myMentalPercentage}%</span>
-                        <span>Partner: {results.partnerMentalPercentage}%</span>
-                      </div>
-                      
-                      {/* Context for couples */}
-                      <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-                        <p className="text-xs text-muted-foreground">
-                          {results.myMentalPercentage > 60 
-                            ? "⚠️ You may be carrying a disproportionate mental load"
-                            : results.myMentalPercentage < 40
-                            ? "✓ Mental load appears fairly balanced"
-                            : "✓ Mental load distribution looks balanced"
-                          }
-                        </p>
-                      </div>
-                    </>
-                  )}
-                  
-                  {isSingleAdult && (
-                    <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-purple-600">{wmliResults.myWMLI}</div>
+                      <p className="text-sm text-muted-foreground">WMLI Score</p>
                       <p className="text-xs text-muted-foreground">
-                        Score: {results.myMentalLoad} - This reflects the cognitive burden from your household tasks. Higher scores indicate more mental effort required.
+                        {isSingleAdult ? "Your weighted mental load index" : "Your share: " + results.myMentalPercentage + "%"}
                       </p>
                     </div>
-                  )}
-                </div>
+                    
+                    {/* Evidence-based flags */}
+                    <div className="flex flex-wrap gap-2">
+                      {wmliResults.myFlags.highSubjectiveStrain && (
+                        <Badge variant="destructive" className="text-xs">
+                          High Subjective Strain
+                        </Badge>
+                      )}
+                      {wmliResults.myFlags.fairnessRisk && (
+                        <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
+                          Fairness Risk
+                        </Badge>
+                      )}
+                      {wmliResults.myFlags.equityPriority && (
+                        <Badge variant="secondary" className="text-xs bg-red-100 text-red-700">
+                          Equity Priority
+                        </Badge>
+                      )}
+                      {wmliResults.disparity?.highEquityRisk && (
+                        <Badge variant="destructive" className="text-xs">
+                          High Equity Risk
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {!isSingleAdult && wmliResults.partnerWMLI && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span>Mine: {results.myMentalPercentage}%</span>
+                          <span>Partner: {results.partnerMentalPercentage}%</span>
+                        </div>
+                        
+                        {wmliResults.disparity && (
+                          <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">
+                              <strong>Disparity Gap:</strong> {wmliResults.disparity.mentalLoadGap.toFixed(1)} percentage points
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {wmliResults.interpretationContext}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {isSingleAdult && (
+                      <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>WMLI {wmliResults.myWMLI}:</strong> {wmliResults.interpretationContext}
+                        </p>
+                      </div>
+                    )}
+                  </div>
               </CardContent>
             </Card>
           </div>
 
 
+        </TabsContent>
+
+        <TabsContent value="wmli" className="space-y-6">
+          <WMLIBreakdown 
+            wmliResults={wmliResults}
+            taskResponses={state.taskResponses}
+            isSingleAdult={isSingleAdult}
+          />
         </TabsContent>
 
         <TabsContent value="visible-vs-mental" className="space-y-6">
@@ -288,42 +335,58 @@ const Results: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">
-                    {isSingleAdult ? "Your Mental Load" : "My Mental Load"}
-                  </h3>
-                  <div className="text-3xl font-bold text-primary">
-                    {results.myMentalLoad || 0}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Based on burden and fairness ratings across all tasks
-                  </p>
-                  
-                  {/* Mental Load Benchmark */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Low (0-100)</span>
-                      <span>Moderate (100-200)</span>
-                      <span>High (200-300)</span>
-                      <span>Very High (300+)</span>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">
+                      {isSingleAdult ? "Your Mental Load Analysis" : "My Mental Load Analysis"}
+                    </h3>
+                    <div className="text-3xl font-bold text-primary">
+                      WMLI {wmliResults.myWMLI}
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-500 ${
-                          results.myMentalLoad < 100 ? 'bg-green-500' :
-                          results.myMentalLoad < 200 ? 'bg-yellow-500' :
-                          results.myMentalLoad < 300 ? 'bg-orange-500' : 'bg-red-500'
-                        }`}
-                        style={{ width: `${Math.min((results.myMentalLoad / 400) * 100, 100)}%` }}
-                      />
+                    <p className="text-sm text-muted-foreground">
+                      Research-based Weighted Mental Load Index
+                    </p>
+                    
+                    {/* Evidence-Based Context */}
+                    <div className="space-y-3">
+                      <div className="text-sm">
+                        <p className="font-medium mb-2">Evidence-Based Assessment:</p>
+                        <div className="space-y-1">
+                          {wmliResults.myFlags.highSubjectiveStrain && (
+                            <div className="flex items-center gap-2 text-red-600">
+                              <AlertCircle className="h-4 w-4" />
+                              <span className="text-xs">High burden on tasks you primarily own</span>
+                            </div>
+                          )}
+                          {wmliResults.myFlags.fairnessRisk && (
+                            <div className="flex items-center gap-2 text-orange-600">
+                              <AlertCircle className="h-4 w-4" />
+                              <span className="text-xs">Unfairness concerns detected</span>
+                            </div>
+                          )}
+                          {wmliResults.myFlags.equityPriority && (
+                            <div className="flex items-center gap-2 text-red-700">
+                              <AlertCircle className="h-4 w-4" />
+                              <span className="text-xs">Priority for equity conversation</span>
+                            </div>
+                          )}
+                          {!wmliResults.myFlags.highSubjectiveStrain && !wmliResults.myFlags.fairnessRisk && (
+                            <div className="flex items-center gap-2 text-green-600">
+                              <UserCheck className="h-4 w-4" />
+                              <span className="text-xs">No major strain indicators detected</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Interpretation:</strong> {wmliResults.interpretationContext}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Scores combine burden and fairness ratings weighted by responsibility. Population benchmarks will be established from pilot data.
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-xs font-medium">
-                      {results.myMentalLoad < 100 ? '✓ Low mental load - manageable' :
-                       results.myMentalLoad < 200 ? '⚠️ Moderate mental load - monitor stress' :
-                       results.myMentalLoad < 300 ? '⚠️ High mental load - consider redistributing tasks' :
-                       '🚨 Very high mental load - urgent attention needed'}
-                    </div>
-                  </div>
                   
                   {!isSingleAdult && (
                     <>

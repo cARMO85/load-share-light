@@ -158,7 +158,193 @@ export const calculatePersonLoad = (
   };
 };
 
-// Calculate fairness indicators for all tasks
+// ============= EVIDENCE-BASED FLAG SYSTEM =============
+
+export interface EvidenceFlags {
+  highSubjectiveStrain: boolean;
+  fairnessRisk: boolean;
+  equityPriority: boolean;
+  strainTasks: string[];
+  unfairnessTasks: string[];
+}
+
+// Calculate evidence-based flags per person
+export const calculateEvidenceFlags = (
+  responses: TaskResponse[],
+  taskLookup: Record<string, AllTask>,
+  isMe: boolean = true
+): EvidenceFlags => {
+  const relevantResponses = responses.filter(r => !r.notApplicable && r.likertRating);
+  
+  let strainTasks: string[] = [];
+  let unfairnessTasks: string[] = [];
+  let weightedUnfairness = 0;
+  let totalResponsibility = 0;
+  
+  relevantResponses.forEach(response => {
+    const responsibility = isMe 
+      ? calculateResponsibilityShare(response.assignment, response.mySharePercentage)
+      : 1 - calculateResponsibilityShare(response.assignment, response.mySharePercentage);
+    
+    const { burden, fairness } = response.likertRating!;
+    
+    // Flag: High Subjective Strain (Responsibility ≥ 60% AND Burden ≥ 4)
+    if (responsibility >= 0.6 && burden >= 4) {
+      strainTasks.push(response.taskId);
+    }
+    
+    // Track unfairness for weighted average
+    if (fairness <= 2) { // 1-2 on fairness scale = highly unfair
+      unfairnessTasks.push(response.taskId);
+    }
+    
+    // Calculate weighted unfairness (weighted by responsibility)
+    const unfairnessScore = (5 - fairness) / 4; // Normalize to 0-1
+    weightedUnfairness += unfairnessScore * responsibility;
+    totalResponsibility += responsibility;
+  });
+  
+  const avgWeightedUnfairness = totalResponsibility > 0 ? weightedUnfairness / totalResponsibility : 0;
+  
+  return {
+    highSubjectiveStrain: strainTasks.length > 0,
+    fairnessRisk: avgWeightedUnfairness >= 0.75, // Corresponds to avg fairness ≤ 2
+    equityPriority: false, // Will be calculated at household level
+    strainTasks,
+    unfairnessTasks
+  };
+};
+
+// Calculate couple disparity metrics
+export interface DisparityAnalysis {
+  mentalLoadGap: number; // Percentage points difference
+  mentalLoadRatio: number; // Larger share / smaller share
+  visibleLoadGap: number;
+  visibleLoadRatio: number;
+  highEquityRisk: boolean;
+  overburdened: 'me' | 'partner' | 'none';
+}
+
+export const calculateDisparityAnalysis = (
+  myMentalLoad: number,
+  partnerMentalLoad: number,
+  myVisibleLoad: number,
+  partnerVisibleLoad: number,
+  myFlags: EvidenceFlags,
+  partnerFlags: EvidenceFlags,
+  myMentalPercentage: number,
+  partnerMentalPercentage: number
+): DisparityAnalysis => {
+  const mentalLoadGap = Math.abs(myMentalPercentage - partnerMentalPercentage);
+  const visibleLoadGap = Math.abs(myVisibleLoad - partnerVisibleLoad);
+  
+  const mentalLoadRatio = myMentalPercentage >= partnerMentalPercentage 
+    ? myMentalPercentage / Math.max(partnerMentalPercentage, 1)
+    : partnerMentalPercentage / Math.max(myMentalPercentage, 1);
+  
+  const visibleLoadRatio = myVisibleLoad >= partnerVisibleLoad
+    ? myVisibleLoad / Math.max(partnerVisibleLoad, 1)
+    : partnerVisibleLoad / Math.max(myVisibleLoad, 1);
+  
+  // Determine who is overburdened and equity risk
+  let overburdened: 'me' | 'partner' | 'none' = 'none';
+  let highEquityRisk = false;
+  
+  if (myMentalPercentage >= 60 && myFlags.fairnessRisk) {
+    overburdened = 'me';
+    highEquityRisk = true;
+  } else if (partnerMentalPercentage >= 60 && partnerFlags.fairnessRisk) {
+    overburdened = 'partner';
+    highEquityRisk = true;
+  } else if (mentalLoadGap >= 20) {
+    // Flag high disparity even without fairness issues
+    overburdened = myMentalPercentage > partnerMentalPercentage ? 'me' : 'partner';
+  }
+  
+  return {
+    mentalLoadGap,
+    mentalLoadRatio,
+    visibleLoadGap,
+    visibleLoadRatio,
+    highEquityRisk,
+    overburdened
+  };
+};
+
+// ============= WMLI CALCULATION =============
+
+export interface WMLIResults {
+  myWMLI: number;        // 0-100 Weighted Mental Load Index for me
+  partnerWMLI?: number;  // 0-100 Weighted Mental Load Index for partner
+  householdWMLI: number; // Total household WMLI
+  myFlags: EvidenceFlags;
+  partnerFlags?: EvidenceFlags;
+  disparity?: DisparityAnalysis;
+  interpretationContext: string;
+}
+
+export const calculateWMLI = (
+  responses: TaskResponse[],
+  taskLookup: Record<string, AllTask>,
+  partnerResponses?: TaskResponse[]
+): WMLIResults => {
+  // Calculate my WMLI (equivalent to mental load from existing calculation)
+  const myResults = calculatePersonLoad(responses, taskLookup);
+  const myWMLI = Math.round(myResults.myMentalLoad);
+  const myFlags = calculateEvidenceFlags(responses, taskLookup, true);
+  
+  let partnerWMLI: number | undefined;
+  let partnerFlags: EvidenceFlags | undefined;
+  let disparity: DisparityAnalysis | undefined;
+  
+  if (partnerResponses) {
+    const partnerResults = calculatePersonLoad(partnerResponses, taskLookup);
+    partnerWMLI = Math.round(partnerResults.myMentalLoad);
+    partnerFlags = calculateEvidenceFlags(partnerResponses, taskLookup, true);
+    
+    // Calculate equity flags for both partners
+    myFlags.equityPriority = myResults.myMentalPercentage >= 60 && myFlags.fairnessRisk;
+    partnerFlags.equityPriority = myResults.partnerMentalPercentage! >= 60 && partnerFlags.fairnessRisk;
+    
+    disparity = calculateDisparityAnalysis(
+      myWMLI,
+      partnerWMLI,
+      myResults.myVisibleLoad,
+      myResults.partnerVisibleLoad!,
+      myFlags,
+      partnerFlags,
+      myResults.myMentalPercentage,
+      myResults.partnerMentalPercentage!
+    );
+  }
+  
+  const householdWMLI = myWMLI + (partnerWMLI || 0);
+  
+  // Generate interpretation context
+  let interpretationContext = "Higher WMLI scores indicate greater subjective workload from household responsibilities.";
+  
+  if (partnerWMLI !== undefined) {
+    if (disparity?.highEquityRisk) {
+      interpretationContext += " ⚠️ Significant disparity detected with fairness concerns.";
+    } else if (disparity?.mentalLoadGap && disparity.mentalLoadGap >= 20) {
+      interpretationContext += " Notable difference in mental load distribution.";
+    } else {
+      interpretationContext += " Mental load appears reasonably balanced.";
+    }
+  }
+  
+  return {
+    myWMLI,
+    partnerWMLI,
+    householdWMLI,
+    myFlags,
+    partnerFlags,
+    disparity,
+    interpretationContext
+  };
+};
+
+// Calculate fairness indicators for all tasks (legacy compatibility)
 export const calculateFairnessIndicators = (
   responses: TaskResponse[]
 ): { unfairnessPercentage: number; hasHighUnfairness: boolean } => {
