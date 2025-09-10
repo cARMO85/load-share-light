@@ -16,6 +16,7 @@ import {
   Brain,
   Clock,
   MessageCircle,
+  MessageSquare,
   FileText,
   AlertTriangle,
   CheckCircle,
@@ -644,49 +645,112 @@ const Results: React.FC = () => {
                           <CheckCircle className="h-8 w-8 mx-auto mb-2" />
                           <p>No significant hotspots detected. Your workload appears well-managed!</p>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <div className="text-center mb-6">
+                      ) : (() => {
+                        // Find discussion areas from actual responses
+                        const partnerResponses = state.partnerTaskResponses || [];
+                        const discussionAreas = state.taskResponses
+                          .filter(r => !r.notApplicable)
+                          .map(myResponse => {
+                            const partnerResponse = partnerResponses.find(pr => pr.taskId === myResponse.taskId);
+                            if (!partnerResponse) return null;
+                            
+                            const getResponsibilityShare = (response: any) => {
+                              if (response.assignment === 'me') return 1.0;
+                              if (response.assignment === 'partner') return 0.0;
+                              if (response.assignment === 'shared' && response.mySharePercentage) {
+                                return response.mySharePercentage / 100;
+                              }
+                              return 0.5;
+                            };
+
+                            const myResp = getResponsibilityShare(myResponse);
+                            const partnerResp = getResponsibilityShare(partnerResponse);
+                            const respGap = Math.abs(myResp - partnerResp);
+                            
+                            let burdenGap = 0;
+                            let fairnessGap = 0;
+                            let hasPerceptionIssues = false;
+                            
+                            if (myResponse.likertRating && partnerResponse.likertRating) {
+                              burdenGap = Math.abs(myResponse.likertRating.burden - partnerResponse.likertRating.burden);
+                              fairnessGap = Math.abs(myResponse.likertRating.fairness - partnerResponse.likertRating.fairness);
+                              hasPerceptionIssues = burdenGap > 1 || fairnessGap > 1;
+                            }
+                            
+                            // Include if there's any meaningful difference
+                            if (respGap > 0.2 || hasPerceptionIssues) {
+                              const task = allTaskLookup[myResponse.taskId];
+                              return {
+                                taskId: myResponse.taskId,
+                                taskName: (task && 'title' in task) ? task.title : (task && 'task_name' in task) ? task.task_name : myResponse.taskId,
+                                myResp,
+                                partnerResp,
+                                respGap,
+                                burdenGap,
+                                fairnessGap,
+                                myBurden: myResponse.likertRating?.burden || 0,
+                                partnerBurden: partnerResponse.likertRating?.burden || 0,
+                                myFairness: myResponse.likertRating?.fairness || 0,
+                                partnerFairness: partnerResponse.likertRating?.fairness || 0
+                              };
+                            }
+                            return null;
+                          })
+                          .filter(Boolean)
+                          .sort((a, b) => (b.respGap + b.burdenGap/5 + b.fairnessGap/5) - (a.respGap + a.burdenGap/5 + a.fairnessGap/5))
+                          .slice(0, 5);
+
+                        return discussionAreas.length > 0 ? (
+                          <div className="space-y-4">
+                            <div className="text-center mb-6">
+                              <MessageSquare className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                              <p className="text-lg font-medium">Areas for Discussion</p>
+                              <p className="text-muted-foreground">Tasks where you and your partner have different perspectives</p>
+                            </div>
+                            
+                            {discussionAreas.map((area, index) => (
+                              <div key={area.taskId} className="p-4 border rounded-lg bg-blue-50/30">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="font-medium mb-2">#{index + 1} {area.taskName}</h4>
+                                    <div className="text-sm text-muted-foreground space-y-1">
+                                      {area.respGap > 0.2 && (
+                                        <p>
+                                          <strong>Responsibility gap:</strong> You think you do {Math.round(area.myResp * 100)}%, 
+                                          partner thinks they do {Math.round(area.partnerResp * 100)}%
+                                        </p>
+                                      )}
+                                      {area.burdenGap > 1 && (
+                                        <p>
+                                          <strong>Burden perception:</strong> You rate difficulty {area.myBurden}/5, 
+                                          partner rates {area.partnerBurden}/5
+                                        </p>
+                                      )}
+                                      {area.fairnessGap > 1 && (
+                                        <p>
+                                          <strong>Fairness views:</strong> You rate fairness {area.myFairness}/5, 
+                                          partner rates {area.partnerFairness}/5
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <ConversationPrompts 
+                                    taskName={area.taskName} 
+                                    isCouple={true}
+                                    imbalanceData={area}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center text-muted-foreground">
                             <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                            <p className="text-lg font-medium">Great news! No major imbalances detected.</p>
-                            <p className="text-muted-foreground">Here are some areas you can focus on to maintain and improve your balance:</p>
+                            <p className="text-lg font-medium">Excellent alignment!</p>
+                            <p>You and your partner have very similar perspectives on task distribution.</p>
                           </div>
-                          
-                          <div className="grid gap-4">
-                            <div className="p-4 border rounded-lg border-blue-200 bg-blue-50/50">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                <h4 className="font-medium text-blue-900">Communication & Check-ins</h4>
-                              </div>
-                              <p className="text-sm text-blue-800">Schedule regular conversations about workload to prevent imbalances from developing. Discuss what's working and what could be improved.</p>
-                            </div>
-                            
-                            <div className="p-4 border rounded-lg border-purple-200 bg-purple-50/50">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-                                <h4 className="font-medium text-purple-900">Invisible Labor Recognition</h4>
-                              </div>
-                              <p className="text-sm text-purple-800">Acknowledge and appreciate the mental load tasks like planning, organizing, and remembering. Consider rotating responsibility for these tasks.</p>
-                            </div>
-                            
-                            <div className="p-4 border rounded-lg border-green-200 bg-green-50/50">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                                <h4 className="font-medium text-green-900">Efficiency & Systems</h4>
-                              </div>
-                              <p className="text-sm text-green-800">Create shared systems and routines that reduce overall household burden. Consider tools, schedules, or delegation strategies.</p>
-                            </div>
-                            
-                            <div className="p-4 border rounded-lg border-amber-200 bg-amber-50/50">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-2 h-2 bg-amber-600 rounded-full"></div>
-                                <h4 className="font-medium text-amber-900">Individual Well-being</h4>
-                              </div>
-                              <p className="text-sm text-amber-800">Ensure both partners have time for self-care and personal interests. A balanced household supports individual thriving.</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
