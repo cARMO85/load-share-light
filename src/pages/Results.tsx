@@ -208,12 +208,14 @@ const Results: React.FC = () => {
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-blue-600">{results.myVisiblePercentage}%</div>
-                    <p className="text-sm text-muted-foreground">Your share of visible work</p>
+                    <p className="text-sm text-muted-foreground">
+                      {isSingleAdult ? "Your visible work" : "Your share of visible work"}
+                    </p>
                   </div>
                   
                   {!isSingleAdult && (
                     <div className="flex justify-between text-sm">
-                      <span>You: {results.myVisiblePercentage}%</span>
+                      <span>Mine: {results.myVisiblePercentage}%</span>
                       <span>Partner: {results.partnerVisiblePercentage}%</span>
                     </div>
                   )}
@@ -235,13 +237,37 @@ const Results: React.FC = () => {
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-purple-600">{results.myMentalPercentage}%</div>
-                    <p className="text-sm text-muted-foreground">Your share of mental load</p>
+                    <p className="text-sm text-muted-foreground">
+                      {isSingleAdult ? "Your mental load" : "Your share of mental load"}
+                    </p>
                   </div>
                   
                   {!isSingleAdult && (
-                    <div className="flex justify-between text-sm">
-                      <span>You: {results.myMentalPercentage}%</span>
-                      <span>Partner: {results.partnerMentalPercentage}%</span>
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span>Mine: {results.myMentalPercentage}%</span>
+                        <span>Partner: {results.partnerMentalPercentage}%</span>
+                      </div>
+                      
+                      {/* Context for couples */}
+                      <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          {results.myMentalPercentage > 60 
+                            ? "⚠️ You may be carrying a disproportionate mental load"
+                            : results.myMentalPercentage < 40
+                            ? "✓ Mental load appears fairly balanced"
+                            : "✓ Mental load distribution looks balanced"
+                          }
+                        </p>
+                      </div>
+                    </>
+                  )}
+                  
+                  {isSingleAdult && (
+                    <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        Score: {results.myMentalLoad} - This reflects the cognitive burden from your household tasks. Higher scores indicate more mental effort required.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -263,7 +289,9 @@ const Results: React.FC = () => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Your Mental Load</h3>
+                  <h3 className="text-lg font-semibold">
+                    {isSingleAdult ? "Your Mental Load" : "My Mental Load"}
+                  </h3>
                   <div className="text-3xl font-bold text-primary">
                     {results.myMentalLoad || 0}
                   </div>
@@ -273,10 +301,18 @@ const Results: React.FC = () => {
                   <div className="text-sm">
                     <strong>Percentage of household mental load:</strong> {results.myMentalPercentage || 0}%
                   </div>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
+                    <strong>What this means:</strong> Mental load scores reflect cognitive burden. 
+                    {!isSingleAdult && (
+                      <span> 50/50 would be perfectly balanced. {results.myMentalPercentage > 60 ? "You may be carrying more than your fair share." : "This distribution looks reasonable."}</span>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Your Visible Time</h3>
+                  <h3 className="text-lg font-semibold">
+                    {isSingleAdult ? "Your Visible Work" : "My Visible Work"}
+                  </h3>
                   <div className="text-3xl font-bold text-secondary">
                     {results.myVisibleLoad || 0} tasks
                   </div>
@@ -285,6 +321,9 @@ const Results: React.FC = () => {
                    </p>
                   <div className="text-sm">
                     <strong>Percentage of household visible work:</strong> {results.myVisiblePercentage || 0}%
+                  </div>
+                  <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
+                    <strong>What this means:</strong> This is the actual time spent doing tasks - the visible work that's easy to see and measure.
                   </div>
                 </div>
               </div>
