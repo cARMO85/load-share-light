@@ -45,6 +45,13 @@ const Results: React.FC = () => {
   const [actionItems, setActionItems] = useState<Array<{id: string, text: string, owner: string, date: string}>>([]);
   const [summary, setSummary] = useState('');
 
+  // Auto-open Next Steps section when notes are added
+  React.useEffect(() => {
+    if (summary.trim()) {
+      setOpenSections(prev => ({ ...prev, nextSteps: true }));
+    }
+  }, [summary]);
+
   const isSingleAdult = state.householdSetup.adults === 1;
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
 
@@ -293,7 +300,11 @@ const Results: React.FC = () => {
             </>
           )}
           <Button 
-            onClick={() => setSummary(prev => prev + `\n• Discussed ${taskName} - [Add your notes here]`)}
+            onClick={() => {
+              setSummary(prev => prev + `\n• Discussed ${taskName} - [Add your notes here]`);
+              // Auto-open the Next Steps section when notes are added
+              setOpenSections(prev => ({ ...prev, nextSteps: true }));
+            }}
             variant="outline"
             className="w-full"
           >
@@ -813,6 +824,11 @@ const Results: React.FC = () => {
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5" />
                       Next Steps
+                      {summary.trim() && (
+                        <Badge variant="secondary" className="ml-2">
+                          Has notes
+                        </Badge>
+                      )}
                     </CardTitle>
                     <CardDescription>Action planning and follow-up</CardDescription>
                   </div>
