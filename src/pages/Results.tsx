@@ -539,15 +539,27 @@ const Results: React.FC = () => {
                             const myIntensity = wmliResults.myWMLI_Intensity;
                             const partnerIntensity = wmliResults.partnerWMLI_Intensity || 0;
                             const avgIntensity = (myIntensity + partnerIntensity) / 2;
-                            const intensityGap = Math.abs(myIntensity - partnerIntensity);
+                            
+                            // Factor in imbalance as a stress multiplier
+                            const visibleGap = Math.abs(visibleResults.myVisiblePercentage - 50);
+                            const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
+                            const avgGap = (visibleGap + mentalGap) / 2;
+                            
+                            // Adjust stress level based on imbalance
+                            let adjustedStress = avgIntensity;
+                            if (avgGap > 20) {
+                              adjustedStress = Math.min(100, avgIntensity + 25); // Significant imbalance adds stress
+                            } else if (avgGap > 10) {
+                              adjustedStress = Math.min(100, avgIntensity + 15); // Moderate imbalance adds stress
+                            }
                             
                             // Household stress level
                             let householdStress = '';
                             let stressColor = '';
-                            if (avgIntensity <= 30) {
+                            if (adjustedStress <= 30) {
                               householdStress = 'Low household stress';
                               stressColor = 'text-green-600';
-                            } else if (avgIntensity <= 60) {
+                            } else if (adjustedStress <= 60) {
                               householdStress = 'Moderate household stress';
                               stressColor = 'text-yellow-600';
                             } else {
@@ -555,28 +567,34 @@ const Results: React.FC = () => {
                               stressColor = 'text-red-600';
                             }
                             
-                            // Stress distribution
-                            let distribution = '';
-                            if (intensityGap <= 15) {
-                              distribution = 'Stress fairly distributed between partners';
+                            // Stress source explanation
+                            let stressSource = '';
+                            if (avgGap > 20) {
+                              stressSource = 'Elevated due to significant workload imbalance';
+                            } else if (avgGap > 10) {
+                              stressSource = 'Increased due to workload disparity between partners';
+                            } else if (avgIntensity > 60) {
+                              stressSource = 'High individual burden levels affecting household';
+                            } else if (avgIntensity > 40) {
+                              stressSource = 'Moderate individual burden levels';
                             } else {
-                              distribution = 'Uneven stress distribution - one partner feeling more overwhelmed';
+                              stressSource = 'Both partners managing workload well';
                             }
                             
                             return (
                               <>
                                 <div className="flex justify-between">
-                                  <span>Overall stress level:</span>
+                                  <span>Overall household stress:</span>
                                   <span className={stressColor}>
                                     {householdStress}
                                   </span>
                                 </div>
                                 <div className="text-xs text-purple-700 mt-1">
-                                  {distribution}
+                                  {stressSource}
                                 </div>
-                                {avgIntensity > 60 && (
+                                {adjustedStress > 70 && (
                                   <div className="text-xs text-red-600 font-medium mt-2">
-                                    ⚠ Consider reducing overall household burden or seeking support
+                                    ⚠ Consider addressing imbalance or reducing overall household burden
                                   </div>
                                 )}
                               </>
