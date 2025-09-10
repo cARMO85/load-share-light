@@ -267,11 +267,27 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="h-4 w-4 text-red-500" />
                   <span className="font-medium text-red-700 dark:text-red-400">
-                    One partner is feeling overwhelmed by some tasks
+                    High stress on specific tasks
                   </span>
                 </div>
                 <p className="text-sm text-red-600 dark:text-red-300">
-                  Partner 1 is handling most of the work AND finding it really stressful for: {strainTasks.map(t => t.title).join(', ')}
+                  <strong>Partner 1</strong> is carrying most of the responsibility for {strainTasks.map(t => t.title).join(', ')} and finding these tasks particularly stressful. 
+                  <br /><strong>Partner 2</strong> could help by taking on more of these tasks or finding ways to reduce the burden.
+                </p>
+              </div>
+            )}
+            
+            {wmliResults.partnerFlags?.highSubjectiveStrain && (
+              <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <XCircle className="h-4 w-4 text-red-500" />
+                  <span className="font-medium text-red-700 dark:text-red-400">
+                    Partner 2 experiencing task stress
+                  </span>
+                </div>
+                <p className="text-sm text-red-600 dark:text-red-300">
+                  <strong>Partner 2</strong> is feeling overwhelmed by certain household responsibilities. 
+                  <br /><strong>Partner 1</strong> could provide support by sharing these tasks or helping to streamline them.
                 </p>
               </div>
             )}
@@ -281,25 +297,43 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="h-4 w-4 text-orange-500" />
                   <span className="font-medium text-orange-700 dark:text-orange-400">
-                    Some contributions feel unrecognized
+                    Partner 1 feels unrecognized
                   </span>
                 </div>
                 <p className="text-sm text-orange-600 dark:text-orange-300">
-                  One partner feels their household contributions aren't being recognized or appreciated enough
+                  <strong>Partner 1</strong> feels their household contributions aren't being fully acknowledged. 
+                  <br /><strong>Partner 2</strong> could help by expressing more appreciation and recognition for these efforts.
                 </p>
               </div>
             )}
             
-            {wmliResults.myFlags.equityPriority && (
+            {wmliResults.partnerFlags?.fairnessRisk && (
+              <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <XCircle className="h-4 w-4 text-orange-500" />
+                  <span className="font-medium text-orange-700 dark:text-orange-400">
+                    Partner 2 feels unrecognized
+                  </span>
+                </div>
+                <p className="text-sm text-orange-600 dark:text-orange-300">
+                  <strong>Partner 2</strong> feels their household contributions aren't being fully acknowledged. 
+                  <br /><strong>Partner 1</strong> could help by expressing more appreciation and recognition for these efforts.
+                </p>
+              </div>
+            )}
+            
+            {wmliResults.disparity?.highEquityRisk && (
               <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200">
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="h-4 w-4 text-red-600" />
                   <span className="font-medium text-red-700 dark:text-red-400">
-                    Significant household imbalance
+                    Significant household imbalance detected
                   </span>
                 </div>
                 <p className="text-sm text-red-600 dark:text-red-300">
-                  One partner is carrying most of the mental load AND it feels unfair - time for a household conversation!
+                  Your household has a {Math.round(wmliResults.disparity.mentalLoadGap)}% gap in mental load distribution. 
+                  <strong>{wmliResults.disparity.overburdened === 'me' ? 'Partner 1' : 'Partner 2'}</strong> is carrying significantly more mental load, 
+                  while <strong>{wmliResults.disparity.overburdened === 'me' ? 'Partner 2' : 'Partner 1'}</strong> could take on more responsibility to create better balance.
                 </p>
               </div>
             )}
