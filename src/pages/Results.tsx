@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { DiscussionNotes } from '@/components/DiscussionNotes';
@@ -173,8 +174,8 @@ const Results: React.FC = () => {
             Discussion
           </TabsTrigger>
           <TabsTrigger value="insights">
-            <Users className="h-4 w-4 mr-1" />
-            {isSingleAdult ? "Your Data" : "Household Overview"}
+            <BarChart3 className="h-4 w-4 mr-1" />
+            Your Data
           </TabsTrigger>
           <TabsTrigger value="wmli">
             <Brain className="h-4 w-4 mr-1" />
@@ -232,12 +233,190 @@ const Results: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">
-          <HouseholdInsights 
-            wmliResults={wmliResults}
-            taskResponses={state.taskResponses}
-            results={results}
-            isSingleAdult={isSingleAdult}
-          />
+          {/* Partner Comparison Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-blue/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  Visible Work Load
+                </CardTitle>
+                <CardDescription>
+                  The actual time spent on household tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-blue-600">{results.myVisiblePercentage}%</div>
+                    <p className="text-sm text-muted-foreground">
+                      {isSingleAdult ? "Your visible work" : "Your share of visible work"}
+                    </p>
+                  </div>
+                  
+                  {!isSingleAdult && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span>You: {results.myVisiblePercentage}%</span>
+                        <span>Partner: {results.partnerVisiblePercentage}%</span>
+                      </div>
+                      <Progress value={results.myVisiblePercentage} className="h-2" />
+                      <p className="text-xs text-muted-foreground text-center">
+                        Distribution of household visible work
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-purple/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                  Mental Load (WMLI)
+                </CardTitle>
+                <CardDescription>
+                  The cognitive work of planning and managing
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-purple-600">{wmliResults.myWMLI_Intensity || 0}/100</div>
+                    <p className="text-sm text-muted-foreground">Your WMLI Intensity</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isSingleAdult ? "Your mental load intensity" : `Your share: ${wmliResults.myWMLI_Share || 0}%`}
+                    </p>
+                  </div>
+                  
+                  {!isSingleAdult && wmliResults.partnerWMLI_Intensity !== undefined && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="text-center p-2 bg-primary/10 rounded">
+                          <div className="font-semibold">You</div>
+                          <div>{wmliResults.myWMLI_Intensity || 0}/100 intensity</div>
+                          <div>{wmliResults.myWMLI_Share || 0}% of load</div>
+                        </div>
+                        <div className="text-center p-2 bg-secondary/10 rounded">
+                          <div className="font-semibold">Partner</div>
+                          <div>{wmliResults.partnerWMLI_Intensity || 0}/100 intensity</div>
+                          <div>{wmliResults.partnerWMLI_Share || 0}% of load</div>
+                        </div>
+                      </div>
+                      
+                      {wmliResults.disparity && (
+                        <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                          <p className="text-xs text-muted-foreground">
+                            <strong>Mental Load Gap:</strong> {Math.round(wmliResults.disparity.mentalLoadGap)}% difference
+                          </p>
+                          {wmliResults.disparity.highEquityRisk && (
+                            <p className="text-xs text-orange-600 mt-1">
+                              ⚠️ Significant imbalance detected - good topic for discussion
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {isSingleAdult && (
+                    <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        <strong>WMLI {wmliResults.myWMLI_Intensity || 0}:</strong> {wmliResults.interpretationContext}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Discussion Insights for Partners */}
+          {!isSingleAdult && (
+            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  For Your Discussion
+                </CardTitle>
+                <CardDescription>
+                  Key insights both partners should know
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* My Flags */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-primary">Your Experience</h4>
+                    <div className="space-y-2">
+                      {wmliResults.myFlags.highSubjectiveStrain ? (
+                        <Badge variant="destructive" className="text-xs">
+                          Feeling overwhelmed by some tasks
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          Managing workload well
+                        </Badge>
+                      )}
+                      {wmliResults.myFlags.fairnessRisk ? (
+                        <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
+                          Contributions feel unrecognized
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs border-green-500 text-green-600">
+                          Feeling appreciated
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Partner Flags */}
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-secondary">Partner's Experience</h4>
+                    <div className="space-y-2">
+                      {wmliResults.partnerFlags?.highSubjectiveStrain ? (
+                        <Badge variant="destructive" className="text-xs">
+                          Feeling overwhelmed by some tasks
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          Managing workload well
+                        </Badge>
+                      )}
+                      {wmliResults.partnerFlags?.fairnessRisk ? (
+                        <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
+                          Contributions feel unrecognized
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs border-green-500 text-green-600">
+                          Feeling appreciated
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overall Household Status */}
+                <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                  <h4 className="font-medium mb-2">Household Status</h4>
+                  {wmliResults.disparity?.highEquityRisk ? (
+                    <p className="text-sm text-orange-700 dark:text-orange-300">
+                      ⚠️ There's a significant imbalance in mental load distribution. This is a great opportunity to discuss how to better share responsibilities.
+                    </p>
+                  ) : wmliResults.disparity && wmliResults.disparity.mentalLoadGap >= 15 ? (
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      📊 There's some difference in mental load distribution ({Math.round(wmliResults.disparity.mentalLoadGap)}% gap). Consider discussing if this feels right for both of you.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      ✅ Your mental load distribution appears fairly balanced. Great work!
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="wmli" className="space-y-6">
