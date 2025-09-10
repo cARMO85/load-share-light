@@ -525,19 +525,19 @@ const Results: React.FC = () => {
           </Collapsible>
         </Card>
 
-        {/* 4. WMLI Intensity */}
+        {/* 4. Mental Load Intensity */}
         <Card id="intensity" className="border-2">
           <Collapsible open={openSections.intensity} onOpenChange={() => toggleSection('intensity')}>
             <CollapsibleTrigger asChild>
               <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Brain className="h-5 w-5" />
-                      WMLI Intensity Explanation
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                        <HelpCircle className="h-4 w-4" />
-                      </Button>
+                     <CardTitle className="flex items-center gap-2">
+                       <Brain className="h-5 w-5" />
+                       Mental Load Intensity Explanation
+                       <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                         <HelpCircle className="h-4 w-4" />
+                       </Button>
                     </CardTitle>
                     <CardDescription>Understanding your mental workload level</CardDescription>
                   </div>
@@ -576,7 +576,7 @@ const Results: React.FC = () => {
                 <div className="space-y-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm">
-                      <strong>WMLI (0–100):</strong> This score reflects how heavy your share of invisible household work feels to you — higher = more mental strain.
+                      <strong>Mental Load Score (0–100):</strong> This score reflects how heavy your share of invisible household work feels to you — higher = more mental strain.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
                       Technical: Average subjective workload across tasks (burden + unfairness, weighted by responsibility).
@@ -609,10 +609,10 @@ const Results: React.FC = () => {
                   <details className="text-sm">
                     <summary className="cursor-pointer font-medium hover:text-primary">
                       <HelpCircle className="h-4 w-4 inline mr-1" />
-                      Understanding WMLI Metrics
+                      Understanding Mental Load Metrics
                     </summary>
                     <div className="mt-3 space-y-2 text-xs text-muted-foreground pl-4">
-                      <p><strong>WMLI Share (%):</strong> Which partner carries what proportion of the household's total mental load.</p>
+                      <p><strong>Mental Load Share (%):</strong> Which partner carries what proportion of the household's total mental load.</p>
                       <p><strong>Equity rule of thumb:</strong> Balanced bands: 40–60% each. Outside 60% signals potential inequity.</p>
                       <p><strong>Evidence flags:</strong> Research-backed indicators of workload strain and fairness concerns.</p>
                     </div>
