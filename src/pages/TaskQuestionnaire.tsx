@@ -12,6 +12,8 @@ import { TaskResponse, LikertRating } from '@/types/assessment';
 import { Clock, Brain, Users, UserCheck, Heart, Calendar, Eye, BarChart3 } from 'lucide-react';
 import { InfoButton } from '@/components/InfoButton';
 import { createDemoResponses, isDevelopment } from '@/lib/devUtils';
+import { testProfiles } from '@/components/DevProfileSelector';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +29,7 @@ const TaskQuestionnaire: React.FC = () => {
   );
 
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
+  const [selectedProfile, setSelectedProfile] = useState<string>('');
 
   // Dev function to auto-populate responses
   const handleAutoPopulate = () => {
@@ -251,15 +254,44 @@ const TaskQuestionnaire: React.FC = () => {
             Who Does What?
           </h1>
           {isDevelopment && (
-            <div className="mb-4">
-              <Button 
-                onClick={handleAutoPopulate} 
-                variant="outline" 
-                size="sm"
-                className="text-xs bg-yellow-100 border-yellow-300 hover:bg-yellow-200 text-yellow-800"
-              >
-                🔧 Dev: Auto-populate Demo Data
-              </Button>
+            <div className="mb-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <Select value={selectedProfile} onValueChange={setSelectedProfile}>
+                  <SelectTrigger className="w-[280px] bg-yellow-50 border-yellow-300">
+                    <SelectValue placeholder="Choose test profile..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 z-50">
+                    <SelectItem value="">Default Demo Data</SelectItem>
+                    {testProfiles.map(profile => {
+                      const IconComponent = profile.icon;
+                      return (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="h-4 w-4" />
+                            <span>{profile.name}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                
+                <Button 
+                  onClick={handleAutoPopulate} 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs bg-yellow-100 border-yellow-300 hover:bg-yellow-200 text-yellow-800"
+                >
+                  🔧 {selectedProfile ? 'Apply Profile' : 'Auto-populate Demo'}
+                </Button>
+              </div>
+              
+              {selectedProfile && (
+                <div className="text-xs text-yellow-700 bg-yellow-50 p-2 rounded border border-yellow-200">
+                  <strong>{testProfiles.find(p => p.id === selectedProfile)?.name}:</strong>{' '}
+                  {testProfiles.find(p => p.id === selectedProfile)?.description}
+                </div>
+              )}
             </div>
           )}
           <p className="text-muted-foreground mb-4">
