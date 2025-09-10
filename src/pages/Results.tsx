@@ -14,6 +14,7 @@ import { calculatePersonLoad, calculateWMLI } from '@/lib/calculationUtils';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
 import HouseholdInsights from '@/components/HouseholdInsights';
 import { WMLIBreakdown } from '@/components/WMLIBreakdown';
+import { DevProfileSelector } from '@/components/DevProfileSelector';
 import { 
   AlertCircle, 
   BarChart3, 
@@ -195,36 +196,15 @@ const Results: React.FC = () => {
         </TabsList>
 
         <TabsContent value="conversation" className="space-y-6">
-          {/* Development Panel - Only visible in dev mode */}
+          {/* Development Panel - Profile Selector */}
           {isDevelopment && (
-            <Card className="bg-yellow-50 border-yellow-200 dark:bg-yellow-900/10 dark:border-yellow-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-                  <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                    DEV
-                  </Badge>
-                  Development Testing Tools
-                </CardTitle>
-                <CardDescription>
-                  Tools for testing the conversation facilitator with sample data
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-3">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => console.log('Demo functionality removed')}
-                    className="border-yellow-300 text-yellow-800 hover:bg-yellow-100 dark:border-yellow-700 dark:text-yellow-200 dark:hover:bg-yellow-900/20"
-                  >
-                    Demo Button (Functionality Removed)
-                  </Button>
-                  <div className="text-sm text-muted-foreground flex items-center">
-                    This will populate realistic sample comments from the questionnaire for testing
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <DevProfileSelector 
+              onProfileSelected={(profile) => {
+                console.log('Applied profile:', profile.name);
+                // Refresh page to see new data
+                window.location.reload();
+              }}
+            />
           )}
           
           <DiscussionNotes 

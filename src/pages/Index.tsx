@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, MessageSquare, PenTool, BarChart3, ArrowRight } from 'lucide-react';
+import { DevProfileSelector } from '@/components/DevProfileSelector';
+import { isDevelopment } from '@/lib/devUtils';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -215,6 +217,18 @@ const Index = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Development Panel */}
+        {isDevelopment && (
+          <div className="mt-8">
+            <DevProfileSelector 
+              onProfileSelected={(profile) => {
+                console.log('Applied profile:', profile.name);
+                navigate('/results');
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
