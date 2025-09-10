@@ -246,33 +246,78 @@ const Results: React.FC = () => {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-6">
-                {/* Big Numbers */}
+                {/* Big Numbers with Plain Language */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{visibleResults.myVisiblePercentage}%</div>
-                    <div className="text-sm font-medium">Visible Share (%)</div>
+                  <div className={`text-center p-4 rounded-lg ${
+                    isSingleAdult ? 'bg-blue-50 dark:bg-blue-950/20' :
+                    Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'bg-green-50 dark:bg-green-950/20' :
+                    Math.abs(visibleResults.myVisiblePercentage - 50) <= 25 ? 'bg-yellow-50 dark:bg-yellow-950/20' :
+                    'bg-red-50 dark:bg-red-950/20'
+                  }`}>
+                    <div className={`text-2xl font-bold ${
+                      isSingleAdult ? 'text-blue-600' :
+                      Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'text-green-600' :
+                      Math.abs(visibleResults.myVisiblePercentage - 50) <= 25 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>{visibleResults.myVisiblePercentage}%</div>
+                    <div className="text-sm font-medium">Your visible time share</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {isSingleAdult ? 'Individual household' :
+                       Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'balanced with partner' :
+                       visibleResults.myVisiblePercentage > 50 ? 'doing more visible work' :
+                       'doing less visible work'}
+                    </div>
                     {!isSingleAdult && (
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="text-xs text-muted-foreground">
                         You {visibleResults.myVisiblePercentage}% • Partner {visibleResults.partnerVisiblePercentage}%
                       </div>
                     )}
                   </div>
                   
-                  <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">{wmliResults.myWMLI_Intensity}/100</div>
-                    <div className="text-sm font-medium">WMLI Intensity (0-100)</div>
+                  <div className={`text-center p-4 rounded-lg ${
+                    wmliResults.myWMLI_Intensity <= 33 ? 'bg-green-50 dark:bg-green-950/20' :
+                    wmliResults.myWMLI_Intensity <= 66 ? 'bg-yellow-50 dark:bg-yellow-950/20' :
+                    'bg-red-50 dark:bg-red-950/20'
+                  }`}>
+                    <div className={`text-2xl font-bold ${
+                      wmliResults.myWMLI_Intensity <= 33 ? 'text-green-600' :
+                      wmliResults.myWMLI_Intensity <= 66 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>{wmliResults.myWMLI_Intensity}/100</div>
+                    <div className="text-sm font-medium">Your mental load intensity</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {wmliResults.myWMLI_Intensity <= 33 ? 'light subjective workload' :
+                       wmliResults.myWMLI_Intensity <= 66 ? 'moderate mental strain' :
+                       'high mental burden'}
+                    </div>
                     {!isSingleAdult && wmliResults.partnerWMLI_Intensity !== undefined && (
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="text-xs text-muted-foreground">
                         You {wmliResults.myWMLI_Intensity} • Partner {wmliResults.partnerWMLI_Intensity}
                       </div>
                     )}
                   </div>
                   
-                  <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{wmliResults.myWMLI_Share || 50}%</div>
-                    <div className="text-sm font-medium">WMLI Share (%)</div>
+                  <div className={`text-center p-4 rounded-lg ${
+                    isSingleAdult ? 'bg-blue-50 dark:bg-blue-950/20' :
+                    Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'bg-green-50 dark:bg-green-950/20' :
+                    Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 25 ? 'bg-yellow-50 dark:bg-yellow-950/20' :
+                    'bg-red-50 dark:bg-red-950/20'
+                  }`}>
+                    <div className={`text-2xl font-bold ${
+                      isSingleAdult ? 'text-blue-600' :
+                      Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'text-green-600' :
+                      Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 25 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>{wmliResults.myWMLI_Share || 50}%</div>
+                    <div className="text-sm font-medium">Your share of household mental load</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {isSingleAdult ? 'Individual household' :
+                       Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'close to equal' :
+                       (wmliResults.myWMLI_Share || 50) > 50 ? 'carrying more mental load' :
+                       'carrying less mental load'}
+                    </div>
                     {!isSingleAdult && (
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="text-xs text-muted-foreground">
                         You {wmliResults.myWMLI_Share}% • Partner {wmliResults.partnerWMLI_Share}%
                       </div>
                     )}
@@ -332,9 +377,9 @@ const Results: React.FC = () => {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5" />
-                      What's Driving Your Score
+                      Tasks adding most to your mental load
                     </CardTitle>
-                    <CardDescription>Top 3 tasks needing attention</CardDescription>
+                    <CardDescription>Areas of highest burden that might need attention</CardDescription>
                   </div>
                   {openSections.drivers ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
@@ -597,6 +642,34 @@ const Results: React.FC = () => {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-6">
+                {/* Positive Framing First */}
+                <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">What's Working Well</h4>
+                      <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
+                        {statusInfo.status === 'Balanced' && (
+                          <p>• Your household shows good balance in mental load distribution</p>
+                        )}
+                        {wmliResults.myWMLI_Intensity <= 33 && (
+                          <p>• You're managing your mental load without excessive strain</p>
+                        )}
+                        {hotspots.length === 0 && (
+                          <p>• No major hotspots detected in your household work patterns</p>
+                        )}
+                        {!wmliResults.myFlags.highSubjectiveStrain && (
+                          <p>• Your current workload feels manageable and sustainable</p>
+                        )}
+                        {Math.abs(visibleResults.myVisiblePercentage - 50) <= 15 && (
+                          <p>• Time-based tasks are reasonably shared between partners</p>
+                        )}
+                        <p>• Taking this assessment shows commitment to household equity</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Pre-populated Recommendations */}
                 <div className="space-y-4">
                   <h4 className="font-medium">Recommended Actions</h4>
