@@ -37,10 +37,6 @@ const HouseholdSetup: React.FC = () => {
         newSetup.adults = 1;
         newSetup.partnerEmployed = undefined;
         newSetup.children = 0; // Individual has no children
-      } else if (updates.householdType === 'single_parent') {
-        newSetup.adults = 1;
-        newSetup.partnerEmployed = undefined;
-        if (newSetup.children === 0) newSetup.children = 1; // Default to 1 child if not set
       } else if (updates.householdType === 'couple') {
         newSetup.adults = 2;
         // Don't auto-set children for couple - they can have children or not
@@ -80,7 +76,7 @@ const HouseholdSetup: React.FC = () => {
                 <p className="text-sm text-muted-foreground mt-1">This helps us show you relevant tasks and comparisons</p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Button
                   variant={setup.householdType === 'single' ? "default" : "outline"}
                   onClick={() => updateSetup({ householdType: 'single' })}
@@ -91,18 +87,6 @@ const HouseholdSetup: React.FC = () => {
                      <div className="font-medium">Individual</div>
                      <div className="text-xs text-muted-foreground">Living alone</div>
                    </div>
-                </Button>
-                
-                <Button
-                  variant={setup.householdType === 'single_parent' ? "default" : "outline"}
-                  onClick={() => updateSetup({ householdType: 'single_parent' })}
-                  className="h-auto p-4 flex flex-col items-center gap-2"
-                >
-                  <Baby className="h-6 w-6" />
-                  <div className="text-center">
-                    <div className="font-medium">Parent</div>
-                    <div className="text-xs text-muted-foreground">Raising children</div>
-                  </div>
                 </Button>
                 
                 <Button
@@ -119,8 +103,8 @@ const HouseholdSetup: React.FC = () => {
               </div>
             </div>
 
-            {/* Tip for couples and parents */}
-            {(setup.householdType === 'couple' || setup.householdType === 'single_parent') && (
+            {/* Tip for couples */}
+            {setup.householdType === 'couple' && (
               <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                 <p className="text-sm text-muted-foreground text-center">
                   💡 <strong>Tip:</strong> For the best results, try completing this assessment together as a pair. If you do it alone, you can still share your results afterwards.
@@ -128,8 +112,8 @@ const HouseholdSetup: React.FC = () => {
               </div>
             )}
 
-            {/* Children - Show for Parent and Couple categories */}
-            {(setup.householdType === 'single_parent' || setup.householdType === 'couple') && (
+            {/* Children - Show for Couples only */}
+            {setup.householdType === 'couple' && (
               <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-3">
                   <Baby className="h-6 w-6 text-primary" />
@@ -139,7 +123,7 @@ const HouseholdSetup: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {(setup.householdType === 'couple' ? [0, 1, 2, 3] : [1, 2, 3]).map(num => (
+                  {[0, 1, 2, 3].map(num => (
                     <Button
                       key={num}
                       variant={setup.children === num ? "default" : "outline"}

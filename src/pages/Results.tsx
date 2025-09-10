@@ -109,7 +109,7 @@ const Results: React.FC = () => {
   // Top 3 hotspots calculation - different logic for couples vs singles
   const getHotspots = () => {
     if (isSingleAdult) {
-      // Single parent: Show individual pain points (current logic)
+      // Individual: Show individual pain points (current logic)
       const taskScores = state.taskResponses
         .filter(r => !r.notApplicable && r.likertRating)
         .map(response => {
@@ -291,7 +291,7 @@ const Results: React.FC = () => {
                 </div>
               </>
             ) : (
-              // Individual/single parent prompts
+              // Individual/single prompts
               <>
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm">"What makes {taskName} feel particularly burdensome right now?"</p>
@@ -563,7 +563,7 @@ const Results: React.FC = () => {
                           </div>
                           
                           {hotspot.type === 'individual' ? (
-                            // Single parent view - individual burden
+                            // Individual view - individual burden
                             <p className="text-sm text-muted-foreground mt-1">
                               {hotspot.burden >= 4 ? (
                                 <>This task feels <strong>very burdensome</strong> (rated {hotspot.burden}/5 for difficulty)</>

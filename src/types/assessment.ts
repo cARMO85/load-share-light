@@ -1,4 +1,4 @@
-export type HouseholdType = 'single' | 'single_parent' | 'couple' | 'couple_with_children' | 'other';
+export type HouseholdType = 'single' | 'couple';
 export type AssessmentMode = 'solo' | 'together';
 
 export interface HouseholdSetup {
