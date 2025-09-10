@@ -518,11 +518,11 @@ const Results: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  // Couple View - Relationship focused
+                  // Couple View - Both Partners' Results
                   <div className="space-y-6">
-                    {/* Relationship Balance Status */}
+                    {/* Household Status */}
                     <div className="text-center p-6 rounded-lg border-2 border-dashed border-muted-foreground/30">
-                      <h3 className="text-lg font-semibold mb-2">Your Household Balance</h3>
+                      <h3 className="text-lg font-semibold mb-2">Household Balance Status</h3>
                       {(() => {
                         const visibleGap = Math.abs(visibleResults.myVisiblePercentage - 50);
                         const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
@@ -556,135 +556,145 @@ const Results: React.FC = () => {
                       })()}
                     </div>
 
-                    {/* Key Insights - No duplicate visuals */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Balance Summary */}
+                    {/* Both Partners' Individual Scores */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Partner 1 Scores */}
                       <div className="p-4 rounded-lg bg-blue-50/50 border border-blue-200">
                         <div className="flex items-center gap-2 mb-3">
                           <Users className="h-5 w-5 text-blue-600" />
-                          <h4 className="font-medium text-blue-900">Partnership Balance</h4>
+                          <h4 className="font-medium text-blue-900">Partner 1 (Assessment Taker)</h4>
                         </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Visible work:</span>
-                            <span className={Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'text-green-600' : 'text-amber-600'}>
-                              {Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 
-                                ? 'Balanced' 
-                                : visibleResults.myVisiblePercentage > 50 
-                                  ? `You do ${Math.abs(visibleResults.myVisiblePercentage - 50)}% more`
-                                  : `Partner does ${Math.abs(visibleResults.myVisiblePercentage - 50)}% more`}
-                            </span>
+                        <div className="space-y-3 text-sm">
+                          <div className="text-center p-3 rounded bg-blue-100">
+                            <div className="text-xl font-bold text-blue-700">{visibleResults.myVisiblePercentage}%</div>
+                            <div className="text-xs">Visible work share</div>
                           </div>
-                          <div className="flex justify-between">
-                            <span>Mental load:</span>
-                            <span className={Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'text-green-600' : 'text-amber-600'}>
-                              {Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 
-                                ? 'Balanced' 
-                                : (wmliResults.myWMLI_Share || 50) > 50
-                                  ? `You carry ${Math.abs((wmliResults.myWMLI_Share || 50) - 50)}% more`
-                                  : `Partner carries ${Math.abs((wmliResults.myWMLI_Share || 50) - 50)}% more`}
-                            </span>
+                          <div className="text-center p-3 rounded bg-blue-100">
+                            <div className="text-xl font-bold text-blue-700">{wmliResults.myWMLI_Share || 50}%</div>
+                            <div className="text-xs">Mental load share</div>
+                          </div>
+                          <div className="text-center p-3 rounded bg-blue-100">
+                            <div className="text-xl font-bold text-blue-700">{wmliResults.myWMLI_Intensity}/100</div>
+                            <div className="text-xs">Mental load intensity</div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Household Stress Assessment */}
-                      <div className="p-4 rounded-lg bg-purple-50/50 border border-purple-200">
+                      {/* Partner 2 Scores */}
+                      <div className="p-4 rounded-lg bg-orange-50/50 border border-orange-200">
                         <div className="flex items-center gap-2 mb-3">
-                          <Brain className="h-5 w-5 text-purple-600" />
-                          <h4 className="font-medium text-purple-900">Household Stress Assessment</h4>
+                          <Users className="h-5 w-5 text-orange-600" />
+                          <h4 className="font-medium text-orange-900">Partner 2</h4>
                         </div>
                         <div className="space-y-3 text-sm">
+                          <div className="text-center p-3 rounded bg-orange-100">
+                            <div className="text-xl font-bold text-orange-700">{100 - visibleResults.myVisiblePercentage}%</div>
+                            <div className="text-xs">Visible work share</div>
+                          </div>
+                          <div className="text-center p-3 rounded bg-orange-100">
+                            <div className="text-xl font-bold text-orange-700">{100 - (wmliResults.myWMLI_Share || 50)}%</div>
+                            <div className="text-xs">Mental load share</div>
+                          </div>
+                          <div className="text-center p-3 rounded bg-orange-100">
+                            <div className="text-xl font-bold text-orange-700">{wmliResults.partnerWMLI_Intensity || 50}/100</div>
+                            <div className="text-xs">Mental load intensity</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Household Summary */}
+                    <div className="p-4 rounded-lg bg-purple-50/50 border border-purple-200">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Brain className="h-5 w-5 text-purple-600" />
+                        <h4 className="font-medium text-purple-900">Household Summary</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="font-medium mb-2">Work Distribution Balance</div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span>Visible work gap:</span>
+                              <span className={Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'text-green-600' : 'text-amber-600'}>
+                                {Math.abs(visibleResults.myVisiblePercentage - 50)}%
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Mental load gap:</span>
+                              <span className={Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'text-green-600' : 'text-amber-600'}>
+                                {Math.abs((wmliResults.myWMLI_Share || 50) - 50)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="font-medium mb-2">Household Stress Level</div>
                           {(() => {
                             const myIntensity = wmliResults.myWMLI_Intensity;
                             const partnerIntensity = wmliResults.partnerWMLI_Intensity || 0;
                             const avgIntensity = (myIntensity + partnerIntensity) / 2;
-                            
-                            // Factor in imbalance as a stress multiplier
                             const visibleGap = Math.abs(visibleResults.myVisiblePercentage - 50);
                             const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
                             const avgGap = (visibleGap + mentalGap) / 2;
                             
-                            // Adjust stress level based on imbalance
                             let adjustedStress = avgIntensity;
                             if (avgGap > 20) {
-                              adjustedStress = Math.min(100, avgIntensity + 25); // Significant imbalance adds stress
+                              adjustedStress = Math.min(100, avgIntensity + 25);
                             } else if (avgGap > 10) {
-                              adjustedStress = Math.min(100, avgIntensity + 15); // Moderate imbalance adds stress
+                              adjustedStress = Math.min(100, avgIntensity + 15);
                             }
                             
-                            // Household stress level
-                            let householdStress = '';
+                            let stressLevel = '';
                             let stressColor = '';
                             if (adjustedStress <= 30) {
-                              householdStress = 'Low household stress';
+                              stressLevel = 'Low';
                               stressColor = 'text-green-600';
                             } else if (adjustedStress <= 60) {
-                              householdStress = 'Moderate household stress';
+                              stressLevel = 'Moderate';
                               stressColor = 'text-yellow-600';
                             } else {
-                              householdStress = 'High household stress';
+                              stressLevel = 'High';
                               stressColor = 'text-red-600';
                             }
                             
-                            // Stress source explanation
-                            let stressSource = '';
-                            if (avgGap > 20) {
-                              stressSource = 'Elevated due to significant workload imbalance';
-                            } else if (avgGap > 10) {
-                              stressSource = 'Increased due to workload disparity between partners';
-                            } else if (avgIntensity > 60) {
-                              stressSource = 'High individual burden levels affecting household';
-                            } else if (avgIntensity > 40) {
-                              stressSource = 'Moderate individual burden levels';
-                            } else {
-                              stressSource = 'Both partners managing workload well';
-                            }
-                            
                             return (
-                              <>
+                              <div className="space-y-1">
                                 <div className="flex justify-between">
-                                  <span>Overall household stress:</span>
-                                  <span className={stressColor}>
-                                    {householdStress}
-                                  </span>
+                                  <span>Overall stress:</span>
+                                  <span className={stressColor}>{stressLevel}</span>
                                 </div>
-                                <div className="text-xs text-purple-700 mt-1">
-                                  {stressSource}
+                                <div className="text-xs text-muted-foreground">
+                                  Based on partner intensity levels and workload balance
                                 </div>
-                                {adjustedStress > 70 && (
-                                  <div className="text-xs text-red-600 font-medium mt-2">
-                                    ⚠ Consider addressing imbalance or reducing overall household burden
-                                  </div>
-                                )}
-                              </>
+                              </div>
                             );
                           })()}
                         </div>
                       </div>
                     </div>
 
-                    {/* Relationship Insight */}
+                    {/* Partnership Insight */}
                     <div className="p-4 bg-gray-50/50 rounded-lg border border-gray-200">
                       <div className="flex items-start gap-3">
                         <MessageCircle className="h-5 w-5 text-gray-600 mt-0.5" />
                         <div>
-                          <h4 className="font-medium text-gray-900 mb-1">Partnership Insight</h4>
+                          <h4 className="font-medium text-gray-900 mb-1">Partnership Analysis</h4>
                           <p className="text-sm text-gray-800">
                             {(() => {
                               const visibleDiff = visibleResults.myVisiblePercentage - 50;
                               const mentalDiff = (wmliResults.myWMLI_Share || 50) - 50;
                               
                               if (Math.abs(visibleDiff) <= 8 && Math.abs(mentalDiff) <= 8) {
-                                return "You both contribute fairly equally to household work. This balanced partnership is associated with higher relationship satisfaction and lower stress for both partners.";
+                                return "Both partners contribute fairly equally to household work. This balanced partnership is associated with higher relationship satisfaction and lower stress for both partners.";
                               } else if (visibleDiff > 15 && mentalDiff > 15) {
-                                return "You're carrying significantly more of both visible and mental work. Consider discussing how to redistribute some responsibilities to prevent burnout.";
+                                return "Partner 1 is carrying significantly more of both visible and mental work. The partnership may benefit from redistributing some responsibilities to prevent burnout.";
                               } else if (visibleDiff < -15 && mentalDiff < -15) {
-                                return "Your partner is handling most of the household work. Acknowledge their contribution and consider taking on more responsibilities to support them.";
+                                return "Partner 2 is handling most of the household work. Their contribution should be acknowledged and responsibilities could be redistributed for better balance.";
                               } else if (Math.abs(visibleDiff - mentalDiff) > 15) {
-                                return "There's a mismatch between who does the work and who manages it. Consider having the person doing less visible work take on more of the planning and organizing.";
+                                return "There's a mismatch between who does the work and who manages it. The partner doing less visible work could take on more of the planning and organizing.";
                               } else {
-                                return "Your partnership shows some imbalance. Regular check-ins about who does what can help maintain fairness and prevent resentment over time.";
+                                return "The partnership shows some imbalance. Regular check-ins about household responsibilities can help maintain fairness and prevent resentment over time.";
                               }
                             })()}
                           </p>
