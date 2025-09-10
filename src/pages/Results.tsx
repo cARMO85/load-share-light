@@ -1078,36 +1078,130 @@ const Results: React.FC = () => {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-6">
-                {/* Gauge */}
-                <div className="text-center space-y-4">
-                  <div className="relative w-48 h-24 mx-auto">
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded-t-full"></div>
-                    <div 
-                      className="absolute w-1 h-12 bg-primary rounded-full origin-bottom"
-                      style={{
-                        left: '50%',
-                        bottom: '0',
-                        transform: `translateX(-50%) rotate(${(wmliResults.myWMLI_Intensity - 50) * 1.8}deg)`,
-                        transformOrigin: 'center bottom'
-                      }}
-                    ></div>
-                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full"></div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-primary">{wmliResults.myWMLI_Intensity}/100</div>
-                    <div className="text-sm text-muted-foreground">
-                      {wmliResults.myWMLI_Intensity <= 30 ? 'Light subjective workload' :
-                       wmliResults.myWMLI_Intensity <= 60 ? 'Moderate subjective workload' :
-                       'Heavy subjective workload'}
+                {isSingleAdult ? (
+                  // Single Adult - Original gauge view
+                  <>
+                    <div className="text-center space-y-4">
+                      <div className="relative w-48 h-24 mx-auto">
+                        <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded-t-full"></div>
+                        <div 
+                          className="absolute w-1 h-12 bg-primary rounded-full origin-bottom"
+                          style={{
+                            left: '50%',
+                            bottom: '0',
+                            transform: `translateX(-50%) rotate(${(wmliResults.myWMLI_Intensity - 50) * 1.8}deg)`,
+                            transformOrigin: 'center bottom'
+                          }}
+                        ></div>
+                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full"></div>
+                      </div>
+                      <div>
+                        <div className="text-3xl font-bold text-primary">{wmliResults.myWMLI_Intensity}/100</div>
+                        <div className="text-sm text-muted-foreground">
+                          {wmliResults.myWMLI_Intensity <= 30 ? 'Light subjective workload' :
+                           wmliResults.myWMLI_Intensity <= 60 ? 'Moderate subjective workload' :
+                           'Heavy subjective workload'}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </>
+                ) : (
+                  // Couple - Side by side comparison
+                  <>
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-semibold">Mental Load Intensity Comparison</h3>
+                      <p className="text-sm text-muted-foreground">How heavy the mental load feels for each partner</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Your Intensity */}
+                      <div className="text-center space-y-4">
+                        <h4 className="font-medium text-blue-900">Your Intensity</h4>
+                        <div className="relative w-40 h-20 mx-auto">
+                          <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded-t-full"></div>
+                          <div 
+                            className="absolute w-1 h-10 bg-blue-600 rounded-full origin-bottom"
+                            style={{
+                              left: '50%',
+                              bottom: '0',
+                              transform: `translateX(-50%) rotate(${(wmliResults.myWMLI_Intensity - 50) * 1.8}deg)`,
+                              transformOrigin: 'center bottom'
+                            }}
+                          ></div>
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-blue-600 rounded-full"></div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-blue-600">{wmliResults.myWMLI_Intensity}/100</div>
+                          <div className={`text-sm font-medium ${
+                            wmliResults.myWMLI_Intensity <= 30 ? 'text-green-600' :
+                            wmliResults.myWMLI_Intensity <= 60 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {wmliResults.myWMLI_Intensity <= 30 ? 'Light workload' :
+                             wmliResults.myWMLI_Intensity <= 60 ? 'Moderate workload' :
+                             'Heavy workload'}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Partner Intensity */}
+                      <div className="text-center space-y-4">
+                        <h4 className="font-medium text-orange-900">Partner's Intensity</h4>
+                        <div className="relative w-40 h-20 mx-auto">
+                          <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded-t-full"></div>
+                          <div 
+                            className="absolute w-1 h-10 bg-orange-600 rounded-full origin-bottom"
+                            style={{
+                              left: '50%',
+                              bottom: '0',
+                              transform: `translateX(-50%) rotate(${((wmliResults.partnerWMLI_Intensity || 50) - 50) * 1.8}deg)`,
+                              transformOrigin: 'center bottom'
+                            }}
+                          ></div>
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-orange-600 rounded-full"></div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-orange-600">{wmliResults.partnerWMLI_Intensity || 50}/100</div>
+                          <div className={`text-sm font-medium ${
+                            (wmliResults.partnerWMLI_Intensity || 50) <= 30 ? 'text-green-600' :
+                            (wmliResults.partnerWMLI_Intensity || 50) <= 60 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {(wmliResults.partnerWMLI_Intensity || 50) <= 30 ? 'Light workload' :
+                             (wmliResults.partnerWMLI_Intensity || 50) <= 60 ? 'Moderate workload' :
+                             'Heavy workload'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Comparison Insight */}
+                    <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-200 mt-6">
+                      <div className="text-center">
+                        <h4 className="font-medium text-blue-900 mb-2">Household Intensity Analysis</h4>
+                        <p className="text-sm text-blue-800">
+                          {(() => {
+                            const myIntensity = wmliResults.myWMLI_Intensity;
+                            const partnerIntensity = wmliResults.partnerWMLI_Intensity || 50;
+                            const gap = Math.abs(myIntensity - partnerIntensity);
+                            
+                            if (gap <= 10) {
+                              return "Both partners experience similar levels of mental load intensity - good alignment in how burdensome household tasks feel.";
+                            } else if (myIntensity > partnerIntensity) {
+                              return `You experience ${gap} points higher intensity than your partner. Consider discussing whether some responsibilities could be redistributed.`;
+                            } else {
+                              return `Your partner experiences ${gap} points higher intensity than you. They may benefit from support or task redistribution.`;
+                            }
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Simplified Interpretation */}
                 <div className="space-y-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm">
-                      <strong>Mental Load Score (0–100):</strong> This score reflects how heavy your share of invisible household work feels to you — higher = more mental strain.
+                      <strong>Mental Load Intensity (0–100):</strong> This score reflects how heavy {isSingleAdult ? 'your' : 'each partner\'s'} share of invisible household work feels — higher = more mental strain.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
                       Technical: Average subjective workload across tasks (burden + unfairness, weighted by responsibility).
