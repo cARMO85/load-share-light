@@ -33,14 +33,19 @@ const HouseholdSetup: React.FC = () => {
     
     // Auto-derive adults count from household type
     if (updates.householdType) {
-      if (updates.householdType === 'single' || updates.householdType === 'single_parent') {
+      if (updates.householdType === 'single') {
         newSetup.adults = 1;
         newSetup.partnerEmployed = undefined;
         newSetup.assessmentMode = 'solo';
-      } else if (updates.householdType === 'couple' || updates.householdType === 'couple_with_children') {
+        newSetup.children = 0; // Individual has no children
+      } else if (updates.householdType === 'single_parent') {
+        newSetup.adults = 1;
+        newSetup.partnerEmployed = undefined;
+        newSetup.assessmentMode = 'solo';
+        if (newSetup.children === 0) newSetup.children = 1; // Default to 1 child if not set
+      } else if (updates.householdType === 'couple') {
         newSetup.adults = 2;
-      } else {
-        newSetup.adults = setup.adults; // Keep current for 'other'
+        // Don't auto-set children for couple - they can have children or not
       }
     }
     
@@ -73,11 +78,11 @@ const HouseholdSetup: React.FC = () => {
             {/* Household Type */}
             <div className="space-y-4">
               <div className="text-center">
-                <Label className="text-lg font-semibold">What best describes your household?</Label>
-                <p className="text-sm text-muted-foreground mt-1">This helps us show you relevant tasks</p>
+                <Label className="text-lg font-semibold">What best describes your situation?</Label>
+                <p className="text-sm text-muted-foreground mt-1">This helps us show you relevant tasks and comparisons</p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <Button
                   variant={setup.householdType === 'single' ? "default" : "outline"}
                   onClick={() => updateSetup({ householdType: 'single' })}
@@ -85,8 +90,8 @@ const HouseholdSetup: React.FC = () => {
                 >
                   <UserCheck className="h-6 w-6" />
                    <div className="text-center">
-                     <div className="font-medium">Single Person</div>
-                     <div className="text-xs text-muted-foreground">Track your mental load & optimize your time</div>
+                     <div className="font-medium">Individual</div>
+                     <div className="text-xs text-muted-foreground">Living alone</div>
                    </div>
                 </Button>
                 
@@ -97,8 +102,8 @@ const HouseholdSetup: React.FC = () => {
                 >
                   <Baby className="h-6 w-6" />
                   <div className="text-center">
-                    <div className="font-medium">Single Parent</div>
-                    <div className="text-xs text-muted-foreground">One adult with children</div>
+                    <div className="font-medium">Parent</div>
+                    <div className="text-xs text-muted-foreground">Raising children</div>
                   </div>
                 </Button>
                 
@@ -110,26 +115,14 @@ const HouseholdSetup: React.FC = () => {
                   <Heart className="h-6 w-6" />
                   <div className="text-center">
                     <div className="font-medium">Couple</div>
-                    <div className="text-xs text-muted-foreground">Two adults, no children</div>
-                  </div>
-                </Button>
-                
-                <Button
-                  variant={setup.householdType === 'couple_with_children' ? "default" : "outline"}
-                  onClick={() => updateSetup({ householdType: 'couple_with_children' })}
-                  className="h-auto p-4 flex flex-col items-center gap-2"
-                >
-                  <Home className="h-6 w-6" />
-                  <div className="text-center">
-                    <div className="font-medium">Family</div>
-                    <div className="text-xs text-muted-foreground">Two adults with children</div>
+                    <div className="text-xs text-muted-foreground">Two adults together</div>
                   </div>
                 </Button>
               </div>
             </div>
 
             {/* Assessment Mode for Couples */}
-            {(setup.householdType === 'couple' || setup.householdType === 'couple_with_children') && (
+            {setup.householdType === 'couple' && (
               <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
                 <div className="text-center">
                   <Label className="text-lg font-semibold text-primary">How would you like to take this assessment?</Label>
@@ -172,8 +165,8 @@ const HouseholdSetup: React.FC = () => {
               </div>
             )}
 
-            {/* Children - Only show if not already specified by household type */}
-            {(setup.householdType === 'single_parent' || setup.householdType === 'couple_with_children' || setup.householdType === 'other') && (
+            {/* Children - Show for Parent and Couple categories */}
+            {(setup.householdType === 'single_parent' || setup.householdType === 'couple') && (
               <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-3">
                   <Baby className="h-6 w-6 text-primary" />
@@ -183,7 +176,7 @@ const HouseholdSetup: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {[0, 1, 2, 3].map(num => (
+                  {(setup.householdType === 'couple' ? [0, 1, 2, 3] : [1, 2, 3]).map(num => (
                     <Button
                       key={num}
                       variant={setup.children === num ? "default" : "outline"}
@@ -214,7 +207,7 @@ const HouseholdSetup: React.FC = () => {
                 />
               </div>
 
-              {(setup.householdType === 'couple' || setup.householdType === 'couple_with_children') && (
+              {setup.householdType === 'couple' && (
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-3">
                     <Briefcase className="h-6 w-6 text-secondary" />
