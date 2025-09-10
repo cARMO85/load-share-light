@@ -55,39 +55,48 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
   const strainTasks = getTaskDetails(wmliResults.myFlags.strainTasks);
   const unfairnessTasks = getTaskDetails(wmliResults.myFlags.unfairnessTasks);
 
-  // Prepare chart data - always show both bars for comparison
+  // Prepare chart data - always show both partners for comparison
   const comparisonData = [
     {
-      name: 'You',
+      name: 'Partner 1',
       mentalLoad: wmliResults.myWMLI,
       fill: 'hsl(var(--primary))'
     },
     {
-      name: 'Partner',
+      name: 'Partner 2', 
       mentalLoad: wmliResults.partnerWMLI || 0,
       fill: 'hsl(var(--secondary))'
     }
   ];
 
   // Calculate load percentages from WMLI scores
-  const myPercentage = wmliResults.partnerWMLI ? 
+  const partner1Percentage = wmliResults.partnerWMLI ? 
     Math.round((wmliResults.myWMLI / (wmliResults.myWMLI + wmliResults.partnerWMLI)) * 100) : 100;
-  const partnerPercentage = wmliResults.partnerWMLI ? 
+  const partner2Percentage = wmliResults.partnerWMLI ? 
     Math.round((wmliResults.partnerWMLI / (wmliResults.myWMLI + wmliResults.partnerWMLI)) * 100) : 0;
 
-  // Pie chart data for load distribution
+  // Pie chart data for load distribution  
   const pieData = wmliResults.partnerWMLI ? [
     { 
-      name: 'Your Load', 
-      value: myPercentage, 
+      name: 'Partner 1 Load', 
+      value: partner1Percentage, 
       fill: 'hsl(var(--primary))' 
     },
     { 
-      name: 'Partner Load', 
-      value: partnerPercentage, 
+      name: 'Partner 2 Load', 
+      value: partner2Percentage, 
       fill: 'hsl(var(--secondary))' 
     }
   ] : [];
+
+  // Debug the data
+  console.log('WMLI Debug:', {
+    myWMLI: wmliResults.myWMLI,
+    partnerWMLI: wmliResults.partnerWMLI,
+    partner1Percentage,
+    partner2Percentage,
+    comparisonData
+  });
 
   const getLoadDescription = (score: number) => {
     if (score >= 70) return { text: "High mental load", color: "text-red-600" };
@@ -106,10 +115,10 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
-            Your Mental Load at a Glance
+            Your Household's Mental Load Distribution
           </CardTitle>
           <CardDescription>
-            Higher scores mean you're feeling more overwhelmed by household tasks
+            Higher scores mean feeling more overwhelmed by household responsibilities
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -137,32 +146,30 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
             <div className="text-center p-4 bg-primary/5 rounded-lg">
               <div className="text-3xl font-bold text-primary">{wmliResults.myWMLI}/100</div>
               <p className={`text-sm ${getLoadDescription(wmliResults.myWMLI).color}`}>
-                {getLoadDescription(wmliResults.myWMLI).text}
+                Partner 1: {getLoadDescription(wmliResults.myWMLI).text}
               </p>
             </div>
             
-            {wmliResults.partnerWMLI && (
-              <div className="text-center p-4 bg-secondary/5 rounded-lg">
-                <div className="text-3xl font-bold text-secondary">{wmliResults.partnerWMLI}/100</div>
-                <p className={`text-sm ${getLoadDescription(wmliResults.partnerWMLI).color}`}>
-                  {getLoadDescription(wmliResults.partnerWMLI).text}
-                </p>
-              </div>
-            )}
+            <div className="text-center p-4 bg-secondary/5 rounded-lg">
+              <div className="text-3xl font-bold text-secondary">{wmliResults.partnerWMLI || 0}/100</div>
+              <p className={`text-sm ${getLoadDescription(wmliResults.partnerWMLI || 0).color}`}>
+                Partner 2: {getLoadDescription(wmliResults.partnerWMLI || 0).text}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Load Distribution for Couples */}
-      {!isSingleAdult && wmliResults.partnerWMLI && (
+      {/* Household Load Distribution */}
+      {wmliResults.partnerWMLI && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <PieChart className="h-5 w-5 text-blue-500" />
-              Who's Carrying the Mental Load?
+              How Is Mental Load Shared in Your Household?
             </CardTitle>
             <CardDescription>
-              A balanced relationship usually splits mental work 40-60%
+              A balanced household usually shares mental work 40-60% between partners
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -193,25 +200,25 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
               
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span>You carry:</span>
+                  <span>Partner 1 carries:</span>
                   <span className="font-bold text-primary">
-                    {myPercentage}%
+                    {partner1Percentage}%
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Partner carries:</span>
+                  <span>Partner 2 carries:</span>
                   <span className="font-bold text-secondary">
-                    {partnerPercentage}%
+                    {partner2Percentage}%
                   </span>
                 </div>
                 
                 {wmliResults.disparity?.mentalLoadGap && wmliResults.disparity.mentalLoadGap > 20 && (
                   <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200">
                     <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
-                      ⚠️ Big gap detected
+                      ⚠️ Household imbalance detected
                     </p>
                     <p className="text-xs text-orange-600 dark:text-orange-300">
-                      One person is carrying {Math.round(wmliResults.disparity.mentalLoadGap)}% more mental load
+                      One partner is carrying {Math.round(wmliResults.disparity.mentalLoadGap)}% more mental load than the other
                     </p>
                   </div>
                 )}
@@ -221,16 +228,16 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
         </Card>
       )}
 
-      {/* Simple Issues Summary */}
+      {/* Household Wellbeing Indicators */}
       {hasAnyIssues && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Things to Watch Out For
+              Areas for Your Household to Address
             </CardTitle>
             <CardDescription>
-              Based on your responses, here's what might need attention
+              Based on both partners' responses, here's what might need attention in your household
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -239,11 +246,11 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="h-4 w-4 text-red-500" />
                   <span className="font-medium text-red-700 dark:text-red-400">
-                    You're feeling overwhelmed by some tasks
+                    One partner is feeling overwhelmed by some tasks
                   </span>
                 </div>
                 <p className="text-sm text-red-600 dark:text-red-300">
-                  You're doing most of the work AND finding it really stressful for: {strainTasks.map(t => t.title).join(', ')}
+                  Partner 1 is handling most of the work AND finding it really stressful for: {strainTasks.map(t => t.title).join(', ')}
                 </p>
               </div>
             )}
@@ -253,11 +260,11 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="h-4 w-4 text-orange-500" />
                   <span className="font-medium text-orange-700 dark:text-orange-400">
-                    Some tasks feel unfair
+                    Some contributions feel unrecognized
                   </span>
                 </div>
                 <p className="text-sm text-orange-600 dark:text-orange-300">
-                  You feel your contributions aren't being recognized or appreciated enough
+                  One partner feels their household contributions aren't being recognized or appreciated enough
                 </p>
               </div>
             )}
@@ -267,11 +274,11 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="h-4 w-4 text-red-600" />
                   <span className="font-medium text-red-700 dark:text-red-400">
-                    Big imbalance in your relationship
+                    Significant household imbalance
                   </span>
                 </div>
                 <p className="text-sm text-red-600 dark:text-red-300">
-                  You're carrying most of the mental load AND it feels unfair - time for a conversation!
+                  One partner is carrying most of the mental load AND it feels unfair - time for a household conversation!
                 </p>
               </div>
             )}
@@ -279,15 +286,15 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
         </Card>
       )}
 
-      {/* Simple Next Steps */}
+      {/* Household Action Steps */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-green-600" />
-            What Should You Do Next?
+            Next Steps for Your Household
           </CardTitle>
           <CardDescription>
-            Simple steps based on your results
+            Actionable steps based on your household's results
           </CardDescription>
         </CardHeader>
         <CardContent>
