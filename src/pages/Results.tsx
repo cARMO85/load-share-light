@@ -34,7 +34,7 @@ import { addSampleInsights, isDevelopment } from '@/lib/devUtils';
 const Results: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useAssessment();
-  const [activeTab, setActiveTab] = useState('conversation');
+  const [activeTab, setActiveTab] = useState('insights');
   const [discussionNotes, setDiscussionNotes] = useState<Record<string, string>>({});
 
   const calculateLoadFromResponses = (responses: TaskResponse[]) => {
