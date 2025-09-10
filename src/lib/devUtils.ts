@@ -78,59 +78,121 @@ export const createDemoResponses = (): {
   const myResponses: TaskResponse[] = [];
   const partnerResponses: TaskResponse[] = [];
 
-  // Scenario: Main user carries most mental load, partner does more physical tasks but less acknowledgment
+  // Scenario: More balanced relationship with different strengths  
   allTasks.forEach((task, index) => {
     const taskId = task.id;
     
-    // User responses - carrying mental load burden
+    // Create a more balanced scenario where partner handles some categories better
     const isPhysical = 'title' in task;
+    const isEmotional = task.category === 'Emotional and Social Management';
+    const isPlanning = task.category === 'Planning and Coordination';
+    const isMaintenance = task.category === 'Maintenance and Management';
     
     if (isPhysical) {
-      // Physical tasks - more shared but user feels burdened
+      // Physical tasks - mostly shared, partner does a bit more
+      const assignment = Math.random() > 0.7 ? 'partner' : 'shared';
+      const userShare = assignment === 'shared' ? (Math.random() > 0.5 ? 40 : 45) : 30;
+      
       myResponses.push({
         taskId,
-        assignment: Math.random() > 0.3 ? 'shared' : 'me',
-        mySharePercentage: Math.random() > 0.5 ? 70 : 60, // User does more
+        assignment,
+        mySharePercentage: userShare,
+        measurementType: 'likert',
+        likertRating: {
+          burden: Math.floor(Math.random() * 2) + 2, // 2-3 (moderate burden)
+          fairness: Math.floor(Math.random() * 2) + 3, // 3-4 (fair acknowledgment)
+        }
+      });
+
+      partnerResponses.push({
+        taskId,
+        assignment: assignment === 'partner' ? 'me' : 'shared',
+        mySharePercentage: assignment === 'partner' ? 70 : (100 - userShare),
+        measurementType: 'likert',
+        likertRating: {
+          burden: Math.floor(Math.random() * 2) + 3, // 3-4 (partner feels the burden)
+          fairness: Math.floor(Math.random() * 2) + 3, // 3-4 (feels acknowledged)
+        }
+      });
+      
+    } else if (isEmotional) {
+      // Emotional tasks - user still handles more but partner does some
+      const assignment = Math.random() > 0.4 ? 'me' : 'shared';
+      const userShare = assignment === 'me' ? (Math.random() > 0.5 ? 70 : 80) : 60;
+      
+      myResponses.push({
+        taskId,
+        assignment,
+        mySharePercentage: userShare,
         measurementType: 'likert',
         likertRating: {
           burden: Math.floor(Math.random() * 2) + 3, // 3-4 (moderate to high burden)
-          fairness: Math.floor(Math.random() * 2) + 2, // 2-3 (low to moderate acknowledgment)
+          fairness: Math.floor(Math.random() * 2) + 3, // 3-4 (better acknowledgment)
         }
       });
 
-      // Partner's perspective - thinks it's more balanced
       partnerResponses.push({
         taskId,
-        assignment: 'shared',
-        mySharePercentage: Math.random() > 0.5 ? 40 : 50, // Partner thinks they do more
+        assignment: assignment === 'me' ? 'partner' : 'shared',
+        mySharePercentage: assignment === 'me' ? (100 - userShare) : (100 - userShare),
         measurementType: 'likert',
         likertRating: {
-          burden: Math.floor(Math.random() * 2) + 2, // 2-3 (sees it as less burdensome)
-          fairness: Math.floor(Math.random() * 2) + 4, // 4-5 (thinks it's well acknowledged)
+          burden: Math.floor(Math.random() * 2) + 2, // 2-3 (aware of some burden)
+          fairness: Math.floor(Math.random() * 2) + 4, // 4-5 (feels it's acknowledged)
         }
       });
-    } else {
-      // Cognitive tasks - user carries most of the load
+      
+    } else if (isMaintenance) {
+      // Maintenance - partner takes lead on some of these
+      const assignment = Math.random() > 0.6 ? 'partner' : 'shared';
+      const userShare = assignment === 'partner' ? 25 : 45;
+      
       myResponses.push({
         taskId,
-        assignment: Math.random() > 0.2 ? 'me' : 'shared',
-        mySharePercentage: Math.random() > 0.6 ? 90 : 80, // User does most
+        assignment,
+        mySharePercentage: userShare,
         measurementType: 'likert',
         likertRating: {
-          burden: Math.floor(Math.random() * 2) + 4, // 4-5 (high burden)
-          fairness: Math.floor(Math.random() * 2) + 1, // 1-2 (poor acknowledgment)
+          burden: Math.floor(Math.random() * 2) + 2, // 2-3 (lower burden)
+          fairness: Math.floor(Math.random() * 2) + 4, // 4-5 (good acknowledgment)
         }
       });
 
-      // Partner's perspective - doesn't realize the mental load
       partnerResponses.push({
         taskId,
-        assignment: Math.random() > 0.4 ? 'shared' : 'partner',
-        mySharePercentage: Math.random() > 0.5 ? 60 : 70, // Partner thinks they do more
+        assignment: assignment === 'partner' ? 'me' : 'shared',
+        mySharePercentage: assignment === 'partner' ? 75 : 55,
         measurementType: 'likert',
         likertRating: {
-          burden: Math.floor(Math.random() * 2) + 2, // 2-3 (doesn't see the burden)
-          fairness: Math.floor(Math.random() * 2) + 3, // 3-4 (thinks it's fairly acknowledged)
+          burden: Math.floor(Math.random() * 2) + 3, // 3-4 (partner feels the work)
+          fairness: Math.floor(Math.random() * 2) + 3, // 3-4 (feels fairly acknowledged)
+        }
+      });
+      
+    } else {
+      // Planning tasks - mixed responsibility
+      const assignment = Math.random() > 0.3 ? 'shared' : 'me';
+      const userShare = assignment === 'shared' ? (Math.random() > 0.5 ? 60 : 55) : 75;
+      
+      myResponses.push({
+        taskId,
+        assignment,
+        mySharePercentage: userShare,
+        measurementType: 'likert',
+        likertRating: {
+          burden: Math.floor(Math.random() * 2) + 3, // 3-4 (moderate burden)
+          fairness: Math.floor(Math.random() * 2) + 3, // 3-4 (decent acknowledgment)
+        }
+      });
+
+      partnerResponses.push({
+        taskId,
+        assignment,
+        mySharePercentage: 100 - userShare,
+        measurementType: 'likert',
+        likertRating: {
+          burden: Math.floor(Math.random() * 2) + 2, // 2-3 (moderate burden)
+          fairness: Math.floor(Math.random() * 2) + 4, // 4-5 (good acknowledgment)
         }
       });
     }

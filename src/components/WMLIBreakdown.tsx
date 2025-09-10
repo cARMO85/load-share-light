@@ -55,22 +55,19 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
   const strainTasks = getTaskDetails(wmliResults.myFlags.strainTasks);
   const unfairnessTasks = getTaskDetails(wmliResults.myFlags.unfairnessTasks);
 
-  // Prepare chart data
+  // Prepare chart data - always show both bars for comparison
   const comparisonData = [
     {
       name: 'You',
       mentalLoad: wmliResults.myWMLI,
       fill: 'hsl(var(--primary))'
+    },
+    {
+      name: 'Partner',
+      mentalLoad: wmliResults.partnerWMLI || 0,
+      fill: 'hsl(var(--secondary))'
     }
   ];
-
-  if (wmliResults.partnerWMLI) {
-    comparisonData.push({
-      name: 'Partner',
-      mentalLoad: wmliResults.partnerWMLI,
-      fill: 'hsl(var(--secondary))'
-    });
-  }
 
   // Calculate load percentages from WMLI scores
   const myPercentage = wmliResults.partnerWMLI ? 
