@@ -61,17 +61,20 @@ export const normalizeToDisplayScale = (score: number): number => {
   return Math.round(score * 100);
 };
 
-// Calculate comprehensive load scores for a person using proper formula
+// Calculate comprehensive load scores for a person using proper normalized formula
 export const calculatePersonLoad = (
   responses: TaskResponse[],
   taskLookup: Record<string, AllTask>
 ) => {
-  let myInvisibleLoadRaw = 0;
-  let partnerInvisibleLoadRaw = 0;
+  let myInvisibleLoadSum = 0;
+  let partnerInvisibleLoadSum = 0;
   let myVisibleLoadRaw = 0;
   let partnerVisibleLoadRaw = 0;
+  let applicableTaskCount = 0;
   
   const categoryScores: Record<string, number> = {};
+  const myItlScores: number[] = [];
+  const partnerItlScores: number[] = [];
   
   responses.forEach(response => {
     if (response.notApplicable || !response.likertRating) return;
@@ -81,35 +84,33 @@ export const calculatePersonLoad = (
     
     const { burden, fairness } = response.likertRating;
     
+    // Skip tasks without valid Likert inputs
+    if (!isFinite(burden) || !isFinite(fairness)) return;
+    
     // Calculate responsibility shares
     const myResponsibilityShare = calculateResponsibilityShare(response.assignment, response.mySharePercentage);
     const partnerResponsibilityShare = 1 - myResponsibilityShare;
+    
+    // Skip if no defined responsibility share
+    if (myResponsibilityShare == null) return;
     
     // Normalize burden and fairness ratings
     const normalizedBurden = normalizeBurden(burden);
     const normalizedFairness = normalizeFairness(fairness);
     
-    // Debug logging to verify calculations
-    console.log(`Task ${response.taskId}:`, {
-      assignment: response.assignment,
-      sharePercentage: response.mySharePercentage,
-      myResponsibilityShare,
-      burden,
-      fairness,
-      normalizedBurden,
-      normalizedFairness
-    });
-    
-    // Calculate invisible task loads for each person
+    // Calculate invisible task loads for each person (returns 0-100 per task)
     const myITL = calculateInvisibleTaskLoad(myResponsibilityShare, normalizedBurden, normalizedFairness);
     const partnerITL = calculateInvisibleTaskLoad(partnerResponsibilityShare, normalizedBurden, normalizedFairness);
     
-    console.log(`  Mental loads: myITL=${myITL.toFixed(2)}, partnerITL=${partnerITL.toFixed(2)}`);
+    // Store individual task scores for intensity calculation
+    myItlScores.push(myITL);
+    partnerItlScores.push(partnerITL);
     
-    myInvisibleLoadRaw += myITL;
-    partnerInvisibleLoadRaw += partnerITL;
+    myInvisibleLoadSum += myITL;
+    partnerInvisibleLoadSum += partnerITL;
+    applicableTaskCount++;
     
-    // Calculate visible workload based on responsibility share (without time data)
+    // Calculate visible workload based on responsibility share
     myVisibleLoadRaw += myResponsibilityShare;
     partnerVisibleLoadRaw += partnerResponsibilityShare;
     
@@ -119,42 +120,57 @@ export const calculatePersonLoad = (
     }
   });
   
-  // Calculate household totals for percentage calculations
-  const totalInvisibleLoadRaw = myInvisibleLoadRaw + partnerInvisibleLoadRaw;
+  // WMLI_Intensity: Average subjective workload across tasks (0-100)
+  const myWMLI_Intensity = applicableTaskCount > 0 
+    ? Math.round(myInvisibleLoadSum / applicableTaskCount) 
+    : 0;
+  
+  const partnerWMLI_Intensity = applicableTaskCount > 0 
+    ? Math.round(partnerInvisibleLoadSum / applicableTaskCount) 
+    : 0;
+  
+  // WMLI_Share: Percentage of household's total invisible load (0-100)
+  const householdTotalITL = myInvisibleLoadSum + partnerInvisibleLoadSum;
+  const myWMLI_Share = householdTotalITL > 0 ? Math.round((myInvisibleLoadSum / householdTotalITL) * 100) : 0;
+  const partnerWMLI_Share = 100 - myWMLI_Share;
+  
+  // Calculate visible load percentages
   const totalVisibleLoadRaw = myVisibleLoadRaw + partnerVisibleLoadRaw;
-  
-  // Calculate percentages
-  const myMentalPercentage = totalInvisibleLoadRaw > 0 ? Math.round((myInvisibleLoadRaw / totalInvisibleLoadRaw) * 100) : 0;
-  const partnerMentalPercentage = totalInvisibleLoadRaw > 0 ? Math.round((partnerInvisibleLoadRaw / totalInvisibleLoadRaw) * 100) : 0;
-  
   const myVisiblePercentage = totalVisibleLoadRaw > 0 ? Math.round((myVisibleLoadRaw / totalVisibleLoadRaw) * 100) : 0;
   const partnerVisiblePercentage = totalVisibleLoadRaw > 0 ? Math.round((partnerVisibleLoadRaw / totalVisibleLoadRaw) * 100) : 0;
   
-  // Calculate display scores (0-100 scale)
-  const myDisplayScore = Math.round(myInvisibleLoadRaw);
-  const partnerDisplayScore = Math.round(partnerInvisibleLoadRaw);
-  
   return {
-    // Legacy compatibility
-    totalScore: myInvisibleLoadRaw / 100,
-    displayScore: myDisplayScore,
-    categoryScores,
+    // New normalized metrics
+    myWMLI_Intensity,
+    partnerWMLI_Intensity,
+    myWMLI_Share,
+    partnerWMLI_Share,
     
-    // Proper separated metrics
-    myMentalLoad: Math.round(myInvisibleLoadRaw),
-    partnerMentalLoad: Math.round(partnerInvisibleLoadRaw),
+    // Task counts for validation
+    applicableTaskCount,
+    myItlScores,
+    partnerItlScores,
+    
+    // Legacy compatibility - use intensity scores
+    myMentalLoad: myWMLI_Intensity,
+    partnerMentalLoad: partnerWMLI_Intensity,
     myVisibleLoad: Math.round(myVisibleLoadRaw),
     partnerVisibleLoad: Math.round(partnerVisibleLoadRaw),
     
     // Totals
-    totalMentalLoad: Math.round(totalInvisibleLoadRaw),
+    totalMentalLoad: Math.round(myInvisibleLoadSum + partnerInvisibleLoadSum),
     totalVisibleLoad: Math.round(totalVisibleLoadRaw),
     
     // Percentages
-    myMentalPercentage,
-    partnerMentalPercentage,
+    myMentalPercentage: myWMLI_Share,
+    partnerMentalPercentage: partnerWMLI_Share,
     myVisiblePercentage,
-    partnerVisiblePercentage
+    partnerVisiblePercentage,
+    
+    // Legacy fields
+    totalScore: myWMLI_Intensity / 100,
+    displayScore: myWMLI_Intensity,
+    categoryScores
   };
 };
 
@@ -166,9 +182,10 @@ export interface EvidenceFlags {
   equityPriority: boolean;
   strainTasks: string[];
   unfairnessTasks: string[];
+  averageUnfairness: number;
 }
 
-// Calculate evidence-based flags per person
+// Calculate evidence-based flags per person with proper unfairness tracking
 export const calculateEvidenceFlags = (
   responses: TaskResponse[],
   taskLookup: Record<string, AllTask>,
@@ -178,8 +195,8 @@ export const calculateEvidenceFlags = (
   
   let strainTasks: string[] = [];
   let unfairnessTasks: string[] = [];
-  let weightedUnfairness = 0;
-  let totalResponsibility = 0;
+  let totalUnfairness = 0;
+  let taskCount = 0;
   
   relevantResponses.forEach(response => {
     const responsibility = isMe 
@@ -188,30 +205,30 @@ export const calculateEvidenceFlags = (
     
     const { burden, fairness } = response.likertRating!;
     
-    // Flag: High Subjective Strain (Responsibility ≥ 60% AND Burden ≥ 4)
-    if (responsibility >= 0.6 && burden >= 4) {
+    // High Subjective Strain: Responsibility ≥ 60% AND (Burden ≥ 4 OR Unfairness ≥ 4)
+    if (responsibility >= 0.6 && (burden >= 4 || fairness <= 2)) {
       strainTasks.push(response.taskId);
     }
     
-    // Track unfairness for weighted average
+    // Track tasks with high unfairness
     if (fairness <= 2) { // 1-2 on fairness scale = highly unfair
       unfairnessTasks.push(response.taskId);
     }
     
-    // Calculate weighted unfairness (weighted by responsibility)
-    const unfairnessScore = (5 - fairness) / 4; // Normalize to 0-1
-    weightedUnfairness += unfairnessScore * responsibility;
-    totalResponsibility += responsibility;
+    // Calculate average unfairness across all tasks
+    totalUnfairness += fairness;
+    taskCount++;
   });
   
-  const avgWeightedUnfairness = totalResponsibility > 0 ? weightedUnfairness / totalResponsibility : 0;
+  const averageUnfairness = taskCount > 0 ? totalUnfairness / taskCount : 5;
   
   return {
     highSubjectiveStrain: strainTasks.length > 0,
-    fairnessRisk: avgWeightedUnfairness >= 0.75, // Corresponds to avg fairness ≤ 2
+    fairnessRisk: averageUnfairness <= 2.5, // Average fairness ≤ 2.5 indicates risk
     equityPriority: false, // Will be calculated at household level
     strainTasks,
-    unfairnessTasks
+    unfairnessTasks,
+    averageUnfairness
   };
 };
 
@@ -226,39 +243,37 @@ export interface DisparityAnalysis {
 }
 
 export const calculateDisparityAnalysis = (
-  myMentalLoad: number,
-  partnerMentalLoad: number,
-  myVisibleLoad: number,
-  partnerVisibleLoad: number,
+  myWMLI_Share: number,
+  partnerWMLI_Share: number,
+  myVisiblePercentage: number,
+  partnerVisiblePercentage: number,
   myFlags: EvidenceFlags,
-  partnerFlags: EvidenceFlags,
-  myMentalPercentage: number,
-  partnerMentalPercentage: number
+  partnerFlags: EvidenceFlags
 ): DisparityAnalysis => {
-  const mentalLoadGap = Math.abs(myMentalPercentage - partnerMentalPercentage);
-  const visibleLoadGap = Math.abs(myVisibleLoad - partnerVisibleLoad);
+  // Calculate gaps in percentage points
+  const mentalLoadGap = Math.abs(myWMLI_Share - partnerWMLI_Share);
+  const visibleLoadGap = Math.abs(myVisiblePercentage - partnerVisiblePercentage);
   
-  const mentalLoadRatio = myMentalPercentage >= partnerMentalPercentage 
-    ? myMentalPercentage / Math.max(partnerMentalPercentage, 1)
-    : partnerMentalPercentage / Math.max(myMentalPercentage, 1);
+  // Calculate ratios for relative comparison
+  const mentalLoadRatio = myWMLI_Share >= partnerWMLI_Share 
+    ? myWMLI_Share / Math.max(partnerWMLI_Share, 1)
+    : partnerWMLI_Share / Math.max(myWMLI_Share, 1);
   
-  const visibleLoadRatio = myVisibleLoad >= partnerVisibleLoad
-    ? myVisibleLoad / Math.max(partnerVisibleLoad, 1)
-    : partnerVisibleLoad / Math.max(myVisibleLoad, 1);
+  const visibleLoadRatio = myVisiblePercentage >= partnerVisiblePercentage
+    ? myVisiblePercentage / Math.max(partnerVisiblePercentage, 1)
+    : partnerVisiblePercentage / Math.max(myVisiblePercentage, 1);
   
-  // Determine who is overburdened and equity risk
+  // Evidence-based equity risk detection
   let overburdened: 'me' | 'partner' | 'none' = 'none';
   let highEquityRisk = false;
   
-  if (myMentalPercentage >= 60 && myFlags.fairnessRisk) {
-    overburdened = 'me';
+  // High equity risk: gap ≥20pp AND reported unfairness ≥4 (avg fairness ≤2)
+  if (mentalLoadGap >= 20 && (myFlags.fairnessRisk || partnerFlags.fairnessRisk)) {
     highEquityRisk = true;
-  } else if (partnerMentalPercentage >= 60 && partnerFlags.fairnessRisk) {
-    overburdened = 'partner';
-    highEquityRisk = true;
-  } else if (mentalLoadGap >= 20) {
-    // Flag high disparity even without fairness issues
-    overburdened = myMentalPercentage > partnerMentalPercentage ? 'me' : 'partner';
+    overburdened = myWMLI_Share > partnerWMLI_Share ? 'me' : 'partner';
+  } else if (mentalLoadGap >= 30) {
+    // Very high disparity even without explicit fairness complaints
+    overburdened = myWMLI_Share > partnerWMLI_Share ? 'me' : 'partner';
   }
   
   return {
@@ -274,9 +289,18 @@ export const calculateDisparityAnalysis = (
 // ============= WMLI CALCULATION =============
 
 export interface WMLIResults {
-  myWMLI: number;        // 0-100 Weighted Mental Load Index for me
-  partnerWMLI?: number;  // 0-100 Weighted Mental Load Index for partner
-  householdWMLI: number; // Total household WMLI
+  // Dual normalized metrics (both 0-100)
+  myWMLI_Intensity: number;        // Average subjective workload across my tasks
+  myWMLI_Share: number;           // My percentage of household's total invisible load
+  partnerWMLI_Intensity?: number;  // Partner's average subjective workload
+  partnerWMLI_Share?: number;     // Partner's percentage of household's total invisible load
+  
+  // Legacy compatibility
+  myWMLI: number;
+  partnerWMLI?: number;
+  householdWMLI: number;
+  
+  // Evidence-based insights
   myFlags: EvidenceFlags;
   partnerFlags?: EvidenceFlags;
   disparity?: DisparityAnalysis;
@@ -288,55 +312,63 @@ export const calculateWMLI = (
   taskLookup: Record<string, AllTask>,
   partnerResponses?: TaskResponse[]
 ): WMLIResults => {
-  // Calculate my WMLI (equivalent to mental load from existing calculation)
+  // Calculate normalized metrics for me
   const myResults = calculatePersonLoad(responses, taskLookup);
-  const myWMLI = Math.round(myResults.myMentalLoad);
   const myFlags = calculateEvidenceFlags(responses, taskLookup, true);
   
-  let partnerWMLI: number | undefined;
+  let partnerResults: ReturnType<typeof calculatePersonLoad> | undefined;
   let partnerFlags: EvidenceFlags | undefined;
   let disparity: DisparityAnalysis | undefined;
   
   if (partnerResponses) {
-    const partnerResults = calculatePersonLoad(partnerResponses, taskLookup);
-    partnerWMLI = Math.round(partnerResults.myMentalLoad);
+    partnerResults = calculatePersonLoad(partnerResponses, taskLookup);
     partnerFlags = calculateEvidenceFlags(partnerResponses, taskLookup, true);
     
     // Calculate equity flags for both partners
-    myFlags.equityPriority = myResults.myMentalPercentage >= 60 && myFlags.fairnessRisk;
-    partnerFlags.equityPriority = myResults.partnerMentalPercentage! >= 60 && partnerFlags.fairnessRisk;
+    myFlags.equityPriority = myResults.myWMLI_Share >= 60 && myFlags.fairnessRisk;
+    partnerFlags.equityPriority = partnerResults.myWMLI_Share >= 60 && partnerFlags.fairnessRisk;
     
     disparity = calculateDisparityAnalysis(
-      myWMLI,
-      partnerWMLI,
-      myResults.myVisibleLoad,
-      myResults.partnerVisibleLoad!,
+      myResults.myWMLI_Share,
+      partnerResults.myWMLI_Share,
+      myResults.myVisiblePercentage,
+      partnerResults.myVisiblePercentage,
       myFlags,
-      partnerFlags,
-      myResults.myMentalPercentage,
-      myResults.partnerMentalPercentage!
+      partnerFlags
     );
   }
   
+  // Legacy compatibility values
+  const myWMLI = myResults.myWMLI_Intensity;
+  const partnerWMLI = partnerResults?.myWMLI_Intensity;
   const householdWMLI = myWMLI + (partnerWMLI || 0);
   
-  // Generate interpretation context
-  let interpretationContext = "Higher WMLI scores indicate greater subjective workload from household responsibilities.";
+  // Generate evidence-based interpretation
+  let interpretationContext = "WMLI Intensity (0-100): average subjective workload across tasks. WMLI Share (%): your portion of household's invisible load.";
   
-  if (partnerWMLI !== undefined) {
-    if (disparity?.highEquityRisk) {
-      interpretationContext += " ⚠️ Significant disparity detected with fairness concerns.";
-    } else if (disparity?.mentalLoadGap && disparity.mentalLoadGap >= 20) {
-      interpretationContext += " Notable difference in mental load distribution.";
+  if (partnerWMLI !== undefined && disparity) {
+    if (disparity.highEquityRisk) {
+      interpretationContext += " ⚠️ High equity risk: significant disparity with fairness concerns.";
+    } else if (disparity.mentalLoadGap >= 20) {
+      interpretationContext += ` Notable disparity: ${disparity.mentalLoadGap}pp gap in mental load share.`;
     } else {
-      interpretationContext += " Mental load appears reasonably balanced.";
+      interpretationContext += " Mental load distribution appears balanced.";
     }
   }
   
   return {
+    // New normalized dual metrics
+    myWMLI_Intensity: myResults.myWMLI_Intensity,
+    myWMLI_Share: myResults.myWMLI_Share,
+    partnerWMLI_Intensity: partnerResults?.myWMLI_Intensity,
+    partnerWMLI_Share: partnerResults?.myWMLI_Share,
+    
+    // Legacy compatibility
     myWMLI,
     partnerWMLI,
     householdWMLI,
+    
+    // Evidence-based insights
     myFlags,
     partnerFlags,
     disparity,

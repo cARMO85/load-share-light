@@ -55,53 +55,50 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
   const strainTasks = getTaskDetails(wmliResults.myFlags.strainTasks);
   const unfairnessTasks = getTaskDetails(wmliResults.myFlags.unfairnessTasks);
 
-  // Prepare chart data - always show both partners for comparison
-  const comparisonData = [
+  // Prepare intensity comparison data (0-100 scale)
+  const intensityData = [
     {
       name: 'Partner 1',
-      mentalLoad: wmliResults.myWMLI,
+      intensity: wmliResults.myWMLI_Intensity,
       fill: 'hsl(var(--primary))'
     },
     {
       name: 'Partner 2', 
-      mentalLoad: wmliResults.partnerWMLI || 0,
+      intensity: wmliResults.partnerWMLI_Intensity || 0,
       fill: 'hsl(var(--secondary))'
     }
   ];
 
-  // Calculate load percentages from WMLI scores
-  const partner1Percentage = wmliResults.partnerWMLI ? 
-    Math.round((wmliResults.myWMLI / (wmliResults.myWMLI + wmliResults.partnerWMLI)) * 100) : 100;
-  const partner2Percentage = wmliResults.partnerWMLI ? 
-    Math.round((wmliResults.partnerWMLI / (wmliResults.myWMLI + wmliResults.partnerWMLI)) * 100) : 0;
+  // Use the proper share percentages from WMLI calculation
+  const partner1Percentage = wmliResults.myWMLI_Share || 100;
+  const partner2Percentage = wmliResults.partnerWMLI_Share || 0;
 
-  // Pie chart data for load distribution  
-  const pieData = wmliResults.partnerWMLI ? [
+  // Pie chart data for load distribution (equity view)
+  const pieData = wmliResults.partnerWMLI_Share ? [
     { 
-      name: 'Partner 1 Load', 
+      name: 'Partner 1 Share', 
       value: partner1Percentage, 
       fill: 'hsl(var(--primary))' 
     },
     { 
-      name: 'Partner 2 Load', 
+      name: 'Partner 2 Share', 
       value: partner2Percentage, 
       fill: 'hsl(var(--secondary))' 
     }
   ] : [];
 
-  // Debug the data
-  console.log('WMLI Debug:', {
-    myWMLI: wmliResults.myWMLI,
-    partnerWMLI: wmliResults.partnerWMLI,
-    partner1Percentage,
-    partner2Percentage,
-    comparisonData
-  });
+  const getIntensityDescription = (score: number) => {
+    if (score >= 75) return { text: "Very high subjective workload", color: "text-red-600" };
+    if (score >= 50) return { text: "Moderate subjective workload", color: "text-orange-600" };
+    if (score >= 25) return { text: "Light subjective workload", color: "text-yellow-600" };
+    return { text: "Minimal subjective workload", color: "text-green-600" };
+  };
 
-  const getLoadDescription = (score: number) => {
-    if (score >= 70) return { text: "High mental load", color: "text-red-600" };
-    if (score >= 40) return { text: "Moderate mental load", color: "text-orange-600" };
-    return { text: "Low mental load", color: "text-green-600" };
+  const getEquityDescription = (percentage: number) => {
+    if (percentage >= 70) return { text: "Carrying most of the load", color: "text-red-600" };
+    if (percentage >= 60) return { text: "Carrying more than fair share", color: "text-orange-600" };
+    if (percentage >= 40) return { text: "Balanced share", color: "text-green-600" };
+    return { text: "Carrying less of the load", color: "text-blue-600" };
   };
 
   const hasAnyIssues = wmliResults.myFlags.highSubjectiveStrain || 
@@ -110,26 +107,27 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Mental Load Comparison */}
+      {/* WMLI Intensity Comparison */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Your Household's Mental Load Distribution
+            <Brain className="h-5 w-5 text-primary" />
+            WMLI Intensity: Average Subjective Workload
+            <InfoButton variant="tooltip" tooltipContent="WMLI Intensity (0-100) shows the average subjective workload across all tasks each partner handles. This reflects how heavy the mental load feels on average." />
           </CardTitle>
           <CardDescription>
-            Higher scores mean feeling more overwhelmed by household responsibilities
+            How heavy does the mental load feel across your tasks? (0 = no strain, 100 = very high strain)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={comparisonData}>
+              <BarChart data={intensityData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis domain={[0, 100]} />
                 <Tooltip 
-                  formatter={(value) => [`${value}/100`, 'Mental Load Score']}
+                  formatter={(value) => [`${value}/100`, 'WMLI Intensity']}
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
                   contentStyle={{ 
                     backgroundColor: 'hsl(var(--background))',
@@ -137,39 +135,40 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
                     borderRadius: '6px'
                   }}
                 />
-                <Bar dataKey="mentalLoad" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="intensity" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="text-center p-4 bg-primary/5 rounded-lg">
-              <div className="text-3xl font-bold text-primary">{wmliResults.myWMLI}/100</div>
-              <p className={`text-sm ${getLoadDescription(wmliResults.myWMLI).color}`}>
-                Partner 1: {getLoadDescription(wmliResults.myWMLI).text}
+              <div className="text-3xl font-bold text-primary">{wmliResults.myWMLI_Intensity}/100</div>
+              <p className={`text-sm ${getIntensityDescription(wmliResults.myWMLI_Intensity).color}`}>
+                Partner 1: {getIntensityDescription(wmliResults.myWMLI_Intensity).text}
               </p>
             </div>
             
             <div className="text-center p-4 bg-secondary/5 rounded-lg">
-              <div className="text-3xl font-bold text-secondary">{wmliResults.partnerWMLI || 0}/100</div>
-              <p className={`text-sm ${getLoadDescription(wmliResults.partnerWMLI || 0).color}`}>
-                Partner 2: {getLoadDescription(wmliResults.partnerWMLI || 0).text}
+              <div className="text-3xl font-bold text-secondary">{wmliResults.partnerWMLI_Intensity || 0}/100</div>
+              <p className={`text-sm ${getIntensityDescription(wmliResults.partnerWMLI_Intensity || 0).color}`}>
+                Partner 2: {getIntensityDescription(wmliResults.partnerWMLI_Intensity || 0).text}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Household Load Distribution */}
-      {wmliResults.partnerWMLI && (
+      {/* WMLI Share - Equity View */}
+      {wmliResults.partnerWMLI_Share !== undefined && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-blue-500" />
-              How Is Mental Load Shared in Your Household?
-            </CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <PieChart className="h-5 w-5 text-blue-500" />
+            WMLI Share: Household Equity Distribution
+            <InfoButton variant="tooltip" tooltipContent="WMLI Share shows what percentage of your household's total invisible mental load each partner carries. 40-60% is generally considered balanced." />
+          </CardTitle>
             <CardDescription>
-              A balanced household usually shares mental work 40-60% between partners
+              Who carries what percentage of the household's total invisible load? (Target: 40-60% each)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -201,24 +200,34 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span>Partner 1 carries:</span>
-                  <span className="font-bold text-primary">
-                    {partner1Percentage}%
-                  </span>
+                  <div className="text-right">
+                    <span className="font-bold text-primary text-lg">
+                      {partner1Percentage}%
+                    </span>
+                    <p className={`text-xs ${getEquityDescription(partner1Percentage).color}`}>
+                      {getEquityDescription(partner1Percentage).text}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Partner 2 carries:</span>
-                  <span className="font-bold text-secondary">
-                    {partner2Percentage}%
-                  </span>
+                  <div className="text-right">
+                    <span className="font-bold text-secondary text-lg">
+                      {partner2Percentage}%
+                    </span>
+                    <p className={`text-xs ${getEquityDescription(partner2Percentage).color}`}>
+                      {getEquityDescription(partner2Percentage).text}
+                    </p>
+                  </div>
                 </div>
                 
-                {wmliResults.disparity?.mentalLoadGap && wmliResults.disparity.mentalLoadGap > 20 && (
+                {wmliResults.disparity?.mentalLoadGap && wmliResults.disparity.mentalLoadGap >= 20 && (
                   <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200">
                     <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
-                      ⚠️ Household imbalance detected
+                      {wmliResults.disparity.highEquityRisk ? '🚨 High equity risk' : '⚠️ Significant imbalance'}
                     </p>
                     <p className="text-xs text-orange-600 dark:text-orange-300">
-                      One partner is carrying {Math.round(wmliResults.disparity.mentalLoadGap)}% more mental load than the other
+                      {Math.round(wmliResults.disparity.mentalLoadGap)}pp gap in mental load share{wmliResults.disparity.highEquityRisk ? ' with fairness concerns' : ''}
                     </p>
                   </div>
                 )}
