@@ -302,9 +302,15 @@ const Results: React.FC = () => {
                     <strong>Percentage of household mental load:</strong> {results.myMentalPercentage || 0}%
                   </div>
                   <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
-                    <strong>What this means:</strong> Mental load scores reflect cognitive burden. 
-                    {!isSingleAdult && (
-                      <span> 50/50 would be perfectly balanced. {results.myMentalPercentage > 60 ? "You may be carrying more than your fair share." : "This distribution looks reasonable."}</span>
+                    <strong>What this means:</strong> 
+                    {isSingleAdult ? (
+                      `Your mental load score is ${results.myMentalLoad}. This reflects how cognitively demanding your household tasks feel.`
+                    ) : (
+                      results.myMentalPercentage > 65 ? 
+                        "⚠️ You're carrying significantly more mental load than your partner - this may feel unfair and exhausting." :
+                      results.myMentalPercentage < 35 ?
+                        "✓ Your partner is carrying more of the mental load. Consider if this feels fair to both of you." :
+                      "✓ Mental load is fairly balanced between you and your partner - this is healthy!"
                     )}
                   </div>
                 </div>
