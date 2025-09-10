@@ -528,35 +528,60 @@ const Results: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Stress Indicators */}
+                      {/* Household Stress Assessment */}
                       <div className="p-4 rounded-lg bg-purple-50/50 border border-purple-200">
                         <div className="flex items-center gap-2 mb-3">
                           <Brain className="h-5 w-5 text-purple-600" />
-                          <h4 className="font-medium text-purple-900">Stress Indicators</h4>
+                          <h4 className="font-medium text-purple-900">Household Stress Assessment</h4>
                         </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Your burden level:</span>
-                            <span className={
-                              wmliResults.myWMLI_Intensity <= 33 ? 'text-green-600' :
-                              wmliResults.myWMLI_Intensity <= 66 ? 'text-yellow-600' : 'text-red-600'
-                            }>
-                              {wmliResults.myWMLI_Intensity <= 33 ? 'Low' :
-                               wmliResults.myWMLI_Intensity <= 66 ? 'Moderate' : 'High'}
-                            </span>
-                          </div>
-                          {wmliResults.partnerWMLI_Intensity !== undefined && (
-                            <div className="flex justify-between">
-                              <span>Partner burden level:</span>
-                              <span className={
-                                wmliResults.partnerWMLI_Intensity <= 33 ? 'text-green-600' :
-                                wmliResults.partnerWMLI_Intensity <= 66 ? 'text-yellow-600' : 'text-red-600'
-                              }>
-                                {wmliResults.partnerWMLI_Intensity <= 33 ? 'Low' :
-                                 wmliResults.partnerWMLI_Intensity <= 66 ? 'Moderate' : 'High'}
-                              </span>
-                            </div>
-                          )}
+                        <div className="space-y-3 text-sm">
+                          {(() => {
+                            const myIntensity = wmliResults.myWMLI_Intensity;
+                            const partnerIntensity = wmliResults.partnerWMLI_Intensity || 0;
+                            const avgIntensity = (myIntensity + partnerIntensity) / 2;
+                            const intensityGap = Math.abs(myIntensity - partnerIntensity);
+                            
+                            // Household stress level
+                            let householdStress = '';
+                            let stressColor = '';
+                            if (avgIntensity <= 30) {
+                              householdStress = 'Low household stress';
+                              stressColor = 'text-green-600';
+                            } else if (avgIntensity <= 60) {
+                              householdStress = 'Moderate household stress';
+                              stressColor = 'text-yellow-600';
+                            } else {
+                              householdStress = 'High household stress';
+                              stressColor = 'text-red-600';
+                            }
+                            
+                            // Stress distribution
+                            let distribution = '';
+                            if (intensityGap <= 15) {
+                              distribution = 'Stress fairly distributed between partners';
+                            } else {
+                              distribution = 'Uneven stress distribution - one partner feeling more overwhelmed';
+                            }
+                            
+                            return (
+                              <>
+                                <div className="flex justify-between">
+                                  <span>Overall stress level:</span>
+                                  <span className={stressColor}>
+                                    {householdStress}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-purple-700 mt-1">
+                                  {distribution}
+                                </div>
+                                {avgIntensity > 60 && (
+                                  <div className="text-xs text-red-600 font-medium mt-2">
+                                    ⚠ Consider reducing overall household burden or seeking support
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
