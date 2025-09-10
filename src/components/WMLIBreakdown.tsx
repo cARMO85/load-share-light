@@ -55,11 +55,20 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
   const strainTasks = getTaskDetails(wmliResults.myFlags.strainTasks);
   const unfairnessTasks = getTaskDetails(wmliResults.myFlags.unfairnessTasks);
 
-  // Prepare intensity comparison data (0-100 scale)
+  // Debug partner data
+  console.log('WMLIBreakdown Debug:', {
+    myWMLI_Intensity: wmliResults.myWMLI_Intensity,
+    partnerWMLI_Intensity: wmliResults.partnerWMLI_Intensity,
+    myWMLI_Share: wmliResults.myWMLI_Share,
+    partnerWMLI_Share: wmliResults.partnerWMLI_Share,
+    isSingleAdult
+  });
+
+  // Prepare intensity comparison data (0-100 scale) - always show both partners
   const intensityData = [
     {
       name: 'Partner 1',
-      intensity: wmliResults.myWMLI_Intensity,
+      intensity: wmliResults.myWMLI_Intensity || 0,
       fill: 'hsl(var(--primary))'
     },
     {
@@ -70,11 +79,11 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
   ];
 
   // Use the proper share percentages from WMLI calculation
-  const partner1Percentage = wmliResults.myWMLI_Share || 100;
-  const partner2Percentage = wmliResults.partnerWMLI_Share || 0;
+  const partner1Percentage = wmliResults.myWMLI_Share || (isSingleAdult ? 100 : 50);
+  const partner2Percentage = wmliResults.partnerWMLI_Share || (isSingleAdult ? 0 : 50);
 
-  // Pie chart data for load distribution (equity view)
-  const pieData = wmliResults.partnerWMLI_Share ? [
+  // Pie chart data for load distribution (equity view) - show if not single adult
+  const pieData = !isSingleAdult ? [
     { 
       name: 'Partner 1 Share', 
       value: partner1Percentage, 
@@ -142,9 +151,9 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="text-center p-4 bg-primary/5 rounded-lg">
-              <div className="text-3xl font-bold text-primary">{wmliResults.myWMLI_Intensity}/100</div>
-              <p className={`text-sm ${getIntensityDescription(wmliResults.myWMLI_Intensity).color}`}>
-                Partner 1: {getIntensityDescription(wmliResults.myWMLI_Intensity).text}
+              <div className="text-3xl font-bold text-primary">{wmliResults.myWMLI_Intensity || 0}/100</div>
+              <p className={`text-sm ${getIntensityDescription(wmliResults.myWMLI_Intensity || 0).color}`}>
+                Partner 1: {getIntensityDescription(wmliResults.myWMLI_Intensity || 0).text}
               </p>
             </div>
             
@@ -153,13 +162,16 @@ export const WMLIBreakdown: React.FC<WMLIBreakdownProps> = ({
               <p className={`text-sm ${getIntensityDescription(wmliResults.partnerWMLI_Intensity || 0).color}`}>
                 Partner 2: {getIntensityDescription(wmliResults.partnerWMLI_Intensity || 0).text}
               </p>
+              {(wmliResults.partnerWMLI_Intensity || 0) === 0 && !isSingleAdult && (
+                <p className="text-xs text-muted-foreground mt-1">No partner data available</p>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* WMLI Share - Equity View */}
-      {wmliResults.partnerWMLI_Share !== undefined && (
+      {!isSingleAdult && (
         <Card>
           <CardHeader>
           <CardTitle className="flex items-center gap-2">
