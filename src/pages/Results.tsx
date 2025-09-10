@@ -141,28 +141,48 @@ const Results: React.FC = () => {
       
       return taskScores;
     } else {
-      // Couples: Show biggest imbalances between partners
+      // Couples: Show biggest imbalances between partners across ALL tasks
       const partnerResponses = state.partnerTaskResponses || [];
       const imbalances = state.taskResponses
-        .filter(r => !r.notApplicable && r.likertRating)
+        .filter(r => !r.notApplicable) // Look at ALL tasks, not just likert ones
         .map(myResponse => {
           const partnerResponse = partnerResponses.find(pr => pr.taskId === myResponse.taskId);
-          if (!partnerResponse || !partnerResponse.likertRating) return null;
+          if (!partnerResponse) return null;
           
-          const myResponsibility = myResponse.mySharePercentage ? myResponse.mySharePercentage / 100 : 0.5;
-          const partnerResponsibility = partnerResponse.mySharePercentage ? partnerResponse.mySharePercentage / 100 : 0.5;
+          // Calculate responsibility shares
+          const getResponsibilityShare = (response: any) => {
+            if (response.assignment === 'me') return 1.0;
+            if (response.assignment === 'partner') return 0.0;
+            if (response.assignment === 'shared' && response.mySharePercentage) {
+              return response.mySharePercentage / 100;
+            }
+            return 0.5; // Default for shared without percentage
+          };
+
+          const myResponsibility = getResponsibilityShare(myResponse);
+          const partnerResponsibility = getResponsibilityShare(partnerResponse);
           const responsibilityGap = Math.abs(myResponsibility - partnerResponsibility);
           
-          const myBurden = myResponse.likertRating!.burden;
-          const partnerBurden = partnerResponse.likertRating!.burden;
-          const burdenGap = Math.abs(myBurden - partnerBurden);
+          // For tasks with likert ratings, include burden/fairness differences
+          let burdenGap = 0;
+          let fairnessGap = 0;
+          let myBurden = 0;
+          let partnerBurden = 0;
+          let myFairness = 0;
+          let partnerFairness = 0;
           
-          const myFairness = myResponse.likertRating!.fairness;
-          const partnerFairness = partnerResponse.likertRating!.fairness;
-          const fairnessGap = Math.abs(myFairness - partnerFairness);
+          if (myResponse.likertRating && partnerResponse.likertRating) {
+            myBurden = myResponse.likertRating.burden;
+            partnerBurden = partnerResponse.likertRating.burden;
+            burdenGap = Math.abs(myBurden - partnerBurden);
+            
+            myFairness = myResponse.likertRating.fairness;
+            partnerFairness = partnerResponse.likertRating.fairness;
+            fairnessGap = Math.abs(myFairness - partnerFairness);
+          }
           
-          // Calculate imbalance score: higher responsibility gap + burden/fairness misalignment
-          const imbalanceScore = responsibilityGap * 2 + (burdenGap + fairnessGap) / 8;
+          // Calculate imbalance score: prioritize responsibility gaps, add perception gaps
+          const imbalanceScore = responsibilityGap * 3 + (burdenGap + fairnessGap) / 10;
           
           const task = allTaskLookup[myResponse.taskId];
           const whoDoesMore = myResponsibility > partnerResponsibility ? 'me' : 'partner';
@@ -181,14 +201,15 @@ const Results: React.FC = () => {
             whoDoesMore,
             type: 'imbalance' as const,
             tags: [
-              ...(responsibilityGap > 0.3 ? ['Responsibility imbalance'] : []),
+              ...(responsibilityGap > 0.4 ? ['Major responsibility gap'] : []),
+              ...(responsibilityGap > 0.2 ? ['Responsibility imbalance'] : []),
               ...(burdenGap > 1 ? ['Burden mismatch'] : []),
               ...(fairnessGap > 1 ? ['Fairness disconnect'] : []),
-              ...(whoDoesMore !== higherBurden ? ['Unfair distribution'] : [])
+              ...(myResponsibility > 0.8 || partnerResponsibility > 0.8 ? ['One partner overloaded'] : [])
             ]
           };
         })
-        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .filter((item): item is NonNullable<typeof item> => item !== null && item.imbalanceScore > 0.1) // Only show meaningful imbalances
         .sort((a, b) => b.imbalanceScore - a.imbalanceScore)
         .slice(0, 3);
       
