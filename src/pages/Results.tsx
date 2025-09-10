@@ -424,83 +424,182 @@ const Results: React.FC = () => {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-6">
-                {/* Big Numbers with Plain Language */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className={`text-center p-4 rounded-lg ${
-                    isSingleAdult ? 'bg-blue-50 dark:bg-blue-950/20' :
-                    Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'bg-green-50 dark:bg-green-950/20' :
-                    Math.abs(visibleResults.myVisiblePercentage - 50) <= 25 ? 'bg-yellow-50 dark:bg-yellow-950/20' :
-                    'bg-red-50 dark:bg-red-950/20'
-                  }`}>
-                    <div className={`text-2xl font-bold ${
-                      isSingleAdult ? 'text-blue-600' :
-                      Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'text-green-600' :
-                      Math.abs(visibleResults.myVisiblePercentage - 50) <= 25 ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`}>{visibleResults.myVisiblePercentage}%</div>
-                    <div className="text-sm font-medium">Your visible time share</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {isSingleAdult ? 'Individual household' :
-                       Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'balanced with partner' :
-                       visibleResults.myVisiblePercentage > 50 ? 'doing more visible work' :
-                       'doing less visible work'}
+                {isSingleAdult ? (
+                  // Single Adult View
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                      <div className="text-2xl font-bold text-blue-600">{visibleResults.myVisiblePercentage}%</div>
+                      <div className="text-sm font-medium">Your visible time share</div>
+                      <div className="text-xs text-muted-foreground mt-1">Individual household</div>
                     </div>
-                    {!isSingleAdult && (
-                      <div className="text-xs text-muted-foreground">
-                        You {visibleResults.myVisiblePercentage}% • Partner {visibleResults.partnerVisiblePercentage}%
+                    
+                    <div className={`text-center p-4 rounded-lg ${
+                      wmliResults.myWMLI_Intensity <= 33 ? 'bg-green-50 dark:bg-green-950/20' :
+                      wmliResults.myWMLI_Intensity <= 66 ? 'bg-yellow-50 dark:bg-yellow-950/20' :
+                      'bg-red-50 dark:bg-red-950/20'
+                    }`}>
+                      <div className={`text-2xl font-bold ${
+                        wmliResults.myWMLI_Intensity <= 33 ? 'text-green-600' :
+                        wmliResults.myWMLI_Intensity <= 66 ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>{wmliResults.myWMLI_Intensity}/100</div>
+                      <div className="text-sm font-medium">Your mental load intensity</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {wmliResults.myWMLI_Intensity <= 33 ? 'light subjective workload' :
+                         wmliResults.myWMLI_Intensity <= 66 ? 'moderate mental strain' :
+                         'high mental burden'}
                       </div>
-                    )}
-                  </div>
-                  
-                  <div className={`text-center p-4 rounded-lg ${
-                    wmliResults.myWMLI_Intensity <= 33 ? 'bg-green-50 dark:bg-green-950/20' :
-                    wmliResults.myWMLI_Intensity <= 66 ? 'bg-yellow-50 dark:bg-yellow-950/20' :
-                    'bg-red-50 dark:bg-red-950/20'
-                  }`}>
-                    <div className={`text-2xl font-bold ${
-                      wmliResults.myWMLI_Intensity <= 33 ? 'text-green-600' :
-                      wmliResults.myWMLI_Intensity <= 66 ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`}>{wmliResults.myWMLI_Intensity}/100</div>
-                    <div className="text-sm font-medium">Your mental load intensity</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {wmliResults.myWMLI_Intensity <= 33 ? 'light subjective workload' :
-                       wmliResults.myWMLI_Intensity <= 66 ? 'moderate mental strain' :
-                       'high mental burden'}
                     </div>
-                    {!isSingleAdult && wmliResults.partnerWMLI_Intensity !== undefined && (
-                      <div className="text-xs text-muted-foreground">
-                        You {wmliResults.myWMLI_Intensity} • Partner {wmliResults.partnerWMLI_Intensity}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className={`text-center p-4 rounded-lg ${
-                    isSingleAdult ? 'bg-blue-50 dark:bg-blue-950/20' :
-                    Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'bg-green-50 dark:bg-green-950/20' :
-                    Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 25 ? 'bg-yellow-50 dark:bg-yellow-950/20' :
-                    'bg-red-50 dark:bg-red-950/20'
-                  }`}>
-                    <div className={`text-2xl font-bold ${
-                      isSingleAdult ? 'text-blue-600' :
-                      Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'text-green-600' :
-                      Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 25 ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`}>{wmliResults.myWMLI_Share || 50}%</div>
-                    <div className="text-sm font-medium">Your share of household mental load</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {isSingleAdult ? 'Individual household' :
-                       Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'close to equal' :
-                       (wmliResults.myWMLI_Share || 50) > 50 ? 'carrying more mental load' :
-                       'carrying less mental load'}
+                    
+                    <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                      <div className="text-2xl font-bold text-blue-600">{wmliResults.myWMLI_Share || 50}%</div>
+                      <div className="text-sm font-medium">Your share of household mental load</div>
+                      <div className="text-xs text-muted-foreground mt-1">Individual household</div>
                     </div>
-                    {!isSingleAdult && (
-                      <div className="text-xs text-muted-foreground">
-                        You {wmliResults.myWMLI_Share}% • Partner {wmliResults.partnerWMLI_Share}%
-                      </div>
-                    )}
                   </div>
-                </div>
+                ) : (
+                  // Couple View - Relationship focused
+                  <div className="space-y-6">
+                    {/* Relationship Balance Status */}
+                    <div className="text-center p-6 rounded-lg border-2 border-dashed border-muted-foreground/30">
+                      <h3 className="text-lg font-semibold mb-2">Your Household Balance</h3>
+                      {(() => {
+                        const visibleGap = Math.abs(visibleResults.myVisiblePercentage - 50);
+                        const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
+                        const avgGap = (visibleGap + mentalGap) / 2;
+                        
+                        if (avgGap <= 8) {
+                          return (
+                            <div className="text-green-700">
+                              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                              <p className="text-lg font-medium">Well Balanced Partnership</p>
+                              <p className="text-sm text-muted-foreground">Both partners carry roughly equal shares of household work</p>
+                            </div>
+                          );
+                        } else if (avgGap <= 20) {
+                          return (
+                            <div className="text-amber-700">
+                              <MessageCircle className="h-8 w-8 mx-auto mb-2 text-amber-600" />
+                              <p className="text-lg font-medium">Some Imbalance Present</p>
+                              <p className="text-sm text-muted-foreground">One partner may be carrying more load - worth discussing</p>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="text-red-700">
+                              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-red-600" />
+                              <p className="text-lg font-medium">Significant Imbalance</p>
+                              <p className="text-sm text-muted-foreground">Workload distribution needs immediate attention</p>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
+
+                    {/* Couple Dynamics Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Visible Work Balance */}
+                      <div className={`p-4 rounded-lg ${
+                        Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'bg-green-50 dark:bg-green-950/20 border-green-200' :
+                        'bg-amber-50 dark:bg-amber-950/20 border-amber-200'
+                      } border`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Clock className="h-5 w-5" />
+                          <h4 className="font-medium">Visible Work Distribution</h4>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm">You</span>
+                          <span className="text-sm">Partner</span>
+                        </div>
+                        <div className="flex h-4 rounded-full overflow-hidden bg-muted border mb-2">
+                          <div 
+                            className="bg-blue-500"
+                            style={{ width: `${visibleResults.myVisiblePercentage}%` }}
+                          ></div>
+                          <div 
+                            className="bg-orange-500"
+                            style={{ width: `${100 - visibleResults.myVisiblePercentage}%` }}
+                          ></div>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span>{visibleResults.myVisiblePercentage}%</span>
+                          <span>{100 - visibleResults.myVisiblePercentage}%</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 
+                            ? "Fairly balanced time contributions" 
+                            : visibleResults.myVisiblePercentage > 50 
+                              ? "You handle more of the visible tasks" 
+                              : "Your partner handles more visible tasks"}
+                        </p>
+                      </div>
+
+                      {/* Mental Load Balance */}
+                      <div className={`p-4 rounded-lg ${
+                        Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'bg-green-50 dark:bg-green-950/20 border-green-200' :
+                        'bg-amber-50 dark:bg-amber-950/20 border-amber-200'
+                      } border`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Brain className="h-5 w-5" />
+                          <h4 className="font-medium">Mental Load Distribution</h4>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm">You</span>
+                          <span className="text-sm">Partner</span>
+                        </div>
+                        <div className="flex h-4 rounded-full overflow-hidden bg-muted border mb-2">
+                          <div 
+                            className="bg-blue-500"
+                            style={{ width: `${wmliResults.myWMLI_Share || 50}%` }}
+                          ></div>
+                          <div 
+                            className="bg-orange-500"
+                            style={{ width: `${100 - (wmliResults.myWMLI_Share || 50)}%` }}
+                          ></div>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span>{wmliResults.myWMLI_Share || 50}%</span>
+                          <span>{100 - (wmliResults.myWMLI_Share || 50)}%</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 
+                            ? "Mental load fairly shared" 
+                            : (wmliResults.myWMLI_Share || 50) > 50 
+                              ? "You carry more planning/organizing" 
+                              : "Partner carries more mental load"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Relationship Insight */}
+                    <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-200">
+                      <div className="flex items-start gap-3">
+                        <Users className="h-5 w-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-blue-900 mb-1">Partnership Insight</h4>
+                          <p className="text-sm text-blue-800">
+                            {(() => {
+                              const visibleDiff = visibleResults.myVisiblePercentage - 50;
+                              const mentalDiff = (wmliResults.myWMLI_Share || 50) - 50;
+                              
+                              if (Math.abs(visibleDiff) <= 8 && Math.abs(mentalDiff) <= 8) {
+                                return "You both contribute fairly equally to household work. This balanced partnership is associated with higher relationship satisfaction.";
+                              } else if (visibleDiff > 15 && mentalDiff > 15) {
+                                return "You're carrying significantly more of both visible and mental work. Consider discussing how to redistribute some responsibilities.";
+                              } else if (visibleDiff < -15 && mentalDiff < -15) {
+                                return "Your partner is handling most of the household work. Acknowledge their contribution and consider taking on more responsibilities.";
+                              } else if (Math.abs(visibleDiff - mentalDiff) > 15) {
+                                return "There's a mismatch between who does the work and who manages it. The person doing less visible work might take on more planning and organizing.";
+                              } else {
+                                return "Your partnership shows some imbalance. Regular check-ins about who does what can help maintain fairness over time.";
+                              }
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Status Chip & Evidence Flags */}
                 <div className="space-y-4">
