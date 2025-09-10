@@ -279,17 +279,44 @@ const Results: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Status Chip */}
-                <div className="flex justify-center">
-                  <div className="flex items-center space-x-3">
-                    <Badge className={`${statusInfo.color} text-white px-4 py-2 text-sm`}>
-                      {statusInfo.status === 'Balanced' && <CheckCircle className="h-4 w-4 mr-1" />}
-                      {statusInfo.status === 'Needs Conversation' && <MessageCircle className="h-4 w-4 mr-1" />}
-                      {statusInfo.status === 'Urgent Imbalance' && <AlertTriangle className="h-4 w-4 mr-1" />}
-                      {statusInfo.status}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">{statusInfo.description}</span>
+                {/* Status Chip & Evidence Flags */}
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <div className="flex items-center space-x-3">
+                      <Badge className={`${statusInfo.color} text-white px-4 py-2 text-sm`}>
+                        {statusInfo.status === 'Balanced' && <CheckCircle className="h-4 w-4 mr-1" />}
+                        {statusInfo.status === 'Needs Conversation' && <MessageCircle className="h-4 w-4 mr-1" />}
+                        {statusInfo.status === 'Urgent Imbalance' && <AlertTriangle className="h-4 w-4 mr-1" />}
+                        {statusInfo.status}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">{statusInfo.description}</span>
+                    </div>
                   </div>
+
+                  {/* Prominent Evidence Flags */}
+                  {(wmliResults.myFlags.highSubjectiveStrain || wmliResults.myFlags.fairnessRisk || wmliResults.myFlags.equityPriority) && (
+                    <div className="flex justify-center">
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {wmliResults.myFlags.highSubjectiveStrain && (
+                          <Badge variant="destructive" className="px-3 py-1">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            High Subjective Strain
+                          </Badge>
+                        )}
+                        {wmliResults.myFlags.fairnessRisk && (
+                          <Badge variant="outline" className="border-orange-500 text-orange-600 px-3 py-1">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            High Equity Risk
+                          </Badge>
+                        )}
+                        {wmliResults.myFlags.equityPriority && (
+                          <Badge variant="outline" className="border-purple-500 text-purple-600 px-3 py-1">
+                            Equity Priority
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </CollapsibleContent>
@@ -401,6 +428,34 @@ const Results: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Household Equity Chart */}
+                {!isSingleAdult && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-center">Household Equity Overview</h4>
+                    <div className="w-full max-w-md mx-auto">
+                      <div className="flex h-8 rounded-full overflow-hidden border">
+                        <div 
+                          className="bg-blue-500 flex items-center justify-center text-white text-xs font-medium"
+                          style={{ width: `${wmliResults.myWMLI_Share || 50}%` }}
+                        >
+                          You {wmliResults.myWMLI_Share}%
+                        </div>
+                        <div 
+                          className="bg-orange-500 flex items-center justify-center text-white text-xs font-medium"
+                          style={{ width: `${wmliResults.partnerWMLI_Share || 50}%` }}
+                        >
+                          Partner {wmliResults.partnerWMLI_Share}%
+                        </div>
+                      </div>
+                      <div className="text-center mt-2">
+                        <span className="text-xs text-muted-foreground">
+                          Mental Load Distribution
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Pattern Analysis */}
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm">
@@ -472,12 +527,14 @@ const Results: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Interpretation */}
+                {/* Simplified Interpretation */}
                 <div className="space-y-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm">
-                      <strong>WMLI (0–100):</strong> Average subjective workload across tasks (burden + unfairness, weighted by responsibility). 
-                      Higher = heavier mental load.
+                      <strong>WMLI (0–100):</strong> This score reflects how heavy your share of invisible household work feels to you — higher = more mental strain.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Technical: Average subjective workload across tasks (burden + unfairness, weighted by responsibility).
                     </p>
                   </div>
                   
@@ -496,28 +553,26 @@ const Results: React.FC = () => {
                     </div>
                   </div>
                   
-                  <p className="text-xs text-muted-foreground text-center">
-                    Interpretation bands (provisional). Will be replaced by pilot percentiles.
-                  </p>
+                  <div className="text-xs text-muted-foreground text-center space-y-1">
+                    <p><strong>Temporary pilot thresholds</strong></p>
+                    <p>Will be replaced with real population benchmarks after research validation</p>
+                  </div>
                 </div>
 
-                {/* Evidence Flags */}
-                {(wmliResults.myFlags.highSubjectiveStrain || wmliResults.myFlags.fairnessRisk) && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Evidence Flags</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {wmliResults.myFlags.highSubjectiveStrain && (
-                        <Badge variant="destructive">High subjective strain</Badge>
-                      )}
-                      {wmliResults.myFlags.fairnessRisk && (
-                        <Badge variant="outline" className="border-orange-500 text-orange-600">Fairness risk</Badge>
-                      )}
-                      {wmliResults.myFlags.equityPriority && (
-                        <Badge variant="outline" className="border-purple-500 text-purple-600">Equity priority</Badge>
-                      )}
+                {/* Detailed Definitions Tooltip */}
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <details className="text-sm">
+                    <summary className="cursor-pointer font-medium hover:text-primary">
+                      <HelpCircle className="h-4 w-4 inline mr-1" />
+                      Understanding WMLI Metrics
+                    </summary>
+                    <div className="mt-3 space-y-2 text-xs text-muted-foreground pl-4">
+                      <p><strong>WMLI Share (%):</strong> Which partner carries what proportion of the household's total mental load.</p>
+                      <p><strong>Equity rule of thumb:</strong> Balanced bands: 40–60% each. Outside 60% signals potential inequity.</p>
+                      <p><strong>Evidence flags:</strong> Research-backed indicators of workload strain and fairness concerns.</p>
                     </div>
-                  </div>
-                )}
+                  </details>
+                </div>
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
@@ -542,31 +597,62 @@ const Results: React.FC = () => {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-6">
-                {/* Action Items */}
+                {/* Pre-populated Recommendations */}
                 <div className="space-y-4">
-                  <h4 className="font-medium">Action Items</h4>
-                  {actionItems.length > 0 && (
-                    <div className="space-y-2">
-                      {actionItems.map(item => (
-                        <div key={item.id} className="p-3 border rounded-lg">
-                          <div className="text-sm">{item.text}</div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Owner: {item.owner} | Due: {item.date}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <h4 className="font-medium">Recommended Actions</h4>
                   
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Action Item
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      Set Check-in
-                    </Button>
+                  {/* Evidence-based suggestions */}
+                  <div className="space-y-3">
+                    {hotspots.length > 0 && (
+                      <div className="p-3 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                        <div className="text-sm font-medium mb-2">Based on your hotspots:</div>
+                        <div className="text-sm space-y-1">
+                          {hotspots.slice(0, 2).map((hotspot, index) => (
+                            <div key={index}>• Try sharing {hotspot.taskName.toLowerCase()} responsibilities</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {wmliResults.myFlags.fairnessRisk && (
+                      <div className="p-3 border rounded-lg bg-orange-50 dark:bg-orange-950/20">
+                        <div className="text-sm">• Revisit acknowledgment and appreciation for household decisions</div>
+                      </div>
+                    )}
+                    
+                    {(wmliResults.myWMLI_Share || 50) > 60 && (
+                      <div className="p-3 border rounded-lg bg-purple-50 dark:bg-purple-950/20">
+                        <div className="text-sm">• Consider redistributing planning and monitoring tasks</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Items */}
+                  <div className="space-y-4">
+                    <h5 className="font-medium">Your Action Items</h5>
+                    {actionItems.length > 0 && (
+                      <div className="space-y-2">
+                        {actionItems.map(item => (
+                          <div key={item.id} className="p-3 border rounded-lg">
+                            <div className="text-sm">{item.text}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Owner: {item.owner} | Due: {item.date}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Action Item
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        Set Check-in
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
