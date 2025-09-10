@@ -876,7 +876,6 @@ const Results: React.FC = () => {
                   </div>
                 )}
 
-                {/* Pattern Analysis */}
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <p className="text-sm">
                     <strong>Pattern: </strong>
@@ -885,12 +884,37 @@ const Results: React.FC = () => {
                       const mentalShare = wmliResults.myWMLI_Share || 50;
                       const diff = Math.abs(visibleShare - mentalShare);
                       
-                      if (diff <= 10) {
-                        return `Aligned - You carry ${visibleShare}% of time and ${mentalShare}% of mental load.`;
-                      } else if (mentalShare > visibleShare) {
-                        return `Cognitive load exceeds time - You carry ${visibleShare}% time but ${mentalShare}% mental load (planning/monitoring).`;
+                      if (isSingleAdult) {
+                        return `Single household - You manage 100% of both time and mental load.`;
+                      }
+                      
+                      // For couples, first check if the distribution is fair (around 50%)
+                      const avgShare = (visibleShare + mentalShare) / 2;
+                      const fairnessGap = Math.abs(avgShare - 50);
+                      
+                      if (fairnessGap > 15) {
+                        // Significantly imbalanced household
+                        if (avgShare < 35) {
+                          return `Undercontributing - You carry only ${visibleShare}% of time and ${mentalShare}% of mental load. Consider taking on more responsibility.`;
+                        } else {
+                          return `Overcontributing - You carry ${visibleShare}% of time and ${mentalShare}% of mental load. This may lead to burnout.`;
+                        }
+                      } else if (fairnessGap > 8) {
+                        // Somewhat imbalanced but not extreme
+                        if (avgShare < 42) {
+                          return `Slight undercontribution - You carry ${visibleShare}% of time and ${mentalShare}% of mental load.`;
+                        } else {
+                          return `Slight overcontribution - You carry ${visibleShare}% of time and ${mentalShare}% of mental load.`;
+                        }
                       } else {
-                        return `Time exceeds cognitive load - You carry ${visibleShare}% time but ${mentalShare}% mental load.`;
+                        // Fair distribution, now check alignment between visible and mental
+                        if (diff <= 8) {
+                          return `Well balanced - You carry ${visibleShare}% of time and ${mentalShare}% of mental load. Good alignment!`;
+                        } else if (mentalShare > visibleShare) {
+                          return `High mental load - You carry ${visibleShare}% time but ${mentalShare}% mental load. You're doing more planning/monitoring.`;
+                        } else {
+                          return `High visible work - You carry ${visibleShare}% time but ${mentalShare}% mental load. Partner may handle more planning.`;
+                        }
                       }
                     })()}
                   </p>
