@@ -59,6 +59,40 @@ const Results: React.FC = () => {
 
   // Calculate WMLI and evidence-based insights
   const wmliResults = useMemo(() => {
+    // Debug logging
+    console.log('WMLI Calculation Debug:', {
+      taskResponsesLength: state.taskResponses?.length || 0,
+      partnerTaskResponsesLength: state.partnerTaskResponses?.length || 0,
+      isTogetherMode,
+      taskResponses: state.taskResponses,
+      partnerTaskResponses: state.partnerTaskResponses
+    });
+
+    // If in together mode but no separate partner responses, split the combined responses
+    if (isTogetherMode && (!state.partnerTaskResponses || state.partnerTaskResponses.length === 0)) {
+      // For now, we'll use the same responses for both partners since they were filled out together
+      // This is a temporary fix - ideally, the app should collect separate responses
+      const myResponses = state.taskResponses.map(response => ({
+        ...response,
+        // Adjust share percentage to be from "my" perspective
+        mySharePercentage: response.mySharePercentage || 50
+      }));
+      
+      const partnerResponses = state.taskResponses.map(response => ({
+        ...response,
+        // Flip the perspective for partner - if I have 30%, partner has 70%
+        mySharePercentage: 100 - (response.mySharePercentage || 50),
+        // Flip assignment perspective
+        assignment: response.assignment === 'me' ? 'partner' as const : 
+                   response.assignment === 'partner' ? 'me' as const : 
+                   'shared' as const
+      }));
+
+      console.log('Split responses:', { myResponses, partnerResponses });
+      
+      return calculateWMLI(myResponses, allTaskLookup, partnerResponses);
+    }
+    
     return calculateWMLI(
       state.taskResponses,
       allTaskLookup,
