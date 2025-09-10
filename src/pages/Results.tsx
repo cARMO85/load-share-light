@@ -400,11 +400,21 @@ const Results: React.FC = () => {
                               </Badge>
                             ))}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            High {hotspot.burden >= 4 ? 'burden' : 'responsibility'} ({hotspot.burden}/5) on you; 
-                            Responsibility: {Math.round(hotspot.responsibility * 100)}%
-                            {hotspot.fairness <= 2 && '; feels unacknowledged'}
-                          </p>
+                           <p className="text-sm text-muted-foreground mt-1">
+                             {hotspot.burden >= 4 ? (
+                               <>This task feels <strong>very burdensome</strong> (rated {hotspot.burden}/5 for difficulty)</>
+                             ) : (
+                               <>This task has <strong>high impact</strong> on your mental load (rated {hotspot.burden}/5)</>
+                             )}
+                             {hotspot.responsibility >= 0.8 ? (
+                               <> • You handle <strong>most of it</strong> ({Math.round(hotspot.responsibility * 100)}%)</>
+                             ) : hotspot.responsibility >= 0.6 ? (
+                               <> • You do <strong>more than your share</strong> ({Math.round(hotspot.responsibility * 100)}%)</>
+                             ) : (
+                               <> • You're responsible for <strong>{Math.round(hotspot.responsibility * 100)}%</strong> of this task</>
+                             )}
+                             {hotspot.fairness <= 2 && <> • <strong>Feels unappreciated</strong></>}
+                           </p>
                         </div>
                         <ConversationPrompts taskName={hotspot.taskName} />
                       </div>
