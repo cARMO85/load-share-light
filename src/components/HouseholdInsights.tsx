@@ -25,7 +25,7 @@ interface HouseholdInsightsProps {
   isSingleAdult?: boolean;
 }
 
-export const HouseholdInsights: React.FC<HouseholdInsightsProps> = ({
+const HouseholdInsights: React.FC<HouseholdInsightsProps> = ({
   wmliResults,
   taskResponses,
   results,
@@ -272,3 +272,5 @@ export const HouseholdInsights: React.FC<HouseholdInsightsProps> = ({
     </div>
   );
 };
+
+export default HouseholdInsights;

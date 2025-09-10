@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { allTaskLookup, physicalTaskLookup, cognitiveTaskLookup } from '@/data/allTasks';
 import { calculatePersonLoad, calculateWMLI } from '@/lib/calculationUtils';
 import { CalculatedResults, TaskResponse } from '@/types/assessment';
-import { HouseholdInsights } from '@/components/HouseholdInsights';
+import HouseholdInsights from '@/components/HouseholdInsights';
 import { WMLIBreakdown } from '@/components/WMLIBreakdown';
 import { 
   AlertCircle, 
