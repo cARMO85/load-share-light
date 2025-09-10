@@ -98,37 +98,94 @@ const Results: React.FC = () => {
     }
   };
 
-  // Top 3 hotspots calculation
+  // Top 3 hotspots calculation - different logic for couples vs singles
   const getHotspots = () => {
-    const taskScores = state.taskResponses
-      .filter(r => !r.notApplicable && r.likertRating)
-      .map(response => {
-        const responsibility = response.mySharePercentage ? response.mySharePercentage / 100 : 0.5;
-        const burden = response.likertRating!.burden;
-        const fairness = response.likertRating!.fairness;
-        const unfairness = (5 - fairness) / 4; // Convert to 0-1 scale
-        const normalizedBurden = (burden - 1) / 4; // Convert to 0-1 scale
-        
-        const driverScore = responsibility * ((normalizedBurden + unfairness) / 2);
-        
-        const task = allTaskLookup[response.taskId];
-        return {
-          taskId: response.taskId,
-          taskName: (task && 'title' in task) ? task.title : (task && 'task_name' in task) ? task.task_name : response.taskId,
-          driverScore,
-          responsibility,
-          burden,
-          fairness,
-          tags: [
-            ...(burden >= 4 && responsibility >= 0.6 ? ['High burden'] : []),
-            ...(fairness <= 2 && responsibility >= 0.6 ? ['Unfairness concern'] : [])
-          ]
-        };
-      })
-      .sort((a, b) => b.driverScore - a.driverScore)
-      .slice(0, 3);
-
-    return taskScores;
+    if (isSingleAdult) {
+      // Single parent: Show individual pain points (current logic)
+      const taskScores = state.taskResponses
+        .filter(r => !r.notApplicable && r.likertRating)
+        .map(response => {
+          const responsibility = response.mySharePercentage ? response.mySharePercentage / 100 : 0.5;
+          const burden = response.likertRating!.burden;
+          const fairness = response.likertRating!.fairness;
+          const unfairness = (5 - fairness) / 4; // Convert to 0-1 scale
+          const normalizedBurden = (burden - 1) / 4; // Convert to 0-1 scale
+          
+          const driverScore = responsibility * ((normalizedBurden + unfairness) / 2);
+          
+          const task = allTaskLookup[response.taskId];
+          return {
+            taskId: response.taskId,
+            taskName: (task && 'title' in task) ? task.title : (task && 'task_name' in task) ? task.task_name : response.taskId,
+            driverScore,
+            responsibility,
+            burden,
+            fairness,
+            type: 'individual' as const,
+            tags: [
+              ...(burden >= 4 && responsibility >= 0.6 ? ['High burden'] : []),
+              ...(fairness <= 2 && responsibility >= 0.6 ? ['Unfairness concern'] : [])
+            ]
+          };
+        })
+        .sort((a, b) => b.driverScore - a.driverScore)
+        .slice(0, 3);
+      
+      return taskScores;
+    } else {
+      // Couples: Show biggest imbalances between partners
+      const partnerResponses = state.partnerTaskResponses || [];
+      const imbalances = state.taskResponses
+        .filter(r => !r.notApplicable && r.likertRating)
+        .map(myResponse => {
+          const partnerResponse = partnerResponses.find(pr => pr.taskId === myResponse.taskId);
+          if (!partnerResponse || !partnerResponse.likertRating) return null;
+          
+          const myResponsibility = myResponse.mySharePercentage ? myResponse.mySharePercentage / 100 : 0.5;
+          const partnerResponsibility = partnerResponse.mySharePercentage ? partnerResponse.mySharePercentage / 100 : 0.5;
+          const responsibilityGap = Math.abs(myResponsibility - partnerResponsibility);
+          
+          const myBurden = myResponse.likertRating!.burden;
+          const partnerBurden = partnerResponse.likertRating!.burden;
+          const burdenGap = Math.abs(myBurden - partnerBurden);
+          
+          const myFairness = myResponse.likertRating!.fairness;
+          const partnerFairness = partnerResponse.likertRating!.fairness;
+          const fairnessGap = Math.abs(myFairness - partnerFairness);
+          
+          // Calculate imbalance score: higher responsibility gap + burden/fairness misalignment
+          const imbalanceScore = responsibilityGap * 2 + (burdenGap + fairnessGap) / 8;
+          
+          const task = allTaskLookup[myResponse.taskId];
+          const whoDoesMore = myResponsibility > partnerResponsibility ? 'me' : 'partner';
+          const higherBurden = myBurden > partnerBurden ? 'me' : 'partner';
+          
+          return {
+            taskId: myResponse.taskId,
+            taskName: (task && 'title' in task) ? task.title : (task && 'task_name' in task) ? task.task_name : myResponse.taskId,
+            imbalanceScore,
+            myResponsibility,
+            partnerResponsibility,
+            myBurden,
+            partnerBurden,
+            myFairness,
+            partnerFairness,
+            whoDoesMore,
+            type: 'imbalance' as const,
+            tags: [
+              ...(responsibilityGap > 0.3 ? ['Responsibility imbalance'] : []),
+              ...(burdenGap > 1 ? ['Burden mismatch'] : []),
+              ...(fairnessGap > 1 ? ['Fairness disconnect'] : []),
+              ...(whoDoesMore !== higherBurden ? ['Unfair distribution'] : [])
+            ]
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => b.imbalanceScore - a.imbalanceScore)
+        .slice(0, 3);
+      
+      return imbalances;
+    }
   };
 
   const toggleSection = (section: keyof typeof openSections) => {
@@ -142,7 +199,15 @@ const Results: React.FC = () => {
   const statusInfo = getStatusInfo();
   const hotspots = getHotspots();
 
-  const ConversationPrompts = ({ taskName }: { taskName: string }) => (
+  const ConversationPrompts = ({ 
+    taskName, 
+    isCouple = false, 
+    imbalanceData 
+  }: { 
+    taskName: string; 
+    isCouple?: boolean;
+    imbalanceData?: any;
+  }) => (
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
@@ -154,19 +219,79 @@ const Results: React.FC = () => {
         <DialogHeader>
           <DialogTitle>Conversation Prompts: {taskName}</DialogTitle>
           <DialogDescription>
-            Use these prompts to discuss this task with your partner
+            {isCouple 
+              ? 'Use these prompts to discuss this imbalance with your partner'
+              : 'Reflection prompts for managing this task'
+            }
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm">"How do you feel about how we currently handle {taskName}?"</p>
-          </div>
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm">"What would make {taskName} feel more balanced between us?"</p>
-          </div>
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm">"Are there specific aspects of {taskName} that feel overwhelming or underappreciated?"</p>
-          </div>
+          {isCouple && imbalanceData ? (
+            // Couple-focused prompts based on imbalance data
+            <>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">
+                  "I noticed we have different levels of responsibility for {taskName}. 
+                  {imbalanceData.whoDoesMore === 'me' 
+                    ? " I'm handling more of this - how do you see it?"
+                    : " You're handling more of this - how does that feel for you?"
+                  }"
+                </p>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">
+                  "How could we redistribute {taskName} so it feels more balanced for both of us?"
+                </p>
+              </div>
+              {Math.abs(imbalanceData.myBurden - imbalanceData.partnerBurden) > 1 && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">
+                    "We seem to experience different levels of burden with {taskName}. 
+                    Can we talk about what makes this feel {imbalanceData.myBurden > imbalanceData.partnerBurden ? 'harder for me' : 'easier for me'}?"
+                  </p>
+                </div>
+              )}
+              {Math.abs(imbalanceData.myFairness - imbalanceData.partnerFairness) > 1 && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">
+                    "We have different perceptions about fairness around {taskName}. 
+                    What would help us both feel better about how this is handled?"
+                  </p>
+                </div>
+              )}
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">
+                  "What support would help the person doing {taskName} feel more appreciated?"
+                </p>
+              </div>
+            </>
+          ) : isCouple ? (
+            // General couple prompts
+            <>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">"How do you feel about how we currently handle {taskName}?"</p>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">"What would make {taskName} feel more balanced between us?"</p>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">"Are there specific aspects of {taskName} that feel overwhelming or underappreciated?"</p>
+              </div>
+            </>
+          ) : (
+            // Individual/single parent prompts
+            <>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">"What makes {taskName} feel particularly burdensome right now?"</p>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">"What systems or support could help make {taskName} more manageable?"</p>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">"How could I simplify or delegate parts of {taskName}?"</p>
+              </div>
+            </>
+          )}
           <Button 
             onClick={() => setSummary(prev => prev + `\n• Discussed ${taskName} - [Add your notes here]`)}
             variant="outline"
@@ -368,7 +493,7 @@ const Results: React.FC = () => {
           </Collapsible>
         </Card>
 
-        {/* 2. Top 3 Hotspots */}
+        {/* 2. Top 3 Hotspots/Imbalances */}
         <Card id="drivers" className="border-2">
           <Collapsible open={openSections.drivers} onOpenChange={() => toggleSection('drivers')}>
             <CollapsibleTrigger asChild>
@@ -377,9 +502,14 @@ const Results: React.FC = () => {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5" />
-                      Tasks adding most to your mental load
+                      {isSingleAdult ? 'Tasks adding most to your mental load' : 'Biggest imbalances between partners'}
                     </CardTitle>
-                    <CardDescription>Areas of highest burden that might need attention</CardDescription>
+                    <CardDescription>
+                      {isSingleAdult 
+                        ? 'Areas of highest burden that might need attention'
+                        : 'Tasks where the workload distribution needs the most discussion'
+                      }
+                    </CardDescription>
                   </div>
                   {openSections.drivers ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
@@ -400,30 +530,70 @@ const Results: React.FC = () => {
                               </Badge>
                             ))}
                           </div>
-                           <p className="text-sm text-muted-foreground mt-1">
-                             {hotspot.burden >= 4 ? (
-                               <>This task feels <strong>very burdensome</strong> (rated {hotspot.burden}/5 for difficulty)</>
-                             ) : (
-                               <>This task has <strong>high impact</strong> on your mental load (rated {hotspot.burden}/5)</>
-                             )}
-                             {hotspot.responsibility >= 0.8 ? (
-                               <> • You handle <strong>most of it</strong> ({Math.round(hotspot.responsibility * 100)}%)</>
-                             ) : hotspot.responsibility >= 0.6 ? (
-                               <> • You do <strong>more than your share</strong> ({Math.round(hotspot.responsibility * 100)}%)</>
-                             ) : (
-                               <> • You're responsible for <strong>{Math.round(hotspot.responsibility * 100)}%</strong> of this task</>
-                             )}
-                             {hotspot.fairness <= 2 && <> • <strong>Feels unappreciated</strong></>}
-                           </p>
+                          
+                          {hotspot.type === 'individual' ? (
+                            // Single parent view - individual burden
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {hotspot.burden >= 4 ? (
+                                <>This task feels <strong>very burdensome</strong> (rated {hotspot.burden}/5 for difficulty)</>
+                              ) : (
+                                <>This task has <strong>high impact</strong> on your mental load (rated {hotspot.burden}/5)</>
+                              )}
+                              {hotspot.responsibility >= 0.8 ? (
+                                <> • You handle <strong>most of it</strong> ({Math.round(hotspot.responsibility * 100)}%)</>
+                              ) : hotspot.responsibility >= 0.6 ? (
+                                <> • You do <strong>more than your share</strong> ({Math.round(hotspot.responsibility * 100)}%)</>
+                              ) : (
+                                <> • You're responsible for <strong>{Math.round(hotspot.responsibility * 100)}%</strong> of this task</>
+                              )}
+                              {hotspot.fairness <= 2 && <> • <strong>Feels unappreciated</strong></>}
+                            </p>
+                          ) : (
+                            // Couple view - relationship imbalance
+                            <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span>You: <strong>{Math.round(hotspot.myResponsibility * 100)}%</strong> responsibility</span>
+                                <span>Partner: <strong>{Math.round(hotspot.partnerResponsibility * 100)}%</strong> responsibility</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span>You rate burden: <strong>{hotspot.myBurden}/5</strong></span>
+                                <span>Partner rates burden: <strong>{hotspot.partnerBurden}/5</strong></span>
+                              </div>
+                              {Math.abs(hotspot.myFairness - hotspot.partnerFairness) > 1 && (
+                                <div className="text-amber-600 font-medium">
+                                  ⚠ Different fairness perceptions (You: {hotspot.myFairness}/5, Partner: {hotspot.partnerFairness}/5)
+                                </div>
+                              )}
+                              {hotspot.whoDoesMore === 'me' && hotspot.myBurden > hotspot.partnerBurden && (
+                                <div className="text-red-600 font-medium">
+                                  🔍 You do more and feel greater burden - needs discussion
+                                </div>
+                              )}
+                              {hotspot.whoDoesMore === 'partner' && hotspot.partnerBurden > hotspot.myBurden && (
+                                <div className="text-orange-600 font-medium">
+                                  🤝 Partner does more and feels greater burden - acknowledge their contribution
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <ConversationPrompts taskName={hotspot.taskName} />
+                        <ConversationPrompts 
+                          taskName={hotspot.taskName} 
+                          isCouple={!isSingleAdult}
+                          imbalanceData={hotspot.type === 'imbalance' ? hotspot : undefined}
+                        />
                       </div>
                     </div>
                   ))}
                   {hotspots.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                       <CheckCircle className="h-8 w-8 mx-auto mb-2" />
-                      <p>No significant hotspots detected. Your workload appears well-managed!</p>
+                      <p>
+                        {isSingleAdult 
+                          ? 'No significant hotspots detected. Your workload appears well-managed!'
+                          : 'No major imbalances detected. Your household workload distribution looks fairly balanced!'
+                        }
+                      </p>
                     </div>
                   )}
                 </div>
