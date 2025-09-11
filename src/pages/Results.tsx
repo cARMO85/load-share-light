@@ -521,41 +521,6 @@ const Results: React.FC = () => {
                 ) : (
                   // Couple View - Both Partners' Results
                   <div className="space-y-6">
-                    {/* Household Status */}
-                    <div className="text-center p-6 rounded-lg border-2 border-dashed border-muted-foreground/30">
-                      <h3 className="text-lg font-semibold mb-2">Household Balance Status</h3>
-                      {(() => {
-                        const visibleGap = Math.abs(visibleResults.myVisiblePercentage - 50);
-                        const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
-                        const avgGap = (visibleGap + mentalGap) / 2;
-                        
-                        if (avgGap <= 8) {
-                          return (
-                            <div className="text-green-700">
-                              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                              <p className="text-lg font-medium">Well Balanced Partnership</p>
-                              <p className="text-sm text-muted-foreground">Both partners carry roughly equal shares of household work</p>
-                            </div>
-                          );
-                        } else if (avgGap <= 20) {
-                          return (
-                            <div className="text-amber-700">
-                              <MessageCircle className="h-8 w-8 mx-auto mb-2 text-amber-600" />
-                              <p className="text-lg font-medium">Some Imbalance Present</p>
-                              <p className="text-sm text-muted-foreground">One partner may be carrying more load - worth discussing</p>
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <div className="text-red-700">
-                              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-red-600" />
-                              <p className="text-lg font-medium">Significant Imbalance</p>
-                              <p className="text-sm text-muted-foreground">Workload distribution needs immediate attention</p>
-                            </div>
-                          );
-                        }
-                      })()}
-                    </div>
 
                     {/* Both Partners' Individual Scores */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
