@@ -110,139 +110,199 @@ const Results: React.FC = () => {
   // Data-driven imbalance detection with specific templates
   const getHotspots = () => {
     if (isSingleAdult) {
-      // Individual: Show individual pain points (current logic)
+      // Individual: surface top drivers of subjective strain
       const taskScores = state.taskResponses
         .filter(r => !r.notApplicable && r.likertRating)
         .map(response => {
-          const responsibility = response.mySharePercentage ? response.mySharePercentage / 100 : 0.5;
-          const burden = response.likertRating!.burden;
-          const fairness = response.likertRating!.fairness;
-          const unfairness = (5 - fairness) / 4; // Convert to 0-1 scale
-          const normalizedBurden = (burden - 1) / 4; // Convert to 0-1 scale
-          
-          const driverScore = responsibility * ((normalizedBurden + unfairness) / 2);
-          
+          const responsibility = response.mySharePercentage != null
+            ? response.mySharePercentage / 100
+            : response.assignment === 'me' ? 1
+            : response.assignment === 'partner' ? 0
+            : 0.5;
+
+          const burden = response.likertRating!.burden;   // 1–5
+          const fairness = response.likertRating!.fairness; // 1–5
+
+          const unfairness01 = (5 - fairness) / 4;      // 0–1
+          const burden01 = (burden - 1) / 4;            // 0–1
+
+          const driverScore = responsibility * ((burden01 + unfairness01) / 2);
+
           const task = allTaskLookup[response.taskId];
+          const taskName =
+            (task && 'title' in task) ? task.title :
+            (task && 'task_name' in task) ? task.task_name :
+            response.taskId;
+
           return {
             taskId: response.taskId,
-            taskName: (task && 'title' in task) ? task.title : (task && 'task_name' in task) ? task.task_name : response.taskId,
+            taskName,
+            type: 'individual' as const,
             driverScore,
             responsibility,
             burden,
             fairness,
-            type: 'individual' as const,
             tags: [
               ...(burden >= 4 && responsibility >= 0.6 ? ['High burden'] : []),
-              ...(fairness <= 2 && responsibility >= 0.6 ? ['Unfairness concern'] : [])
-            ]
+              ...(fairness <= 2 && responsibility >= 0.6 ? ['Unfairness concern'] : []),
+            ],
           };
         })
         .sort((a, b) => b.driverScore - a.driverScore)
         .slice(0, 3);
-      
+
       return taskScores;
-    } else {
-      // Couples: Template-based imbalance detection
-      const partnerResponses = state.partnerTaskResponses || [];
-      const imbalances: any[] = [];
-      
-      state.taskResponses
-        .filter(r => !r.notApplicable)
-        .forEach(myResponse => {
-          const partnerResponse = partnerResponses.find(pr => pr.taskId === myResponse.taskId);
-          if (!partnerResponse) return;
-          
-          const getResponsibilityShare = (response: any) => {
-            if (response.assignment === 'me') return 1.0;
-            if (response.assignment === 'partner') return 0.0;
-            if (response.assignment === 'shared' && response.mySharePercentage) {
-              return response.mySharePercentage / 100;
-            }
-            return 0.5;
-          };
-
-          const myResponsibility = getResponsibilityShare(myResponse);
-          const partnerResponsibility = getResponsibilityShare(partnerResponse);
-          const responsibilityGapPct = Math.abs(myResponsibility - partnerResponsibility) * 100;
-          
-          let myBurden = 0;
-          let partnerBurden = 0;
-          let myFairness = 0;
-          let partnerFairness = 0;
-          
-          if (myResponse.likertRating && partnerResponse.likertRating) {
-            myBurden = myResponse.likertRating.burden;
-            partnerBurden = partnerResponse.likertRating.burden;
-            myFairness = myResponse.likertRating.fairness;
-            partnerFairness = partnerResponse.likertRating.fairness;
-          }
-
-          const task = allTaskLookup[myResponse.taskId];
-          const taskName = (task && 'title' in task) ? task.title : (task && 'task_name' in task) ? task.task_name : myResponse.taskId;
-          
-          // Template 1: High Responsibility Gap (≥25% difference)
-          if (responsibilityGapPct >= 25) {
-            const whoDoesMore = myResponsibility > partnerResponsibility ? 'You' : 'Your partner';
-            const higherPct = Math.round(Math.max(myResponsibility, partnerResponsibility) * 100);
-            const lowerPct = Math.round(Math.min(myResponsibility, partnerResponsibility) * 100);
-            
-            imbalances.push({
-              taskId: myResponse.taskId,
-              taskName,
-              type: 'responsibility-gap',
-              priority: responsibilityGapPct,
-              keyInsight: `${whoDoesMore} report carrying ${higherPct}% of this task, while your partner carries only ${lowerPct}%. This gap may feel unbalanced, especially if it's a recurring responsibility.`,
-              conversationPrompt: "Would rotating weeks or setting a shared plan help make this task feel fairer?",
-              tags: ['High Responsibility Gap']
-            });
-          }
-          
-          // Template 2: High Burden + High Responsibility (≥60% and burden ≥4)
-          if (myResponsibility >= 0.6 && myBurden >= 4) {
-            imbalances.push({
-              taskId: myResponse.taskId,
-              taskName,
-              type: 'high-burden-responsibility',
-              priority: myResponsibility * 100 + myBurden * 10,
-              keyInsight: `You carry ${Math.round(myResponsibility * 100)}% of this responsibility, and it feels very burdensome (${myBurden}/5). This may lead to stress or fatigue unless some tasks are shared.`,
-              conversationPrompt: "What part of this task feels heaviest? Could some of it be handed over or automated?",
-              tags: ['High Burden & Responsibility']
-            });
-          } else if (partnerResponsibility >= 0.6 && partnerBurden >= 4) {
-            imbalances.push({
-              taskId: myResponse.taskId,
-              taskName,
-              type: 'high-burden-responsibility',
-              priority: partnerResponsibility * 100 + partnerBurden * 10,
-              keyInsight: `Your partner carries ${Math.round(partnerResponsibility * 100)}% of this responsibility, and rates it as very burdensome (${partnerBurden}/5). They may need support or task redistribution.`,
-              conversationPrompt: "What part of this task feels heaviest for your partner? Could some of it be shared or simplified?",
-              tags: ['High Burden & Responsibility']
-            });
-          }
-          
-          // Template 3: Fairness Disagreement (one ≤2, other ≥4)
-          if ((myFairness <= 2 && partnerFairness >= 4) || (myFairness >= 4 && partnerFairness <= 2)) {
-            const whoFeelsUnfair = myFairness <= 2 ? 'You' : 'Your partner';
-            const fairScore = myFairness <= 2 ? myFairness : partnerFairness;
-            const unfairScore = myFairness >= 4 ? myFairness : partnerFairness;
-            
-            imbalances.push({
-              taskId: myResponse.taskId,
-              taskName,
-              type: 'fairness-disagreement',
-              priority: Math.abs(myFairness - partnerFairness) * 20,
-              keyInsight: `${whoFeelsUnfair} rated this work as unfair (${fairScore}/5), while your partner rated it as fair (${unfairScore}/5). This signals a mismatch in how each of you perceives recognition for this task.`,
-              conversationPrompt: "Do we both feel this work is acknowledged? How could appreciation be shown more clearly?",
-              tags: ['Different Fairness Views']
-            });
-          }
-        });
-      
-      // Sort by priority and take top 3
-      return imbalances
-        .sort((a, b) => b.priority - a.priority)
-        .slice(0, 3);
     }
+
+    // Couples
+    const partnerResponses = state.partnerTaskResponses || [];
+    const imbalances: Array<{
+      taskId: string;
+      taskName: string;
+      type: 'imbalance';
+      imbalanceType: 'responsibility-gap' | 'high-burden-responsibility' | 'fairness-disagreement';
+      priority: number;
+      keyInsight: string;
+      conversationPrompt: string;
+      tags: string[];
+      // fields used by ConversationPrompts / UI
+      myResponsibility: number;
+      partnerResponsibility: number;
+      myBurden: number | null;
+      partnerBurden: number | null;
+      myFairness: number | null;
+      partnerFairness: number | null;
+      whoDoesMore: 'You' | 'Your partner' | 'Evenly shared';
+    }> = [];
+
+    const getResponsibilityShare = (r: any) => {
+      if (r.assignment === 'me') return 1;
+      if (r.assignment === 'partner') return 0;
+      if (r.assignment === 'shared' && typeof r.mySharePercentage === 'number') {
+        return r.mySharePercentage / 100;
+      }
+      return 0.5;
+    };
+
+    state.taskResponses
+      .filter(r => !r.notApplicable)
+      .forEach(myResponse => {
+        const partnerResponse = partnerResponses.find(pr => pr.taskId === myResponse.taskId);
+        if (!partnerResponse) return;
+
+        const myResp = getResponsibilityShare(myResponse);
+        const partnerResp = getResponsibilityShare(partnerResponse);
+        const gapPct = Math.abs(myResp - partnerResp) * 100;
+
+        const myBurden = myResponse.likertRating?.burden ?? null;
+        const partnerBurden = partnerResponse.likertRating?.burden ?? null;
+        const myFairness = myResponse.likertRating?.fairness ?? null;
+        const partnerFairness = partnerResponse.likertRating?.fairness ?? null;
+
+        const task = allTaskLookup[myResponse.taskId];
+        const taskName =
+          (task && 'title' in task) ? task.title :
+          (task && 'task_name' in task) ? task.task_name :
+          myResponse.taskId;
+
+        const whoDoesMore =
+          Math.abs(myResp - partnerResp) < 0.05
+            ? 'Evenly shared'
+            : myResp > partnerResp ? 'You' : 'Your partner';
+
+        // ---------- Template 1: Responsibility gap ----------
+        if (gapPct >= 25) {
+          const higherPct = Math.round(Math.max(myResp, partnerResp) * 100);
+          const lowerPct  = Math.round(Math.min(myResp, partnerResp) * 100);
+
+          imbalances.push({
+            taskId: myResponse.taskId,
+            taskName,
+            type: 'imbalance',
+            imbalanceType: 'responsibility-gap',
+            priority: gapPct, // strongest first
+            keyInsight: `${whoDoesMore} report carrying ${higherPct}% of this task, while the other partner carries ${lowerPct}%. This gap may feel unbalanced, especially if it's recurring.`,
+            conversationPrompt: 'Would rotating weeks or setting a shared plan help make this task feel fairer?',
+            tags: ['High Responsibility Gap'],
+            myResponsibility: myResp,
+            partnerResponsibility: partnerResp,
+            myBurden,
+            partnerBurden,
+            myFairness,
+            partnerFairness,
+            whoDoesMore,
+          });
+        }
+
+        // ---------- Template 2: High burden AND high responsibility ----------
+        if (myResp >= 0.6 && (myBurden ?? 0) >= 4) {
+          imbalances.push({
+            taskId: myResponse.taskId,
+            taskName,
+            type: 'imbalance',
+            imbalanceType: 'high-burden-responsibility',
+            priority: myResp * 100 + (myBurden ?? 0) * 10,
+            keyInsight: `You carry ${Math.round(myResp * 100)}% of this responsibility, and it feels very burdensome (${myBurden}/5). This may lead to fatigue unless some parts are shared.`,
+            conversationPrompt: 'What part of this task feels heaviest? Could some of it be handed over or automated?',
+            tags: ['High Burden & Responsibility'],
+            myResponsibility: myResp,
+            partnerResponsibility: partnerResp,
+            myBurden,
+            partnerBurden,
+            myFairness,
+            partnerFairness,
+            whoDoesMore,
+          });
+        }
+        if (partnerResp >= 0.6 && (partnerBurden ?? 0) >= 4) {
+          imbalances.push({
+            taskId: myResponse.taskId,
+            taskName,
+            type: 'imbalance',
+            imbalanceType: 'high-burden-responsibility',
+            priority: partnerResp * 100 + (partnerBurden ?? 0) * 10,
+            keyInsight: `Your partner carries ${Math.round(partnerResp * 100)}% of this responsibility and rates it very burdensome (${partnerBurden}/5). They may need support or redistribution.`,
+            conversationPrompt: 'What part of this task feels heaviest for your partner? Could some of it be shared or simplified?',
+            tags: ['High Burden & Responsibility'],
+            myResponsibility: myResp,
+            partnerResponsibility: partnerResp,
+            myBurden,
+            partnerBurden,
+            myFairness,
+            partnerFairness,
+            whoDoesMore,
+          });
+        }
+
+        // ---------- Template 3: Fairness disagreement ----------
+        const fairnessDisagrees =
+          (myFairness != null && partnerFairness != null) &&
+          ((myFairness <= 2 && partnerFairness >= 4) || (myFairness >= 4 && partnerFairness <= 2));
+
+        if (fairnessDisagrees) {
+          const unfairSide = (myFairness ?? 0) <= 2 ? 'You' : 'Your partner';
+          imbalances.push({
+            taskId: myResponse.taskId,
+            taskName,
+            type: 'imbalance',
+            imbalanceType: 'fairness-disagreement',
+            priority: Math.abs((myFairness ?? 0) - (partnerFairness ?? 0)) * 20,
+            keyInsight: `${unfairSide} rated this work as unfair (${(myFairness ?? partnerFairness)}/5), while the other partner rated it as fair (${(partnerFairness ?? myFairness)}/5). This signals a mismatch in recognition.`,
+            conversationPrompt: 'Do we both feel this work is acknowledged? How could appreciation be shown more clearly?',
+            tags: ['Different Fairness Views'],
+            myResponsibility: myResp,
+            partnerResponsibility: partnerResp,
+            myBurden,
+            partnerBurden,
+            myFairness,
+            partnerFairness,
+            whoDoesMore,
+          });
+        }
+      });
+
+    // Sort by priority, take top 3
+    return imbalances.sort((a, b) => b.priority - a.priority).slice(0, 3);
   };
 
   const toggleSection = (section: keyof typeof openSections) => {
