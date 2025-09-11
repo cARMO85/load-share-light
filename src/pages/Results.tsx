@@ -423,29 +423,30 @@ const Results: React.FC = () => {
       {/* Sticky Navigation */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-3">
-          <nav className="flex items-center justify-between">
-            <div className="flex items-center space-x-6 text-sm">
-              <button onClick={() => scrollToSection('overview')} className="hover:text-primary transition-colors">
-                Overview
-              </button>
-              <button onClick={() => scrollToSection('drivers')} className="hover:text-primary transition-colors">
-                Drivers
-              </button>
-              <button onClick={() => scrollToSection('comparison')} className="hover:text-primary transition-colors">
-                Visible vs Mental
-              </button>
-              <button onClick={() => scrollToSection('intensity')} className="hover:text-primary transition-colors">
-                Intensity
-              </button>
-              <button onClick={() => scrollToSection('next-steps')} className="hover:text-primary transition-colors">
-                Next Steps
-              </button>
-            </div>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-1" />
-              Export Report
-            </Button>
-          </nav>
+           <nav className="flex items-center justify-between">
+             <div className="flex items-center space-x-6 text-sm">
+               <button onClick={() => scrollToSection('overview')} className="hover:text-primary transition-colors">
+                 Big Numbers
+               </button>
+               <button onClick={() => scrollToSection('drivers')} className="hover:text-primary transition-colors">
+                 Imbalances
+               </button>
+               <button onClick={() => scrollToSection('intensity')} className="hover:text-primary transition-colors">
+                 Mental Load
+               </button>
+               <button onClick={() => scrollToSection('next-steps')} className="hover:text-primary transition-colors">
+                 Next Steps
+               </button>
+             </div>
+             <Button 
+               variant="outline" 
+               size="sm" 
+               onClick={() => navigate('/')}
+               className="text-sm"
+             >
+               Home
+             </Button>
+           </nav>
         </div>
       </div>
 
