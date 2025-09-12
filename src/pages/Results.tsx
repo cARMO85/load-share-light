@@ -29,6 +29,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { WMLIBreakdown } from '@/components/WMLIBreakdown';
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
@@ -759,7 +760,14 @@ const Results: React.FC = () => {
           </Collapsible>
         </Card>
 
-        {/* 2. Biggest Imbalances Between Partners */}
+        {/* 2. WMLI Breakdown with Charts */}
+        <WMLIBreakdown 
+          wmliResults={wmliResults}
+          taskResponses={state.taskResponses}
+          isSingleAdult={isSingleAdult}
+        />
+
+        {/* 3. Biggest Imbalances Between Partners */}
         <Card id="drivers" className="border-2">
           <Collapsible open={openSections.drivers} onOpenChange={() => toggleSection('drivers')}>
             <CollapsibleTrigger asChild>
