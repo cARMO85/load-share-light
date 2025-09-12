@@ -217,15 +217,16 @@ const Results: React.FC = () => {
           (task && 'task_name' in task) ? task.task_name :
           myResponse.taskId;
 
-        // High responsibility + high burden
-        if (myResp >= 0.7 && (myBurden ?? 0) >= 4) {
+        // High responsibility + high burden (lowered threshold)
+        if (myResp >= 0.6 && (myBurden ?? 0) >= 3.5) {
+          console.log(`Debug - Found high burden+responsibility for me on ${taskName}: resp=${myResp}, burden=${myBurden}`);
           imbalances.push({
             taskId: myResponse.taskId,
             taskName,
             type: 'imbalance',
             imbalanceType: 'high-burden-responsibility',
             priority: myResp * 100 + (myBurden ?? 0) * 15,
-            keyInsight: `You're carrying ${Math.round(myResp * 100)}% of this task and it feels very burdensome (${myBurden}/5). This could lead to burnout without support.`,
+            keyInsight: `You're carrying ${Math.round(myResp * 100)}% of this task and it feels burdensome (${myBurden}/5). This could lead to burnout without support.`,
             conversationPrompt: `What parts of ${taskName.toLowerCase()} feel most overwhelming? How could your partner help share this load?`,
             tags: ['High Solo Burden'],
             myResponsibility: myResp,
@@ -238,8 +239,9 @@ const Results: React.FC = () => {
           });
         }
 
-        // High responsibility + low fairness (feeling unacknowledged)
-        if (myResp >= 0.6 && (myFairness ?? 5) <= 2) {
+        // High responsibility + low fairness (lowered threshold)
+        if (myResp >= 0.5 && (myFairness ?? 5) <= 2.5) {
+          console.log(`Debug - Found unfair distribution for me on ${taskName}: resp=${myResp}, fairness=${myFairness}`);
           imbalances.push({
             taskId: myResponse.taskId,
             taskName,
@@ -249,6 +251,50 @@ const Results: React.FC = () => {
             keyInsight: `You handle ${Math.round(myResp * 100)}% of this task but feel it's unfairly distributed (${myFairness}/5). This suggests lack of recognition or support.`,
             conversationPrompt: `How could your partner better acknowledge or help with ${taskName.toLowerCase()}?`,
             tags: ['Unfair Distribution'],
+            myResponsibility: myResp,
+            partnerResponsibility: 1 - myResp,
+            myBurden,
+            partnerBurden: null,
+            myFairness,
+            partnerFairness: null,
+            whoDoesMore: myResp > 0.6 ? 'You' : myResp < 0.4 ? 'Your partner' : 'Evenly shared',
+          });
+        }
+        
+        // NEW: Low responsibility but partner overwhelmed (imbalanced couple scenario)
+        if (myResp <= 0.4 && (myBurden ?? 0) >= 2 && (myFairness ?? 5) <= 3.5) {
+          console.log(`Debug - Found partner overwhelmed scenario for ${taskName}: myResp=${myResp}, burden=${myBurden}, fairness=${myFairness}`);
+          imbalances.push({
+            taskId: myResponse.taskId,
+            taskName,
+            type: 'imbalance',
+            imbalanceType: 'responsibility-gap',
+            priority: (1 - myResp) * 100 + (myBurden ?? 0) * 10,
+            keyInsight: `Your partner handles ${Math.round((1 - myResp) * 100)}% of this task. Even though you do less, you still find it somewhat burdensome (${myBurden}/5), suggesting this area needs attention.`,
+            conversationPrompt: `Could you take on more of ${taskName.toLowerCase()} to better support your partner?`,
+            tags: ['Partner Overload'],
+            myResponsibility: myResp,
+            partnerResponsibility: 1 - myResp,
+            myBurden,
+            partnerBurden: null,
+            myFairness,
+            partnerFairness: null,
+            whoDoesMore: myResp > 0.6 ? 'You' : myResp < 0.4 ? 'Your partner' : 'Evenly shared',
+          });
+        }
+        
+        // NEW: Any task with moderate burden but low fairness
+        if ((myBurden ?? 0) >= 3 && (myFairness ?? 5) <= 2.5) {
+          console.log(`Debug - Found moderate burden + unfairness for ${taskName}: burden=${myBurden}, fairness=${myFairness}`);
+          imbalances.push({
+            taskId: myResponse.taskId,
+            taskName,
+            type: 'imbalance',
+            imbalanceType: 'fairness-disagreement',
+            priority: (myBurden ?? 0) * 20 + (5 - (myFairness ?? 5)) * 15,
+            keyInsight: `This task feels moderately burdensome (${myBurden}/5) and unfairly distributed (${myFairness}/5). The combination suggests need for better acknowledgment or redistribution.`,
+            conversationPrompt: `What would make ${taskName.toLowerCase()} feel more fairly shared between you and your partner?`,
+            tags: ['Burden + Unfairness'],
             myResponsibility: myResp,
             partnerResponsibility: 1 - myResp,
             myBurden,
