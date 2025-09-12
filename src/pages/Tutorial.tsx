@@ -101,25 +101,30 @@ const Tutorial: React.FC = () => {
       content: (
         <div className="space-y-6">
           <p className="text-center text-muted-foreground">
-            Practice rating tasks to see how your input creates insights:
+            Practice rating tasks just like you will in the real assessment:
           </p>
           
           <div className="space-y-4">
             <Card className="p-4 bg-muted/20">
               <div className="space-y-3">
                 <h4 className="font-medium">Grocery Shopping</h4>
-                <p className="text-sm text-muted-foreground">Rate how burdensome this feels (0-100):</p>
+                <p className="text-sm text-muted-foreground">How burdensome is this task? (1-5 scale)</p>
                 <div className="flex gap-2">
-                  {[20, 40, 60, 80].map(value => (
+                  {[1, 2, 3, 4, 5].map(value => (
                     <Button
                       key={value}
                       variant={demoRatings.groceryBurden === value ? "default" : "outline"}
                       size="sm"
                       onClick={() => setDemoRatings(prev => ({ ...prev, groceryBurden: value }))}
+                      className="w-12"
                     >
                       {value}
                     </Button>
                   ))}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Not burdensome</span>
+                  <span>Very burdensome</span>
                 </div>
               </div>
             </Card>
@@ -127,18 +132,23 @@ const Tutorial: React.FC = () => {
             <Card className="p-4 bg-muted/20">
               <div className="space-y-3">
                 <h4 className="font-medium">Planning Weekly Meals</h4>
-                <p className="text-sm text-muted-foreground">Rate how burdensome this feels (0-100):</p>
+                <p className="text-sm text-muted-foreground">How burdensome is this task? (1-5 scale)</p>
                 <div className="flex gap-2">
-                  {[30, 50, 70, 90].map(value => (
+                  {[1, 2, 3, 4, 5].map(value => (
                     <Button
                       key={value}
                       variant={demoRatings.mealPlanBurden === value ? "default" : "outline"}
                       size="sm"
                       onClick={() => setDemoRatings(prev => ({ ...prev, mealPlanBurden: value }))}
+                      className="w-12"
                     >
                       {value}
                     </Button>
                   ))}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Not burdensome</span>
+                  <span>Very burdensome</span>
                 </div>
               </div>
             </Card>
@@ -149,8 +159,7 @@ const Tutorial: React.FC = () => {
               <div className="text-center space-y-2">
                 <CheckCircle className="h-6 w-6 text-success mx-auto" />
                 <p className="text-sm text-success-foreground">
-                  Great! Your ratings show meal planning feels more burdensome than grocery shopping.
-                  This is exactly how the assessment captures your mental load patterns.
+                  Perfect! You've experienced the rating system. The assessment will use these burden ratings along with task assignments to calculate your mental load insights.
                 </p>
               </div>
             </Card>
