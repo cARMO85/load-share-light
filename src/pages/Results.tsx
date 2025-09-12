@@ -918,8 +918,8 @@ const Results: React.FC = () => {
                       imbalances.sort((a, b) => b.priority - a.priority);
                     }
 
-                    return imbalances.slice(0, 3).length > 0 ? (
-                      imbalances.slice(0, 3).map((imbalance, index) => (
+                     return imbalances.length > 0 ? (
+                       imbalances.map((imbalance, index) => (
                         <div key={`${imbalance.taskName}-${index}`} className="p-4 border rounded-lg space-y-3">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 space-y-3">
