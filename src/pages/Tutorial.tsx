@@ -14,7 +14,10 @@ import {
   Users,
   Clock,
   Target,
-  Lightbulb
+  Lightbulb,
+  Heart,
+  Briefcase,
+  Shield
 } from 'lucide-react';
 
 const Tutorial: React.FC = () => {
@@ -116,6 +119,81 @@ const Tutorial: React.FC = () => {
               <p className="text-sm text-foreground">
                 <strong>Result:</strong> Visible Work = 50/50, Mental Load = 80/20
               </p>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Why Balancing Mental Load Matters",
+      icon: <Heart className="h-12 w-12 text-primary" />,
+      content: (
+        <div className="space-y-6">
+          <div className="text-center space-y-2 mb-6">
+            <p className="text-lg text-muted-foreground">
+              Research shows that addressing household imbalances isn't just about fairness — it has real effects on health, relationships, and work.
+            </p>
+            <p className="text-sm text-muted-foreground italic">
+              Here's what the science tells us:
+            </p>
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card className="p-6 border-2 border-red-200 dark:border-red-800 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20">
+              <div className="text-center space-y-4">
+                <Shield className="h-10 w-10 text-red-600 mx-auto" />
+                <h4 className="font-semibold text-foreground text-lg">Health Impact</h4>
+                <div className="text-sm text-red-700 dark:text-red-300 space-y-2">
+                  <p>High and uneven mental load is linked to <strong>stress, burnout, and poorer wellbeing</strong>, especially for women who often carry the greater share of invisible household work.</p>
+                  <p className="text-xs italic">Chronic stress from imbalance can spill over into sleep, mood, and physical health.</p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-6 border-2 border-pink-200 dark:border-pink-800 bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950/20 dark:to-pink-900/20">
+              <div className="text-center space-y-4">
+                <Heart className="h-10 w-10 text-pink-600 mx-auto" />
+                <h4 className="font-semibold text-foreground text-lg">Relationships</h4>
+                <div className="text-sm text-pink-700 dark:text-pink-300 space-y-2">
+                  <p>When one partner feels overloaded, <strong>relationship quality suffers</strong>. Unequal household responsibility is tied to lower partner satisfaction and poorer communication.</p>
+                  <p className="text-xs italic">Couples with fairer sharing report stronger satisfaction and resilience.</p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-6 border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20">
+              <div className="text-center space-y-4">
+                <Briefcase className="h-10 w-10 text-blue-600 mx-auto" />
+                <h4 className="font-semibold text-foreground text-lg">Work & Economics</h4>
+                <div className="text-sm text-blue-700 dark:text-blue-300 space-y-2">
+                  <p>After childbirth, <strong>women's lifetime earnings fall by 20–44%</strong> while men's remain stable. Unequal caregiving reduces workforce participation and widens the gender pay gap.</p>
+                  <p className="text-xs italic">Balancing tasks more equitably can help both partners thrive at work and at home.</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+          
+          <div className="bg-primary/5 p-6 rounded-lg border border-primary/20">
+            <div className="text-center space-y-4">
+              <div className="flex items-center justify-center gap-2">
+                <Target className="h-6 w-6 text-primary" />
+                <h4 className="font-semibold text-lg">Key Takeaway</h4>
+              </div>
+              <p className="text-lg text-foreground font-medium">
+                "Balancing visible and invisible household work isn't just about chores — it reduces stress, strengthens relationships, and supports both partners' careers and wellbeing."
+              </p>
+              <p className="text-sm text-muted-foreground">
+                This assessment helps you see patterns that might be affecting your health, happiness, and success.
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-muted/30 p-5 rounded-lg">
+            <h4 className="font-medium mb-3 text-center">Research Sources</h4>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>• Cezar-Vaz et al. (2022) - Mental load and stress impacts</p>
+              <p>• Ciciolla & Luthar (2019); Mary Omoboye et al. (2024) - Relationship satisfaction</p>
+              <p>• Kleven et al. (2019); ILO (2024) - Economic impacts on women's careers</p>
             </div>
           </div>
         </div>
