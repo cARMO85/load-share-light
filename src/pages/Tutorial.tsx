@@ -57,40 +57,66 @@ const Tutorial: React.FC = () => {
       title: "The 3 Key Insights You'll Discover",
       icon: <Target className="h-12 w-12 text-primary" />,
       content: (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div className="grid gap-6 md:grid-cols-3">
-            <Card className="p-4 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-              <div className="text-center space-y-3">
-                <Brain className="h-8 w-8 text-primary mx-auto" />
-                <h4 className="font-semibold text-foreground">Mental Load Intensity</h4>
+            <Card className="p-6 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+              <div className="text-center space-y-4">
+                <Brain className="h-10 w-10 text-primary mx-auto" />
+                <h4 className="font-semibold text-foreground text-lg">Mental Load Intensity</h4>
                 <p className="text-sm text-muted-foreground">How heavy does the work feel?</p>
-                <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                  0-100 scale measuring subjective burden and stress
+                <div className="text-xs text-foreground bg-white/50 p-3 rounded border">
+                  <strong>Example:</strong> Taking out trash (low burden: 2/5) vs Planning a family vacation (high burden: 5/5)
                 </div>
+                <p className="text-xs text-muted-foreground">Measures subjective stress and cognitive load on a 1-5 scale</p>
               </div>
             </Card>
             
-            <Card className="p-4 border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-secondary/10">
-              <div className="text-center space-y-3">
-                <BarChart3 className="h-8 w-8 text-secondary mx-auto" />
-                <h4 className="font-semibold text-foreground">Mental Load Share</h4>
-                <p className="text-sm text-muted-foreground">Who's carrying the invisible load?</p>
-                <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                  Percentage of household mental work each person handles
+            <Card className="p-6 border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-secondary/10">
+              <div className="text-center space-y-4">
+                <BarChart3 className="h-10 w-10 text-secondary mx-auto" />
+                <h4 className="font-semibold text-foreground text-lg">Mental Load Share</h4>
+                <p className="text-sm text-muted-foreground">Who carries the invisible load?</p>
+                <div className="text-xs text-foreground bg-white/50 p-3 rounded border">
+                  <strong>Example:</strong> One partner does 75% of the mental work (remembering, planning, coordinating)
                 </div>
+                <p className="text-xs text-muted-foreground">Shows percentage of household mental work each person handles</p>
               </div>
             </Card>
             
-            <Card className="p-4 border-2 border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10">
-              <div className="text-center space-y-3">
-                <Eye className="h-8 w-8 text-accent mx-auto" />
-                <h4 className="font-semibold text-foreground">Visible Work Share</h4>
-                <p className="text-sm text-muted-foreground">Who's doing the actual tasks?</p>
-                <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                  Distribution of visible task completion
+            <Card className="p-6 border-2 border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10">
+              <div className="text-center space-y-4">
+                <Eye className="h-10 w-10 text-accent mx-auto" />
+                <h4 className="font-semibold text-foreground text-lg">Visible Work Share</h4>
+                <p className="text-sm text-muted-foreground">Who does the actual tasks?</p>
+                <div className="text-xs text-foreground bg-white/50 p-3 rounded border">
+                  <strong>Example:</strong> Tasks split 50/50, but mental burden is 80/20
                 </div>
+                <p className="text-xs text-muted-foreground">Distribution of actual task completion and execution</p>
               </div>
             </Card>
+          </div>
+          
+          <div className="bg-muted/30 p-6 rounded-lg">
+            <h4 className="font-semibold mb-4 text-center">Real Household Example</h4>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="bg-primary/5 p-4 rounded border border-primary/20">
+                <h5 className="font-medium mb-2">The Visible Story</h5>
+                <p className="text-sm text-muted-foreground">
+                  "We split grocery shopping 50/50. I go on Tuesdays, my partner goes on Saturdays."
+                </p>
+              </div>
+              <div className="bg-secondary/5 p-4 rounded border border-secondary/20">
+                <h5 className="font-medium mb-2">The Mental Load Reality</h5>
+                <p className="text-sm text-muted-foreground">
+                  "But I'm the one who notices we're out of milk, checks what's in the fridge, plans meals for the week, makes the shopping list, and remembers we need party supplies for next weekend."
+                </p>
+              </div>
+            </div>
+            <div className="text-center mt-4 p-3 bg-accent/5 rounded border border-accent/20">
+              <p className="text-sm text-foreground">
+                <strong>Result:</strong> Visible Work = 50/50, Mental Load = 80/20
+              </p>
+            </div>
           </div>
         </div>
       )
@@ -168,31 +194,76 @@ const Tutorial: React.FC = () => {
       )
     },
     {
-      title: "What Makes This Different",
+      title: "Understanding Visible vs Invisible Work",
       icon: <Lightbulb className="h-12 w-12 text-primary" />,
       content: (
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="p-4 bg-muted/20">
-              <h4 className="font-medium mb-2 text-center">Traditional View</h4>
-              <p className="text-sm text-muted-foreground text-center">
-                "Who does the dishes?"
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="p-5 bg-muted/20">
+              <h4 className="font-medium mb-3 text-center flex items-center gap-2 justify-center">
+                <Eye className="h-5 w-5 text-primary" />
+                Visible Work
+              </h4>
+              <div className="space-y-3">
+                <div className="bg-primary/5 p-3 rounded border border-primary/20">
+                  <p className="text-sm font-medium">Laundry Example</p>
+                  <p className="text-xs text-muted-foreground">"I did 3 loads this week"</p>
+                </div>
+                <div className="bg-primary/5 p-3 rounded border border-primary/20">
+                  <p className="text-sm font-medium">Dinner Example</p>
+                  <p className="text-xs text-muted-foreground">"I cooked Monday, Wednesday, Friday"</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3 text-center italic">
+                Easy to see, count, and divide equally
               </p>
             </Card>
-            <Card className="p-4 bg-primary/10 border-primary/30">
-              <h4 className="font-medium mb-2 text-center">Mental Load View</h4>
-              <p className="text-sm text-muted-foreground text-center">
-                "Who notices when dishes need doing, remembers the dish soap is running low, and feels responsible for kitchen cleanliness?"
+            
+            <Card className="p-5 bg-secondary/10 border border-secondary/20">
+              <h4 className="font-medium mb-3 text-center flex items-center gap-2 justify-center">
+                <Brain className="h-5 w-5 text-secondary" />
+                Invisible Mental Load
+              </h4>
+              <div className="space-y-3">
+                <div className="bg-secondary/10 p-3 rounded border border-secondary/30">
+                  <p className="text-sm font-medium">Laundry Mental Load</p>
+                  <p className="text-xs text-muted-foreground">"Noticing clothes are dirty, checking if we have detergent, remembering to move clothes to dryer, knowing which items need special care"</p>
+                </div>
+                <div className="bg-secondary/10 p-3 rounded border border-secondary/30">
+                  <p className="text-sm font-medium">Dinner Mental Load</p>
+                  <p className="text-xs text-muted-foreground">"Planning meals, checking fridge contents, making grocery list, remembering dietary preferences, coordinating timing"</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3 text-center italic">
+                Harder to see, often unacknowledged, creates mental burden
               </p>
             </Card>
           </div>
           
+          <div className="bg-accent/5 p-6 rounded-lg border border-accent/20">
+            <h4 className="font-medium mb-4 text-center">Why This Assessment Matters</h4>
+            <div className="grid gap-4 md:grid-cols-3 text-center">
+              <div>
+                <p className="text-sm font-medium text-foreground">Reveals Hidden Patterns</p>
+                <p className="text-xs text-muted-foreground mt-1">Shows who's really carrying the mental burden</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Creates Understanding</p>
+                <p className="text-xs text-muted-foreground mt-1">Helps partners see each other's contributions</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Improves Conversations</p>
+                <p className="text-xs text-muted-foreground mt-1">Provides data for better household negotiations</p>
+              </div>
+            </div>
+          </div>
+          
           <div className="text-center space-y-3">
-            <p className="text-muted-foreground">
-              <strong>Most couples are surprised by what they discover</strong> about their invisible labor patterns.
+            <p className="text-muted-foreground font-medium">
+              Most couples discover surprising imbalances they never realized existed
             </p>
             <p className="text-sm text-muted-foreground">
-              This assessment creates better conversations and understanding, not blame.
+              This creates better conversations and understanding, not blame or conflict.
             </p>
           </div>
         </div>
