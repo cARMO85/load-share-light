@@ -6,9 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AssessmentProvider } from "@/context/AssessmentContext";
 import Index from "./pages/Index";
 import HouseholdSetup from "./pages/HouseholdSetup";
+import Tutorial from "./pages/Tutorial";
 import TaskQuestionnaire from "./pages/TaskQuestionnaire";
-
-
 import Results from "./pages/Results";
 import LearnMore from "./pages/LearnMore";
 import NotFound from "./pages/NotFound";
@@ -26,8 +25,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/learn-more" element={<LearnMore />} />
             <Route path="/setup" element={<HouseholdSetup />} />
+            <Route path="/tutorial" element={<Tutorial />} />
             <Route path="/questionnaire" element={<TaskQuestionnaire />} />
-            
             <Route path="/results" element={<Results />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

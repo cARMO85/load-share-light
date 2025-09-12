@@ -18,14 +18,14 @@ const HouseholdSetup: React.FC = () => {
   const handleNext = () => {
     setHouseholdSetup(setup);
     setCurrentStep(2);
-    navigate('/questionnaire');
+    navigate('/tutorial');
   };
 
   const steps = [
     { title: "Setup", description: "Household info" },
+    { title: "Tutorial", description: "Learn how it works" },
     { title: "Tasks", description: "Assign responsibilities" },
-    { title: "Results", description: "View calculations" },
-    { title: "Visualize", description: "Charts & insights" }
+    { title: "Results", description: "View calculations" }
   ];
 
   const updateSetup = (updates: Partial<HouseholdSetupType>) => {
@@ -179,7 +179,7 @@ const HouseholdSetup: React.FC = () => {
                 className="w-full"
                 disabled={!setup.householdType}
               >
-                Continue to Task Assessment
+                Continue to Tutorial
               </Button>
               {!setup.householdType && (
                 <p className="text-center text-sm text-muted-foreground mt-2">
