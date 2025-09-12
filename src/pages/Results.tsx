@@ -1283,52 +1283,121 @@ const Results: React.FC = () => {
                       <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">What's Working Well</h4>
                       <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
                         {statusInfo.status === 'Balanced' && (
-                          <p>• Your household shows good balance in mental load distribution</p>
+                          <p>• Your household shows excellent balance in mental load distribution</p>
                         )}
                         {wmliResults.myWMLI_Intensity <= 33 && (
-                          <p>• You're managing your mental load without excessive strain</p>
+                          <p>• Your mental load intensity is at a healthy level ({wmliResults.myWMLI_Intensity.toFixed(0)}/100)</p>
+                        )}
+                        {wmliResults.myWMLI_Intensity > 33 && wmliResults.myWMLI_Intensity <= 66 && (
+                          <p>• Your mental load intensity is moderate but manageable ({wmliResults.myWMLI_Intensity.toFixed(0)}/100)</p>
                         )}
                         {hotspots.length === 0 && (
-                          <p>• No major hotspots detected in your household work patterns</p>
+                          <p>• No major imbalance hotspots detected in your household patterns</p>
+                        )}
+                        {hotspots.length > 0 && hotspots.length <= 2 && (
+                          <p>• Only {hotspots.length} area{hotspots.length > 1 ? 's' : ''} need attention - most of your household runs smoothly</p>
                         )}
                         {!wmliResults.myFlags.highSubjectiveStrain && (
-                          <p>• Your current workload feels manageable and sustainable</p>
+                          <p>• You're not experiencing excessive subjective strain from household work</p>
                         )}
-                        {Math.abs(visibleResults.myVisiblePercentage - 50) <= 15 && (
-                          <p>• Time-based tasks are reasonably shared between partners</p>
+                        {!wmliResults.myFlags.fairnessRisk && (
+                          <p>• You feel the household work distribution is generally fair</p>
                         )}
-                        <p>• Taking this assessment shows commitment to household equity</p>
+                        {Math.abs(visibleResults.myVisiblePercentage - 50) <= 15 && !isSingleAdult && (
+                          <p>• Visible task time is reasonably balanced ({visibleResults.myVisiblePercentage.toFixed(0)}% vs {(100-visibleResults.myVisiblePercentage).toFixed(0)}%)</p>
+                        )}
+                        {isSingleAdult && (
+                          <p>• You're successfully managing your household independently</p>
+                        )}
+                        {!isSingleAdult && Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 && (
+                          <p>• Mental load sharing is well-balanced ({(wmliResults.myWMLI_Share || 50).toFixed(0)}% vs {(100-(wmliResults.myWMLI_Share || 50)).toFixed(0)}%)</p>
+                        )}
+                        <p>• Taking this assessment demonstrates your commitment to household equity and awareness</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Pre-populated Recommendations */}
+                {/* Dynamic Recommendations based on actual results */}
                 <div className="space-y-4">
                   <h4 className="font-medium">Recommended Actions</h4>
                   
-                  {/* Evidence-based suggestions */}
+                  {/* Priority recommendations based on assessment results */}
                   <div className="space-y-3">
+                    {/* Hotspot-based recommendations */}
                     {hotspots.length > 0 && (
-                      <div className="p-3 border rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                        <div className="text-sm font-medium mb-2">Based on your hotspots:</div>
-                        <div className="text-sm space-y-1">
-                          {hotspots.slice(0, 2).map((hotspot, index) => (
-                            <div key={index}>• Try sharing {hotspot.taskName.toLowerCase()} responsibilities</div>
+                      <div className="p-3 border rounded-lg bg-red-50 dark:bg-red-950/20 border-red-200">
+                        <div className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">
+                          Priority: Address Your {hotspots.length} Household Hotspot{hotspots.length > 1 ? 's' : ''}
+                        </div>
+                        <div className="text-sm text-red-700 dark:text-red-300 space-y-1">
+                          {hotspots.map((hotspot, index) => (
+                            <div key={index}>
+                              • <strong>{hotspot.taskName}:</strong> {hotspot.keyInsight.split('.')[0]}
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
                     
-                    {wmliResults.myFlags.fairnessRisk && (
-                      <div className="p-3 border rounded-lg bg-orange-50 dark:bg-orange-950/20">
-                        <div className="text-sm">• Revisit acknowledgment and appreciation for household decisions</div>
+                    {/* High mental load intensity */}
+                    {wmliResults.myWMLI_Intensity > 66 && (
+                      <div className="p-3 border rounded-lg bg-orange-50 dark:bg-orange-950/20 border-orange-200">
+                        <div className="text-sm font-medium text-orange-800 dark:text-orange-200 mb-1">
+                          High Mental Load Alert
+                        </div>
+                        <div className="text-sm text-orange-700 dark:text-orange-300">
+                          • Your mental load intensity is {wmliResults.myWMLI_Intensity.toFixed(0)}/100 - consider reducing burden or seeking support
+                        </div>
                       </div>
                     )}
                     
-                    {(wmliResults.myWMLI_Share || 50) > 60 && (
-                      <div className="p-3 border rounded-lg bg-purple-50 dark:bg-purple-950/20">
-                        <div className="text-sm">• Consider redistributing planning and monitoring tasks</div>
+                    {/* Mental load share imbalance */}
+                    {!isSingleAdult && (wmliResults.myWMLI_Share || 50) > 65 && (
+                      <div className="p-3 border rounded-lg bg-purple-50 dark:bg-purple-950/20 border-purple-200">
+                        <div className="text-sm font-medium text-purple-800 dark:text-purple-200 mb-1">
+                          Mental Load Imbalance
+                        </div>
+                        <div className="text-sm text-purple-700 dark:text-purple-300">
+                          • You carry {(wmliResults.myWMLI_Share || 50).toFixed(0)}% of mental load - consider redistributing planning and monitoring tasks
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Visible work imbalance */}
+                    {!isSingleAdult && Math.abs(visibleResults.myVisiblePercentage - 50) > 20 && (
+                      <div className="p-3 border rounded-lg bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+                        <div className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
+                          Visible Work Imbalance
+                        </div>
+                        <div className="text-sm text-blue-700 dark:text-blue-300">
+                          • You do {visibleResults.myVisiblePercentage.toFixed(0)}% of visible tasks - consider rebalancing time-based responsibilities
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Fairness concerns */}
+                    {wmliResults.myFlags.fairnessRisk && (
+                      <div className="p-3 border rounded-lg bg-amber-50 dark:bg-amber-950/20 border-amber-200">
+                        <div className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
+                          Recognition & Fairness
+                        </div>
+                        <div className="text-sm text-amber-700 dark:text-amber-300">
+                          • Address acknowledgment and appreciation for your household contributions
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* When everything looks good */}
+                    {hotspots.length === 0 && wmliResults.myWMLI_Intensity <= 50 && !wmliResults.myFlags.fairnessRisk && (
+                      <div className="p-3 border rounded-lg bg-green-50 dark:bg-green-950/20 border-green-200">
+                        <div className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">
+                          Maintenance Mode
+                        </div>
+                        <div className="text-sm text-green-700 dark:text-green-300">
+                          • Schedule regular check-ins to maintain your current healthy balance
+                          • Consider what systems are working well that you want to continue
+                        </div>
                       </div>
                     )}
                   </div>
