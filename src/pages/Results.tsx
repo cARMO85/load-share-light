@@ -787,16 +787,43 @@ const Results: React.FC = () => {
                   {(() => {
                     const imbalances = [];
                     
-                    console.log('DEBUG - Imbalance Detection Start:', {
-                      isSingleAdult,
-                      hasPartnerResponses: !!state.partnerTaskResponses,
-                      partnerResponsesLength: state.partnerTaskResponses?.length || 0,
-                      myResponsesLength: state.taskResponses.length,
-                      sampleMyResponse: state.taskResponses[0],
-                      samplePartnerResponse: state.partnerTaskResponses?.[0]
-                    });
+                    // Use the calculated overall percentages to detect imbalances
+                    const visibleGap = Math.abs(visibleResults.myVisiblePercentage - 50);
+                    const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
                     
-                    if (!isSingleAdult && state.partnerTaskResponses) {
+                    if (!isSingleAdult) {
+                      // High visible work gap
+                      if (visibleGap >= 15) {
+                        const higherPartner = visibleResults.myVisiblePercentage > 50 ? 'You' : 'Your partner';
+                        const higherPct = Math.max(visibleResults.myVisiblePercentage, 100 - visibleResults.myVisiblePercentage);
+                        const lowerPct = Math.min(visibleResults.myVisiblePercentage, 100 - visibleResults.myVisiblePercentage);
+                        
+                        imbalances.push({
+                          taskName: 'Overall Visible Work Distribution',
+                          type: 'High Responsibility Gap',
+                          insight: `${higherPartner} handle ${Math.round(higherPct)}% of visible household work while the other partner handles ${Math.round(lowerPct)}%. This ${Math.round(visibleGap)}% gap creates significant imbalance.`,
+                          prompt: 'How could we redistribute some visible tasks to create a more balanced split?',
+                          priority: visibleGap
+                        });
+                      }
+                      
+                      // High mental load gap  
+                      if (mentalGap >= 15) {
+                        const higherPartner = (wmliResults.myWMLI_Share || 50) > 50 ? 'You' : 'Your partner';
+                        const higherPct = Math.max(wmliResults.myWMLI_Share || 50, 100 - (wmliResults.myWMLI_Share || 50));
+                        const lowerPct = Math.min(wmliResults.myWMLI_Share || 50, 100 - (wmliResults.myWMLI_Share || 50));
+                        
+                        imbalances.push({
+                          taskName: 'Overall Mental Load Distribution', 
+                          type: 'Mental Load Imbalance',
+                          insight: `${higherPartner} carry ${Math.round(higherPct)}% of the mental load while the other carries ${Math.round(lowerPct)}%. This invisible work imbalance can create stress.`,
+                          prompt: 'What planning and organizing tasks could be shared or redistributed?',
+                          priority: mentalGap
+                        });
+                      }
+                    }
+                    
+                    return imbalances.length > 0 ? (
                       // Check each task for imbalances
                       state.taskResponses
                         .filter(r => !r.notApplicable)
