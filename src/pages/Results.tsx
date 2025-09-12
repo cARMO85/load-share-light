@@ -184,11 +184,14 @@ const Results: React.FC = () => {
       return 0.5;
     };
 
-    state.taskResponses
-      .filter(r => !r.notApplicable)
-      .forEach(myResponse => {
-        const partnerResponse = partnerResponses.find(pr => pr.taskId === myResponse.taskId);
-        if (!partnerResponse) return;
+  state.taskResponses
+    .filter(r => !r.notApplicable)
+    .forEach(myResponse => {
+      const partnerResponse = partnerResponses.find(pr => pr.taskId === myResponse.taskId);
+      if (!partnerResponse) {
+        console.log(`Debug - No partner response for task: ${myResponse.taskId}`);
+        return;
+      }
 
         const myResp = getResponsibilityShare(myResponse);
         const partnerResp = getResponsibilityShare(partnerResponse);
@@ -210,10 +213,12 @@ const Results: React.FC = () => {
             ? 'Evenly shared'
             : myResp > partnerResp ? 'You' : 'Your partner';
 
-        // ---------- Template 1: Responsibility gap ----------
-        if (gapPct >= 25) {
-          const higherPct = Math.round(Math.max(myResp, partnerResp) * 100);
-          const lowerPct  = Math.round(Math.min(myResp, partnerResp) * 100);
+      // ---------- Template 1: Responsibility gap ----------
+      console.log(`Debug - Task ${taskName}: gap=${gapPct}%, myResp=${myResp}, partnerResp=${partnerResp}`);
+      if (gapPct >= 25) {
+        console.log(`Debug - Found responsibility gap for ${taskName}: ${gapPct}%`);
+        const higherPct = Math.round(Math.max(myResp, partnerResp) * 100);
+        const lowerPct  = Math.round(Math.min(myResp, partnerResp) * 100);
 
           imbalances.push({
             taskId: myResponse.taskId,
@@ -234,8 +239,10 @@ const Results: React.FC = () => {
           });
         }
 
-        // ---------- Template 2: High burden AND high responsibility ----------
-        if (myResp >= 0.6 && (myBurden ?? 0) >= 4) {
+      // ---------- Template 2: High burden AND high responsibility ----------
+      console.log(`Debug - Task ${taskName}: myResp=${myResp}, myBurden=${myBurden}, partnerResp=${partnerResp}, partnerBurden=${partnerBurden}`);
+      if (myResp >= 0.6 && (myBurden ?? 0) >= 4) {
+        console.log(`Debug - Found high burden+responsibility for me on ${taskName}`);
           imbalances.push({
             taskId: myResponse.taskId,
             taskName,
@@ -315,6 +322,17 @@ const Results: React.FC = () => {
 
   const statusInfo = getStatusInfo();
   const hotspots = getHotspots();
+  
+  // Debug logging
+  console.log('Debug - Assessment data:', {
+    isSingleAdult,
+    isTogetherMode,
+    taskResponsesCount: state.taskResponses.length,
+    partnerResponsesCount: state.partnerTaskResponses?.length || 0,
+    sampleTaskResponse: state.taskResponses[0],
+    samplePartnerResponse: state.partnerTaskResponses?.[0],
+    hotspots
+  });
 
   const ConversationPrompts = ({ 
     taskName, 
