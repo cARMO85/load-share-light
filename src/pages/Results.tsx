@@ -787,6 +787,15 @@ const Results: React.FC = () => {
                   {(() => {
                     const imbalances = [];
                     
+                    console.log('DEBUG - Imbalance Detection Start:', {
+                      isSingleAdult,
+                      hasPartnerResponses: !!state.partnerTaskResponses,
+                      partnerResponsesLength: state.partnerTaskResponses?.length || 0,
+                      myResponsesLength: state.taskResponses.length,
+                      sampleMyResponse: state.taskResponses[0],
+                      samplePartnerResponse: state.partnerTaskResponses?.[0]
+                    });
+                    
                     if (!isSingleAdult && state.partnerTaskResponses) {
                       // Check each task for imbalances
                       state.taskResponses
@@ -813,8 +822,20 @@ const Results: React.FC = () => {
                                          (task && 'task_name' in task) ? task.task_name : 
                                          myResponse.taskId;
 
-                          // High responsibility gap (25% or more)
-                          if (gap >= 25) {
+                          console.log('DEBUG - Checking task:', {
+                            taskName,
+                            myShare,
+                            partnerShare,
+                            gap,
+                            myBurden: myResponse.likertRating?.burden,
+                            partnerBurden: partnerResponse.likertRating?.burden,
+                            myFairness: myResponse.likertRating?.fairness,
+                            partnerFairness: partnerResponse.likertRating?.fairness
+                          });
+
+                          // High responsibility gap (lowered to 15% for testing)
+                          if (gap >= 15) {
+                            console.log('DEBUG - Found responsibility gap!', taskName, gap);
                             imbalances.push({
                               taskName,
                               type: 'High Responsibility Gap',
@@ -824,11 +845,12 @@ const Results: React.FC = () => {
                             });
                           }
 
-                          // High burden + high responsibility (60%+ responsibility AND 4+ burden)
+                          // High burden + high responsibility (lowered to 40%+ responsibility AND 3+ burden)
                           const myBurden = myResponse.likertRating?.burden || 0;
                           const partnerBurden = partnerResponse.likertRating?.burden || 0;
                           
-                          if (myShare >= 60 && myBurden >= 4) {
+                          if (myShare >= 40 && myBurden >= 3) {
+                            console.log('DEBUG - Found high burden+responsibility for me!', taskName);
                             imbalances.push({
                               taskName,
                               type: 'High Burden & Responsibility',
@@ -838,7 +860,8 @@ const Results: React.FC = () => {
                             });
                           }
 
-                          if (partnerShare >= 60 && partnerBurden >= 4) {
+                          if (partnerShare >= 40 && partnerBurden >= 3) {
+                            console.log('DEBUG - Found high burden+responsibility for partner!', taskName);
                             imbalances.push({
                               taskName,
                               type: 'High Burden & Responsibility',
