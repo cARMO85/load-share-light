@@ -680,14 +680,14 @@ const Results: React.FC = () => {
                           <TableCell className="text-center">
                             <div className="space-y-1">
                               <div className={`text-lg font-bold ${
-                                (wmliResults.partnerWMLI_Intensity || 0) >= 75 ? 'text-red-600' :
-                                (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? 'text-yellow-600' : 'text-green-600'
+                                (wmliResults.partnerWMLI_Intensity || 50) >= 75 ? 'text-red-600' :
+                                (wmliResults.partnerWMLI_Intensity || 50) >= 50 ? 'text-yellow-600' : 'text-green-600'
                               }`}>
-                                {wmliResults.partnerWMLI_Intensity || 0}/100
+                                {wmliResults.partnerWMLI_Intensity || 50}/100
                               </div>
-                              <Badge variant={(wmliResults.partnerWMLI_Intensity || 0) >= 75 ? "destructive" : (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? "secondary" : "default"} className="text-xs">
-                                {(wmliResults.partnerWMLI_Intensity || 0) >= 75 ? 'Very high' :
-                                 (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? 'Moderate' : 'Light'}
+                              <Badge variant={(wmliResults.partnerWMLI_Intensity || 50) >= 75 ? "destructive" : (wmliResults.partnerWMLI_Intensity || 50) >= 50 ? "secondary" : "default"} className="text-xs">
+                                {(wmliResults.partnerWMLI_Intensity || 50) >= 75 ? 'Very high' :
+                                 (wmliResults.partnerWMLI_Intensity || 50) >= 50 ? 'Moderate' : 'Light'}
                               </Badge>
                             </div>
                           </TableCell>
