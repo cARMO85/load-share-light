@@ -1382,7 +1382,11 @@ const Results: React.FC = () => {
                         <div className="text-sm text-red-700 dark:text-red-300 space-y-1">
                           {hotspots.map((hotspot, index) => (
                             <div key={index}>
-                              • <strong>{hotspot.taskName}:</strong> {hotspot.keyInsight.split('.')[0]}
+                              • <strong>{hotspot.taskName}:</strong> {
+                                hotspot.keyInsight 
+                                  ? hotspot.keyInsight.split('.')[0] 
+                                  : `High driver score (${Math.round((hotspot.driverScore || 0) * 100)}%)`
+                              }
                             </div>
                           ))}
                         </div>
