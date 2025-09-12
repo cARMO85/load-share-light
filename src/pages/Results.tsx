@@ -759,7 +759,7 @@ const Results: React.FC = () => {
           </Collapsible>
         </Card>
 
-        {/* 2. Top 3 Hotspots/Imbalances */}
+        {/* 2. Biggest Imbalances Between Partners */}
         <Card id="drivers" className="border-2">
           <Collapsible open={openSections.drivers} onOpenChange={() => toggleSection('drivers')}>
             <CollapsibleTrigger asChild>
@@ -784,123 +784,136 @@ const Results: React.FC = () => {
             <CollapsibleContent>
               <CardContent>
                 <div className="space-y-4">
-                  {hotspots.map((hotspot, index) => (
-                    <div key={hotspot.taskId} className="p-4 border rounded-lg space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 space-y-3">
-                          {/* Task Header */}
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">#{index + 1} {hotspot.taskName}</span>
-                            {hotspot.type === 'imbalance' ? (
-                              <Badge variant="outline" className="text-xs">
-                                {hotspot.imbalanceType}
-                              </Badge>
-                            ) : (
-                              hotspot.tags.map(tag => (
-                                <Badge key={tag} variant="secondary" className="text-xs">
-                                  {tag}
+                  {(() => {
+                    const imbalances = [];
+                    
+                    if (!isSingleAdult && state.partnerTaskResponses) {
+                      // Check each task for imbalances
+                      state.taskResponses
+                        .filter(r => !r.notApplicable)
+                        .forEach(myResponse => {
+                          const partnerResponse = state.partnerTaskResponses!.find(pr => pr.taskId === myResponse.taskId);
+                          if (!partnerResponse) return;
+
+                          const getShare = (r: any) => {
+                            if (r.assignment === 'me') return 100;
+                            if (r.assignment === 'partner') return 0;
+                            if (r.assignment === 'shared' && typeof r.mySharePercentage === 'number') {
+                              return r.mySharePercentage;
+                            }
+                            return 50;
+                          };
+
+                          const myShare = getShare(myResponse);
+                          const partnerShare = getShare(partnerResponse);
+                          const gap = Math.abs(myShare - partnerShare);
+
+                          const task = allTaskLookup[myResponse.taskId];
+                          const taskName = (task && 'title' in task) ? task.title : 
+                                         (task && 'task_name' in task) ? task.task_name : 
+                                         myResponse.taskId;
+
+                          // High responsibility gap (25% or more)
+                          if (gap >= 25) {
+                            imbalances.push({
+                              taskName,
+                              type: 'High Responsibility Gap',
+                              insight: `${myShare > partnerShare ? 'You' : 'Your partner'} handle ${Math.max(myShare, partnerShare)}% while the other handles ${Math.min(myShare, partnerShare)}%. This gap may feel unbalanced.`,
+                              prompt: 'Would rotating weeks or setting a shared plan help make this task feel fairer?',
+                              priority: gap
+                            });
+                          }
+
+                          // High burden + high responsibility (60%+ responsibility AND 4+ burden)
+                          const myBurden = myResponse.likertRating?.burden || 0;
+                          const partnerBurden = partnerResponse.likertRating?.burden || 0;
+                          
+                          if (myShare >= 60 && myBurden >= 4) {
+                            imbalances.push({
+                              taskName,
+                              type: 'High Burden & Responsibility',
+                              insight: `You carry ${myShare}% of this responsibility and rate it very burdensome (${myBurden}/5). This may lead to fatigue.`,
+                              prompt: 'What part of this task feels heaviest? Could some of it be handed over or automated?',
+                              priority: myShare + myBurden * 10
+                            });
+                          }
+
+                          if (partnerShare >= 60 && partnerBurden >= 4) {
+                            imbalances.push({
+                              taskName,
+                              type: 'High Burden & Responsibility',
+                              insight: `Your partner carries ${partnerShare}% of this responsibility and rates it very burdensome (${partnerBurden}/5). They may need support.`,
+                              prompt: 'What part of this task feels heaviest for your partner? Could some of it be shared?',
+                              priority: partnerShare + partnerBurden * 10
+                            });
+                          }
+
+                          // Fairness disagreement (one rates ≤2, other ≥4)
+                          const myFairness = myResponse.likertRating?.fairness || 0;
+                          const partnerFairness = partnerResponse.likertRating?.fairness || 0;
+                          
+                          if ((myFairness <= 2 && partnerFairness >= 4) || (myFairness >= 4 && partnerFairness <= 2)) {
+                            const unfairSide = myFairness <= 2 ? 'You' : 'Your partner';
+                            imbalances.push({
+                              taskName,
+                              type: 'Different Fairness Views',
+                              insight: `${unfairSide} rate this as unfair while the other sees it as fair. This signals a mismatch in recognition.`,
+                              prompt: 'Do we both feel this work is acknowledged? How could appreciation be shown more clearly?',
+                              priority: Math.abs(myFairness - partnerFairness) * 20
+                            });
+                          }
+                        });
+
+                      // Sort by priority and take top 3
+                      imbalances.sort((a, b) => b.priority - a.priority);
+                    }
+
+                    return imbalances.slice(0, 3).length > 0 ? (
+                      imbalances.slice(0, 3).map((imbalance, index) => (
+                        <div key={`${imbalance.taskName}-${index}`} className="p-4 border rounded-lg space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 space-y-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">#{index + 1} {imbalance.taskName}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {imbalance.type}
                                 </Badge>
-                              ))
-                            )}
-                          </div>
-                          
-                          {/* Key Insight */}
-                          <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-200">
-                            <div className="text-sm font-medium text-blue-900 mb-1">Key Insight</div>
-                            <p className="text-sm text-blue-800">
-                              {hotspot.type === 'imbalance' ? hotspot.keyInsight : (() => {
-                                // Individual view insight
-                                if (hotspot.burden >= 4) {
-                                  return `This task feels very burdensome (rated ${hotspot.burden}/5 for difficulty) and you handle ${Math.round(hotspot.responsibility * 100)}% of it. This high combination may be contributing to mental load strain.`;
-                                } else {
-                                  return `This task has high impact on your mental load with you responsible for ${Math.round(hotspot.responsibility * 100)}% and burden rating of ${hotspot.burden}/5. ${hotspot.fairness <= 2 ? 'Additionally, it feels underappreciated.' : ''}`;
-                                }
-                              })()}
-                            </p>
-                          </div>
-
-                          {/* Suggested Conversation Prompt */}
-                          <div className="p-3 bg-green-50/50 rounded-lg border border-green-200">
-                            <div className="text-sm font-medium text-green-900 mb-1">Suggested Conversation Prompt</div>
-                            <p className="text-sm text-green-800 italic">
-                              "{hotspot.type === 'imbalance' ? hotspot.conversationPrompt : (() => {
-                                // Individual prompts
-                                if (hotspot.burden >= 4 && hotspot.responsibility >= 0.6) {
-                                  return "What support systems or tools could help make this task feel more manageable? Could parts of it be simplified or delegated?";
-                                } else if (hotspot.fairness <= 2) {
-                                  return "How could the value and effort of this task be better recognized? What would make it feel more appreciated?";
-                                } else {
-                                  return "What changes would help reduce the mental load of this task while maintaining its quality?";
-                                }
-                              })()}"
-                            </p>
-                          </div>
-
-                          {/* Additional Context for Couples */}
-                          {hotspot.type === 'imbalance' && (
-                            <div className="text-sm text-muted-foreground mt-2 space-y-1">
-                              <div className="flex justify-between items-center">
-                                <span>You: <strong>{Math.round(hotspot.myResponsibility * 100)}%</strong> responsibility</span>
-                                <span>Partner: <strong>{Math.round(hotspot.partnerResponsibility * 100)}%</strong> responsibility</span>
                               </div>
-                              {hotspot.myBurden > 0 && (
-                                <div className="flex justify-between items-center">
-                                  <span>You rate burden: <strong>{hotspot.myBurden}/5</strong></span>
-                                  <span>Partner rates burden: <strong>{hotspot.partnerBurden}/5</strong></span>
-                                </div>
-                              )}
+                              
+                              <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-200">
+                                <div className="text-sm font-medium text-blue-900 mb-1">Key Insight</div>
+                                <p className="text-sm text-blue-800">{imbalance.insight}</p>
+                              </div>
+                              
+                              <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-200">
+                                <div className="text-sm font-medium text-amber-900 mb-1">Conversation Starter</div>
+                                <p className="text-sm text-amber-800 italic">"{imbalance.prompt}"</p>
+                              </div>
                             </div>
-                          )}
+                          </div>
                         </div>
-                        <ConversationPrompts 
-                          taskName={hotspot.taskName} 
-                          isCouple={!isSingleAdult}
-                          imbalanceData={hotspot.type === 'imbalance' ? hotspot : undefined}
-                        />
+                      ))
+                    ) : (
+                      <div className="py-8 text-center">
+                        <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                        <h3 className="text-lg font-medium text-green-700 mb-2">
+                          {isSingleAdult ? 'Well-Managed Tasks!' : 'Excellent Partnership Balance!'}
+                        </h3>
+                        <p className="text-muted-foreground mb-4">
+                          {isSingleAdult 
+                            ? 'Your current task management appears well-balanced without major strain areas.'
+                            : 'You and your partner show strong alignment on household responsibilities.'
+                          }
+                        </p>
+                        <div className="p-3 bg-blue-50/30 rounded-lg border border-blue-200 max-w-md mx-auto">
+                          <div className="text-sm font-medium text-blue-900 mb-1">Maintenance Prompt</div>
+                          <p className="text-sm text-blue-800 italic">
+                            "What's working well for us right now that we want to make sure we keep?"
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                  {hotspots.length === 0 && (
-                    <div className="py-8 space-y-4">
-                      {isSingleAdult ? (
-                        <div className="text-center text-muted-foreground">
-                          <CheckCircle className="h-8 w-8 mx-auto mb-2" />
-                          <p>No significant hotspots detected. Your workload appears well-managed!</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <div className="text-center mb-6">
-                            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                            <p className="text-lg font-medium text-green-800">Excellent Partnership Balance!</p>
-                            <p className="text-muted-foreground">You and your partner show strong alignment on household responsibilities.</p>
-                          </div>
-                          
-                          {/* Positive Conversation Prompt */}
-                          <div className="p-4 bg-green-50/30 rounded-lg border border-green-200">
-                            <div className="flex items-start gap-3">
-                              <MessageCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <h4 className="font-medium text-green-800 mb-2">Maintaining Your Balance</h4>
-                                <div className="text-sm text-green-700 space-y-1">
-                                  <p>• <strong>Regular Check-ins:</strong> Consider a brief monthly conversation to spot changes before they become issues</p>
-                                  <p>• <strong>Appreciate Efforts:</strong> Continue recognizing each other's contributions, both visible and invisible</p>
-                                  <p>• <strong>Stay Flexible:</strong> Be ready to adjust when life circumstances change (work, health, family)</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Conversation Starter for Maintenance */}
-                          <div className="p-3 bg-blue-50/30 rounded-lg border border-blue-200">
-                            <div className="text-sm font-medium text-blue-900 mb-1">Monthly Check-in Prompt</div>
-                            <p className="text-sm text-blue-800 italic">
-                              "What's working well for us right now that we want to make sure we keep?"
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               </CardContent>
             </CollapsibleContent>
