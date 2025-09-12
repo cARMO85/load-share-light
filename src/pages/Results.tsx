@@ -1331,11 +1331,14 @@ const Results: React.FC = () => {
                         {statusInfo.status === 'Balanced' && (
                           <p>• Your household shows excellent balance in mental load distribution</p>
                         )}
-                        {wmliResults.myWMLI_Intensity <= 33 && (
+                        {wmliResults.myWMLI_Intensity >= 15 && wmliResults.myWMLI_Intensity <= 33 && (
                           <p>• Your mental load intensity is at a healthy level ({wmliResults.myWMLI_Intensity.toFixed(0)}/100)</p>
                         )}
                         {wmliResults.myWMLI_Intensity > 33 && wmliResults.myWMLI_Intensity <= 66 && (
                           <p>• Your mental load intensity is moderate but manageable ({wmliResults.myWMLI_Intensity.toFixed(0)}/100)</p>
+                        )}
+                        {wmliResults.myWMLI_Intensity < 15 && !isSingleAdult && (
+                          <p>• Your mental load intensity is very low ({wmliResults.myWMLI_Intensity.toFixed(0)}/100) - this may indicate your partner is carrying most of the household burden</p>
                         )}
                         {hotspots.length === 0 && (
                           <p>• No major imbalance hotspots detected in your household patterns</p>
@@ -1394,6 +1397,18 @@ const Results: React.FC = () => {
                         </div>
                         <div className="text-sm text-orange-700 dark:text-orange-300">
                           • Your mental load intensity is {wmliResults.myWMLI_Intensity.toFixed(0)}/100 - consider reducing burden or seeking support
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Very low mental load intensity warning */}
+                    {wmliResults.myWMLI_Intensity < 15 && !isSingleAdult && (
+                      <div className="p-3 border rounded-lg bg-red-50 dark:bg-red-950/20 border-red-200">
+                        <div className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">
+                          Household Imbalance Alert
+                        </div>
+                        <div className="text-sm text-red-700 dark:text-red-300">
+                          • Your mental load intensity is very low ({wmliResults.myWMLI_Intensity.toFixed(0)}/100), suggesting your partner may be overwhelmed with household responsibilities. Consider taking on more tasks to achieve better balance.
                         </div>
                       </div>
                     )}
