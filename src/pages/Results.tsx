@@ -785,6 +785,62 @@ const Results: React.FC = () => {
               <CardContent>
                 <div className="space-y-4">
                   {(() => {
+                    if (isSingleAdult) {
+                      // For single adults, show hotspots from our calculated results
+                      return hotspots.length > 0 ? (
+                        hotspots.map((hotspot, index) => (
+                          <div key={`${hotspot.taskId}-${index}`} className="p-4 border rounded-lg space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">#{index + 1} {hotspot.taskName}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    Individual Strain
+                                  </Badge>
+                                </div>
+                                
+                                <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-200">
+                                  <div className="text-sm font-medium text-blue-900 mb-1">Mental Load Impact</div>
+                                  <p className="text-sm text-blue-800">
+                                    You handle {Math.round(hotspot.responsibility * 100)}% of this task, 
+                                    with burden rating of {hotspot.burden.toFixed(1)}/5 and fairness rating of {hotspot.fairness.toFixed(1)}/5.
+                                    Driver score: {hotspot.driverScore.toFixed(3)}
+                                  </p>
+                                </div>
+                                
+                                <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-200">
+                                  <div className="text-sm font-medium text-amber-900 mb-1">Reflection Prompt</div>
+                                  <p className="text-sm text-amber-800 italic">
+                                    "What aspects of {hotspot.taskName.toLowerCase()} feel most overwhelming? 
+                                    What support or changes could help make this more manageable?"
+                                  </p>
+                                </div>
+
+                                <ConversationPrompts 
+                                  taskName={hotspot.taskName}
+                                  isCouple={false}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-8 text-center">
+                          <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                          <h3 className="text-lg font-medium text-green-700 mb-2">Well-Managed Tasks!</h3>
+                          <p className="text-muted-foreground mb-4">
+                            Your current task management appears well-balanced without major strain areas.
+                          </p>
+                          <div className="p-3 bg-blue-50/30 rounded-lg border border-blue-200 max-w-md mx-auto">
+                            <div className="text-sm font-medium text-blue-900 mb-1">Maintenance Prompt</div>
+                            <p className="text-sm text-blue-800 italic">
+                              "What's working well for you right now that you want to make sure you keep?"
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     const imbalances = [];
                     
                     // Use the calculated overall percentages to detect imbalances
@@ -823,103 +879,87 @@ const Results: React.FC = () => {
                       }
                     }
                     
-                    return imbalances.length > 0 ? (
-                      // Check each task for imbalances
-                      state.taskResponses
-                        .filter(r => !r.notApplicable)
-                        .forEach(myResponse => {
-                          const partnerResponse = state.partnerTaskResponses!.find(pr => pr.taskId === myResponse.taskId);
-                          if (!partnerResponse) return;
+                    // Check each task for imbalances first
+                    state.taskResponses
+                      .filter(r => !r.notApplicable)
+                      .forEach(myResponse => {
+                        const partnerResponse = state.partnerTaskResponses!.find(pr => pr.taskId === myResponse.taskId);
+                        if (!partnerResponse) return;
 
-                          const getShare = (r: any) => {
-                            if (r.assignment === 'me') return 100;
-                            if (r.assignment === 'partner') return 0;
-                            if (r.assignment === 'shared' && typeof r.mySharePercentage === 'number') {
-                              return r.mySharePercentage;
-                            }
-                            return 50;
-                          };
+                        const getShare = (r: any) => {
+                          if (r.assignment === 'me') return 100;
+                          if (r.assignment === 'partner') return 0;
+                          if (r.assignment === 'shared' && typeof r.mySharePercentage === 'number') {
+                            return r.mySharePercentage;
+                          }
+                          return 50;
+                        };
 
-                          const myShare = getShare(myResponse);
-                          const partnerShare = getShare(partnerResponse);
-                          const gap = Math.abs(myShare - partnerShare);
+                        const myShare = getShare(myResponse);
+                        const partnerShare = getShare(partnerResponse);
+                        const gap = Math.abs(myShare - partnerShare);
 
-                          const task = allTaskLookup[myResponse.taskId];
-                          const taskName = (task && 'title' in task) ? task.title : 
-                                         (task && 'task_name' in task) ? task.task_name : 
-                                         myResponse.taskId;
+                        const task = allTaskLookup[myResponse.taskId];
+                        const taskName = (task && 'title' in task) ? task.title : 
+                                       (task && 'task_name' in task) ? task.task_name : 
+                                       myResponse.taskId;
 
-                          console.log('DEBUG - Checking task:', {
+                        // High responsibility gap (lowered to 15% for testing)
+                        if (gap >= 15) {
+                          imbalances.push({
                             taskName,
-                            myShare,
-                            partnerShare,
-                            gap,
-                            myBurden: myResponse.likertRating?.burden,
-                            partnerBurden: partnerResponse.likertRating?.burden,
-                            myFairness: myResponse.likertRating?.fairness,
-                            partnerFairness: partnerResponse.likertRating?.fairness
+                            type: 'High Responsibility Gap',
+                            insight: `${myShare > partnerShare ? 'You' : 'Your partner'} handle ${Math.max(myShare, partnerShare)}% while the other handles ${Math.min(myShare, partnerShare)}%. This gap may feel unbalanced.`,
+                            prompt: 'Would rotating weeks or setting a shared plan help make this task feel fairer?',
+                            priority: gap
                           });
+                        }
 
-                          // High responsibility gap (lowered to 15% for testing)
-                          if (gap >= 15) {
-                            console.log('DEBUG - Found responsibility gap!', taskName, gap);
-                            imbalances.push({
-                              taskName,
-                              type: 'High Responsibility Gap',
-                              insight: `${myShare > partnerShare ? 'You' : 'Your partner'} handle ${Math.max(myShare, partnerShare)}% while the other handles ${Math.min(myShare, partnerShare)}%. This gap may feel unbalanced.`,
-                              prompt: 'Would rotating weeks or setting a shared plan help make this task feel fairer?',
-                              priority: gap
-                            });
-                          }
+                        // High burden + high responsibility
+                        const myBurden = myResponse.likertRating?.burden || 0;
+                        const partnerBurden = partnerResponse.likertRating?.burden || 0;
+                        
+                        if (myShare >= 40 && myBurden >= 3) {
+                          imbalances.push({
+                            taskName,
+                            type: 'High Burden & Responsibility',
+                            insight: `You carry ${myShare}% of this responsibility and rate it very burdensome (${myBurden}/5). This may lead to fatigue.`,
+                            prompt: 'What part of this task feels heaviest? Could some of it be handed over or automated?',
+                            priority: myShare + myBurden * 10
+                          });
+                        }
 
-                          // High burden + high responsibility (lowered to 40%+ responsibility AND 3+ burden)
-                          const myBurden = myResponse.likertRating?.burden || 0;
-                          const partnerBurden = partnerResponse.likertRating?.burden || 0;
-                          
-                          if (myShare >= 40 && myBurden >= 3) {
-                            console.log('DEBUG - Found high burden+responsibility for me!', taskName);
-                            imbalances.push({
-                              taskName,
-                              type: 'High Burden & Responsibility',
-                              insight: `You carry ${myShare}% of this responsibility and rate it very burdensome (${myBurden}/5). This may lead to fatigue.`,
-                              prompt: 'What part of this task feels heaviest? Could some of it be handed over or automated?',
-                              priority: myShare + myBurden * 10
-                            });
-                          }
+                        if (partnerShare >= 40 && partnerBurden >= 3) {
+                          imbalances.push({
+                            taskName,
+                            type: 'High Burden & Responsibility',
+                            insight: `Your partner carries ${partnerShare}% of this responsibility and rates it very burdensome (${partnerBurden}/5). They may need support.`,
+                            prompt: 'What part of this task feels heaviest for your partner? Could some of it be shared?',
+                            priority: partnerShare + partnerBurden * 10
+                          });
+                        }
 
-                          if (partnerShare >= 40 && partnerBurden >= 3) {
-                            console.log('DEBUG - Found high burden+responsibility for partner!', taskName);
-                            imbalances.push({
-                              taskName,
-                              type: 'High Burden & Responsibility',
-                              insight: `Your partner carries ${partnerShare}% of this responsibility and rates it very burdensome (${partnerBurden}/5). They may need support.`,
-                              prompt: 'What part of this task feels heaviest for your partner? Could some of it be shared?',
-                              priority: partnerShare + partnerBurden * 10
-                            });
-                          }
+                        // Fairness disagreement
+                        const myFairness = myResponse.likertRating?.fairness || 0;
+                        const partnerFairness = partnerResponse.likertRating?.fairness || 0;
+                        
+                        if ((myFairness <= 2 && partnerFairness >= 4) || (myFairness >= 4 && partnerFairness <= 2)) {
+                          const unfairSide = myFairness <= 2 ? 'You' : 'Your partner';
+                          imbalances.push({
+                            taskName,
+                            type: 'Different Fairness Views',
+                            insight: `${unfairSide} rate this as unfair while the other sees it as fair. This signals a mismatch in recognition.`,
+                            prompt: 'Do we both feel this work is acknowledged? How could appreciation be shown more clearly?',
+                            priority: Math.abs(myFairness - partnerFairness) * 20
+                          });
+                        }
+                      });
 
-                          // Fairness disagreement (one rates ≤2, other ≥4)
-                          const myFairness = myResponse.likertRating?.fairness || 0;
-                          const partnerFairness = partnerResponse.likertRating?.fairness || 0;
-                          
-                          if ((myFairness <= 2 && partnerFairness >= 4) || (myFairness >= 4 && partnerFairness <= 2)) {
-                            const unfairSide = myFairness <= 2 ? 'You' : 'Your partner';
-                            imbalances.push({
-                              taskName,
-                              type: 'Different Fairness Views',
-                              insight: `${unfairSide} rate this as unfair while the other sees it as fair. This signals a mismatch in recognition.`,
-                              prompt: 'Do we both feel this work is acknowledged? How could appreciation be shown more clearly?',
-                              priority: Math.abs(myFairness - partnerFairness) * 20
-                            });
-                          }
-                        });
-
-                      // Sort by priority and take top 3
-                      imbalances.sort((a, b) => b.priority - a.priority);
-                    }
-
-                     return imbalances.length > 0 ? (
-                       imbalances.map((imbalance, index) => (
+                    // Sort by priority and take top 3
+                    imbalances.sort((a, b) => b.priority - a.priority);
+                    
+                    return imbalances.length > 0 ? (
+                      imbalances.slice(0, 3).map((imbalance, index) => (
                         <div key={`${imbalance.taskName}-${index}`} className="p-4 border rounded-lg space-y-3">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 space-y-3">
