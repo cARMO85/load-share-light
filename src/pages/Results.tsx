@@ -23,12 +23,25 @@ import {
   Download,
   Plus,
   Calendar,
-  HelpCircle
+  HelpCircle,
+  BarChart3,
+  PieChart
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart as RechartsPieChart,
+  Pie
+} from 'recharts';
 
 const Results: React.FC = () => {
   const navigate = useNavigate();
@@ -531,228 +544,315 @@ const Results: React.FC = () => {
             <CollapsibleContent>
               <CardContent className="space-y-6">
                 {isSingleAdult ? (
-                  // Single Adult View
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                      <div className="text-2xl font-bold text-blue-600">{visibleResults.myVisiblePercentage}%</div>
-                      <div className="text-sm font-medium">Your visible time share</div>
-                      <div className="text-xs text-muted-foreground mt-1">Individual household</div>
-                    </div>
-                    
-                    <div className={`text-center p-4 rounded-lg ${
-                      wmliResults.myWMLI_Intensity <= 33 ? 'bg-green-50 dark:bg-green-950/20' :
-                      wmliResults.myWMLI_Intensity <= 66 ? 'bg-yellow-50 dark:bg-yellow-950/20' :
-                      'bg-red-50 dark:bg-red-950/20'
-                    }`}>
-                      <div className={`text-2xl font-bold ${
-                        wmliResults.myWMLI_Intensity <= 33 ? 'text-green-600' :
-                        wmliResults.myWMLI_Intensity <= 66 ? 'text-yellow-600' :
-                        'text-red-600'
-                      }`}>{wmliResults.myWMLI_Intensity}/100</div>
-                      <div className="text-sm font-medium">Your mental load intensity</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {wmliResults.myWMLI_Intensity <= 33 ? 'light subjective workload' :
-                         wmliResults.myWMLI_Intensity <= 66 ? 'moderate mental strain' :
-                         'high mental burden'}
+                  // Single Adult - Show WMLI Breakdown
+                  <div className="space-y-6">
+                    {/* Big Numbers Display */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Mental Load Intensity */}
+                      <div className={`p-6 rounded-lg text-center ${
+                        wmliResults.myWMLI_Intensity >= 75 ? 'bg-red-50 dark:bg-red-950/20 border border-red-200' :
+                        wmliResults.myWMLI_Intensity >= 50 ? 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200' :
+                        'bg-green-50 dark:bg-green-950/20 border border-green-200'
+                      }`}>
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Brain className="h-5 w-5" />
+                          <span className="text-sm font-medium">Mental Load Intensity</span>
+                        </div>
+                        <div className={`text-4xl font-bold mb-2 ${
+                          wmliResults.myWMLI_Intensity >= 75 ? 'text-red-600' :
+                          wmliResults.myWMLI_Intensity >= 50 ? 'text-yellow-600' :
+                          'text-green-600'
+                        }`}>
+                          {wmliResults.myWMLI_Intensity}/100
+                        </div>
+                        <div className={`text-sm ${
+                          wmliResults.myWMLI_Intensity >= 75 ? 'text-red-700' :
+                          wmliResults.myWMLI_Intensity >= 50 ? 'text-yellow-700' :
+                          'text-green-700'
+                        }`}>
+                          {wmliResults.myWMLI_Intensity >= 75 ? 'Very high subjective workload' :
+                           wmliResults.myWMLI_Intensity >= 50 ? 'Moderate subjective workload' :
+                           'Light subjective workload'}
+                        </div>
+                      </div>
+                      
+                      {/* Mental Load Share */}
+                      <div className="p-6 rounded-lg text-center bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <PieChart className="h-5 w-5" />
+                          <span className="text-sm font-medium">Your Mental Load Share</span>
+                        </div>
+                        <div className="text-4xl font-bold text-blue-600 mb-2">
+                          {wmliResults.myWMLI_Share || 100}%
+                        </div>
+                        <div className="text-sm text-blue-700">
+                          Individual household
+                        </div>
+                      </div>
+                      
+                      {/* Visible Work Share */}
+                      <div className="p-6 rounded-lg text-center bg-purple-50 dark:bg-purple-950/20 border border-purple-200">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <BarChart3 className="h-5 w-5" />
+                          <span className="text-sm font-medium">Visible Work Share</span>
+                        </div>
+                        <div className="text-4xl font-bold text-purple-600 mb-2">
+                          {visibleResults.myVisiblePercentage}%
+                        </div>
+                        <div className="text-sm text-purple-700">
+                          Time-based tasks
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                      <div className="text-2xl font-bold text-blue-600">{wmliResults.myWMLI_Share || 50}%</div>
-                      <div className="text-sm font-medium">Your share of household mental load</div>
-                      <div className="text-xs text-muted-foreground mt-1">Individual household</div>
-                    </div>
+
+                    {/* Evidence Flags */}
+                    {(wmliResults.myFlags.highSubjectiveStrain || wmliResults.myFlags.fairnessRisk || wmliResults.myFlags.equityPriority) && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="font-medium text-amber-800 dark:text-amber-200 mb-2">Wellbeing Indicators</h4>
+                            <div className="space-y-2">
+                              {wmliResults.myFlags.highSubjectiveStrain && (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="destructive" className="text-xs">High Subjective Strain</Badge>
+                                  <span className="text-sm text-amber-700 dark:text-amber-300">
+                                    Multiple tasks feel burdensome - consider support or simplification
+                                  </span>
+                                </div>
+                              )}
+                              {wmliResults.myFlags.fairnessRisk && (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="border-orange-500 text-orange-600 text-xs">Fairness Risk</Badge>
+                                  <span className="text-sm text-amber-700 dark:text-amber-300">
+                                    Some tasks may feel unappreciated or unsupported
+                                  </span>
+                                </div>
+                              )}
+                              {wmliResults.myFlags.equityPriority && (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="border-purple-500 text-purple-600 text-xs">Equity Priority</Badge>
+                                  <span className="text-sm text-amber-700 dark:text-amber-300">
+                                    Workload distribution may benefit from adjustment
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   // Couple View - Both Partners' Results
                   <div className="space-y-6">
-
-                    {/* Both Partners' Individual Scores */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Partner 1 Scores */}
-                      <div className="p-4 rounded-lg bg-blue-50/50 border border-blue-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Users className="h-5 w-5 text-blue-600" />
-                          <h4 className="font-medium text-blue-900">Partner 1 (Assessment Taker)</h4>
-                        </div>
-                        <div className="space-y-3 text-sm">
-                          <div className="text-center p-3 rounded bg-blue-100">
-                            <div className="text-xl font-bold text-blue-700">{visibleResults.myVisiblePercentage}%</div>
-                            <div className="text-xs">Visible work share</div>
-                          </div>
-                          <div className="text-center p-3 rounded bg-blue-100">
-                            <div className="text-xl font-bold text-blue-700">{wmliResults.myWMLI_Share || 50}%</div>
-                            <div className="text-xs">Mental load share</div>
-                          </div>
-                          <div className="text-center p-3 rounded bg-blue-100">
-                            <div className="text-xl font-bold text-blue-700">{wmliResults.myWMLI_Intensity}/100</div>
-                            <div className="text-xs">Mental load intensity</div>
-                          </div>
-                        </div>
+                    {/* WMLI Intensity Comparison Chart */}
+                    <div className="p-6 bg-muted/30 rounded-lg">
+                      <div className="text-center mb-4">
+                        <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
+                          <Brain className="h-5 w-5" />
+                          Mental Load Intensity Comparison
+                        </h3>
+                        <p className="text-sm text-muted-foreground">How heavy the mental load feels for each partner (0-100)</p>
                       </div>
-
-                      {/* Partner 2 Scores */}
-                      <div className="p-4 rounded-lg bg-orange-50/50 border border-orange-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Users className="h-5 w-5 text-orange-600" />
-                          <h4 className="font-medium text-orange-900">Partner 2</h4>
+                      
+                      <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={[
+                            {
+                              name: 'Partner 1',
+                              intensity: wmliResults.myWMLI_Intensity || 0,
+                              fill: 'hsl(var(--primary))'
+                            },
+                            {
+                              name: 'Partner 2', 
+                              intensity: wmliResults.partnerWMLI_Intensity || 0,
+                              fill: 'hsl(var(--secondary))'
+                            }
+                          ]}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis domain={[0, 100]} />
+                            <Tooltip 
+                              formatter={(value) => [`${value}/100`, 'Intensity']}
+                              labelFormatter={(label) => `${label} Mental Load Intensity`}
+                            />
+                            <Bar dataKey="intensity" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+                        <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded">
+                          <div className="font-medium text-blue-900 dark:text-blue-100">Partner 1</div>
+                          <div className="text-2xl font-bold text-blue-600">{wmliResults.myWMLI_Intensity || 0}/100</div>
+                          <div className={`text-xs ${
+                            (wmliResults.myWMLI_Intensity || 0) >= 75 ? 'text-red-600' :
+                            (wmliResults.myWMLI_Intensity || 0) >= 50 ? 'text-yellow-600' : 'text-green-600'
+                          }`}>
+                            {(wmliResults.myWMLI_Intensity || 0) >= 75 ? 'Very high workload' :
+                             (wmliResults.myWMLI_Intensity || 0) >= 50 ? 'Moderate workload' : 'Light workload'}
+                          </div>
                         </div>
-                        <div className="space-y-3 text-sm">
-                          <div className="text-center p-3 rounded bg-orange-100">
-                            <div className="text-xl font-bold text-orange-700">{100 - visibleResults.myVisiblePercentage}%</div>
-                            <div className="text-xs">Visible work share</div>
-                          </div>
-                          <div className="text-center p-3 rounded bg-orange-100">
-                            <div className="text-xl font-bold text-orange-700">{100 - (wmliResults.myWMLI_Share || 50)}%</div>
-                            <div className="text-xs">Mental load share</div>
-                          </div>
-                          <div className="text-center p-3 rounded bg-orange-100">
-                            <div className="text-xl font-bold text-orange-700">{wmliResults.partnerWMLI_Intensity || 50}/100</div>
-                            <div className="text-xs">Mental load intensity</div>
+                        <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded">
+                          <div className="font-medium text-orange-900 dark:text-orange-100">Partner 2</div>
+                          <div className="text-2xl font-bold text-orange-600">{wmliResults.partnerWMLI_Intensity || 0}/100</div>
+                          <div className={`text-xs ${
+                            (wmliResults.partnerWMLI_Intensity || 0) >= 75 ? 'text-red-600' :
+                            (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? 'text-yellow-600' : 'text-green-600'
+                          }`}>
+                            {(wmliResults.partnerWMLI_Intensity || 0) >= 75 ? 'Very high workload' :
+                             (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? 'Moderate workload' : 'Light workload'}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Household Summary */}
-                    <div className="p-4 rounded-lg bg-purple-50/50 border border-purple-200">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Brain className="h-5 w-5 text-purple-600" />
-                        <h4 className="font-medium text-purple-900">Household Summary</h4>
+                    {/* WMLI Share - Equity Pie Chart */}
+                    <div className="p-6 bg-muted/30 rounded-lg">
+                      <div className="text-center mb-4">
+                        <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
+                          <PieChart className="h-5 w-5" />
+                          Mental Load Distribution
+                        </h3>
+                        <p className="text-sm text-muted-foreground">Share of household mental load by partner</p>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <div className="font-medium mb-2">Work Distribution Balance</div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <span>Visible work gap:</span>
-                              <span className={Math.abs(visibleResults.myVisiblePercentage - 50) <= 10 ? 'text-green-600' : 'text-amber-600'}>
-                                {Math.abs(visibleResults.myVisiblePercentage - 50)}%
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Mental load gap:</span>
-                              <span className={Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 ? 'text-green-600' : 'text-amber-600'}>
-                                {Math.abs((wmliResults.myWMLI_Share || 50) - 50)}%
-                              </span>
-                            </div>
+                      
+                      <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPieChart>
+                            <Pie
+                              data={[
+                                { name: 'Partner 1', value: wmliResults.myWMLI_Share || 50, fill: 'hsl(var(--primary))' },
+                                { name: 'Partner 2', value: wmliResults.partnerWMLI_Share || 50, fill: 'hsl(var(--secondary))' }
+                              ]}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              dataKey="value"
+                              label={({ name, value }) => `${name}: ${value}%`}
+                            >
+                            </Pie>
+                            <Tooltip formatter={(value) => [`${value}%`, 'Share']} />
+                          </RechartsPieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+                        <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded">
+                          <div className="font-medium text-blue-900 dark:text-blue-100">Partner 1 Share</div>
+                          <div className="text-2xl font-bold text-blue-600">{wmliResults.myWMLI_Share || 50}%</div>
+                          <div className={`text-xs ${
+                            (wmliResults.myWMLI_Share || 50) >= 65 ? 'text-red-600' :
+                            (wmliResults.myWMLI_Share || 50) <= 35 ? 'text-red-600' : 'text-green-600'
+                          }`}>
+                            {(wmliResults.myWMLI_Share || 50) >= 65 ? 'Higher share' :
+                             (wmliResults.myWMLI_Share || 50) <= 35 ? 'Lower share' : 'Balanced share'}
                           </div>
                         </div>
-                        
-                        <div>
-                          <div className="font-medium mb-2">Household Stress Level</div>
-                          {(() => {
-                            const myIntensity = wmliResults.myWMLI_Intensity;
-                            const partnerIntensity = wmliResults.partnerWMLI_Intensity || 0;
-                            const avgIntensity = (myIntensity + partnerIntensity) / 2;
-                            const visibleGap = Math.abs(visibleResults.myVisiblePercentage - 50);
-                            const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
-                            const avgGap = (visibleGap + mentalGap) / 2;
-                            
-                            let adjustedStress = avgIntensity;
-                            if (avgGap > 20) {
-                              adjustedStress = Math.min(100, avgIntensity + 25);
-                            } else if (avgGap > 10) {
-                              adjustedStress = Math.min(100, avgIntensity + 15);
-                            }
-                            
-                            let stressLevel = '';
-                            let stressColor = '';
-                            if (adjustedStress <= 30) {
-                              stressLevel = 'Low';
-                              stressColor = 'text-green-600';
-                            } else if (adjustedStress <= 60) {
-                              stressLevel = 'Moderate';
-                              stressColor = 'text-yellow-600';
-                            } else {
-                              stressLevel = 'High';
-                              stressColor = 'text-red-600';
-                            }
-                            
-                            return (
-                              <div className="space-y-1">
-                                <div className="flex justify-between">
-                                  <span>Overall stress:</span>
-                                  <span className={stressColor}>{stressLevel}</span>
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Based on partner intensity levels and workload balance
+                        <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded">
+                          <div className="font-medium text-orange-900 dark:text-orange-100">Partner 2 Share</div>
+                          <div className="text-2xl font-bold text-orange-600">{wmliResults.partnerWMLI_Share || 50}%</div>
+                          <div className={`text-xs ${
+                            (wmliResults.partnerWMLI_Share || 50) >= 65 ? 'text-red-600' :
+                            (wmliResults.partnerWMLI_Share || 50) <= 35 ? 'text-red-600' : 'text-green-600'
+                          }`}>
+                            {(wmliResults.partnerWMLI_Share || 50) >= 65 ? 'Higher share' :
+                             (wmliResults.partnerWMLI_Share || 50) <= 35 ? 'Lower share' : 'Balanced share'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Household Wellbeing Indicators */}
+                    {(wmliResults.myFlags.highSubjectiveStrain || wmliResults.myFlags.fairnessRisk || wmliResults.myFlags.equityPriority ||
+                      wmliResults.partnerFlags?.highSubjectiveStrain || wmliResults.partnerFlags?.fairnessRisk || wmliResults.partnerFlags?.equityPriority) && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="font-medium text-amber-800 dark:text-amber-200 mb-3">Household Wellbeing Indicators</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Partner 1 Flags */}
+                              <div>
+                                <div className="font-medium text-sm text-amber-700 dark:text-amber-300 mb-2">Partner 1</div>
+                                <div className="space-y-2">
+                                  {wmliResults.myFlags.highSubjectiveStrain && (
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="destructive" className="text-xs">High Subjective Strain</Badge>
+                                      <span className="text-xs text-amber-600">Multiple burdensome tasks</span>
+                                    </div>
+                                  )}
+                                  {wmliResults.myFlags.fairnessRisk && (
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="border-orange-500 text-orange-600 text-xs">Fairness Risk</Badge>
+                                      <span className="text-xs text-amber-600">Tasks feel unappreciated</span>
+                                    </div>
+                                  )}
+                                  {wmliResults.myFlags.equityPriority && (
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="border-purple-500 text-purple-600 text-xs">Equity Priority</Badge>
+                                      <span className="text-xs text-amber-600">Workload may need adjustment</span>
+                                    </div>
+                                  )}
+                                  {!wmliResults.myFlags.highSubjectiveStrain && !wmliResults.myFlags.fairnessRisk && !wmliResults.myFlags.equityPriority && (
+                                    <div className="flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                      <span className="text-xs text-green-600">No concerning indicators</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Partnership Insight */}
-                    <div className="p-4 bg-gray-50/50 rounded-lg border border-gray-200">
-                      <div className="flex items-start gap-3">
-                        <MessageCircle className="h-5 w-5 text-gray-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-medium text-gray-900 mb-1">Partnership Analysis</h4>
-                          <p className="text-sm text-gray-800">
-                            {(() => {
-                              const visibleDiff = visibleResults.myVisiblePercentage - 50;
-                              const mentalDiff = (wmliResults.myWMLI_Share || 50) - 50;
                               
-                              if (Math.abs(visibleDiff) <= 8 && Math.abs(mentalDiff) <= 8) {
-                                return "Both partners contribute fairly equally to household work. This balanced partnership is associated with higher relationship satisfaction and lower stress for both partners.";
-                              } else if (visibleDiff > 15 && mentalDiff > 15) {
-                                return "Partner 1 is carrying significantly more of both visible and mental work. The partnership may benefit from redistributing some responsibilities to prevent burnout.";
-                              } else if (visibleDiff < -15 && mentalDiff < -15) {
-                                return "Partner 2 is handling most of the household work. Their contribution should be acknowledged and responsibilities could be redistributed for better balance.";
-                              } else if (Math.abs(visibleDiff - mentalDiff) > 15) {
-                                return "There's a mismatch between who does the work and who manages it. The partner doing less visible work could take on more of the planning and organizing.";
-                              } else {
-                                return "The partnership shows some imbalance. Regular check-ins about household responsibilities can help maintain fairness and prevent resentment over time.";
-                              }
-                            })()}
-                          </p>
+                              {/* Partner 2 Flags */}
+                              <div>
+                                <div className="font-medium text-sm text-amber-700 dark:text-amber-300 mb-2">Partner 2</div>
+                                <div className="space-y-2">
+                                  {wmliResults.partnerFlags?.highSubjectiveStrain && (
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="destructive" className="text-xs">High Subjective Strain</Badge>
+                                      <span className="text-xs text-amber-600">Multiple burdensome tasks</span>
+                                    </div>
+                                  )}
+                                  {wmliResults.partnerFlags?.fairnessRisk && (
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="border-orange-500 text-orange-600 text-xs">Fairness Risk</Badge>
+                                      <span className="text-xs text-amber-600">Tasks feel unappreciated</span>
+                                    </div>
+                                  )}
+                                  {wmliResults.partnerFlags?.equityPriority && (
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="border-purple-500 text-purple-600 text-xs">Equity Priority</Badge>
+                                      <span className="text-xs text-amber-600">Workload may need adjustment</span>
+                                    </div>
+                                  )}
+                                  {!wmliResults.partnerFlags?.highSubjectiveStrain && !wmliResults.partnerFlags?.fairnessRisk && !wmliResults.partnerFlags?.equityPriority && (
+                                    <div className="flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                      <span className="text-xs text-green-600">No concerning indicators</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
-                {/* Status Chip & Evidence Flags */}
-                <div className="space-y-4">
-                  <div className="flex justify-center">
-                    <div className="flex items-center space-x-3">
-                      <Badge className={`${statusInfo.color} text-white px-4 py-2 text-sm`}>
-                        {statusInfo.status === 'Balanced' && <CheckCircle className="h-4 w-4 mr-1" />}
-                        {statusInfo.status === 'Needs Conversation' && <MessageCircle className="h-4 w-4 mr-1" />}
-                        {statusInfo.status === 'Urgent Imbalance' && <AlertTriangle className="h-4 w-4 mr-1" />}
-                        {statusInfo.status}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">{statusInfo.description}</span>
-                    </div>
+                {/* Status Chip */}
+                <div className="flex justify-center">
+                  <div className="flex items-center space-x-3">
+                    <Badge className={`${statusInfo.color} text-white px-4 py-2 text-sm`}>
+                      {statusInfo.status === 'Balanced' && <CheckCircle className="h-4 w-4 mr-1" />}
+                      {statusInfo.status === 'Needs Conversation' && <MessageCircle className="h-4 w-4 mr-1" />}
+                      {statusInfo.status === 'Urgent Imbalance' && <AlertTriangle className="h-4 w-4 mr-1" />}
+                      {statusInfo.status}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">{statusInfo.description}</span>
                   </div>
-
-                  {/* Prominent Evidence Flags */}
-                  {(wmliResults.myFlags.highSubjectiveStrain || wmliResults.myFlags.fairnessRisk || wmliResults.myFlags.equityPriority) && (
-                    <div className="flex justify-center">
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {wmliResults.myFlags.highSubjectiveStrain && (
-                          <Badge variant="destructive" className="px-3 py-1">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            High Subjective Strain
-                          </Badge>
-                        )}
-                        {wmliResults.myFlags.fairnessRisk && (
-                          <Badge variant="outline" className="border-orange-500 text-orange-600 px-3 py-1">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            High Equity Risk
-                          </Badge>
-                        )}
-                        {wmliResults.myFlags.equityPriority && (
-                          <Badge variant="outline" className="border-purple-500 text-purple-600 px-3 py-1">
-                            Equity Priority
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </CollapsibleContent>
@@ -785,6 +885,62 @@ const Results: React.FC = () => {
               <CardContent>
                 <div className="space-y-4">
                   {(() => {
+                    if (isSingleAdult) {
+                      // For single adults, show hotspots from our calculated results
+                      return hotspots.length > 0 ? (
+                        hotspots.map((hotspot, index) => (
+                          <div key={`${hotspot.taskId}-${index}`} className="p-4 border rounded-lg space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">#{index + 1} {hotspot.taskName}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    Individual Strain
+                                  </Badge>
+                                </div>
+                                
+                                <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-200">
+                                  <div className="text-sm font-medium text-blue-900 mb-1">Mental Load Impact</div>
+                                  <p className="text-sm text-blue-800">
+                                    You handle {Math.round(hotspot.responsibility * 100)}% of this task, 
+                                    with burden rating of {hotspot.burden.toFixed(1)}/5 and fairness rating of {hotspot.fairness.toFixed(1)}/5.
+                                    Driver score: {hotspot.driverScore.toFixed(3)}
+                                  </p>
+                                </div>
+                                
+                                <div className="p-3 bg-amber-50/50 rounded-lg border border-amber-200">
+                                  <div className="text-sm font-medium text-amber-900 mb-1">Reflection Prompt</div>
+                                  <p className="text-sm text-amber-800 italic">
+                                    "What aspects of {hotspot.taskName.toLowerCase()} feel most overwhelming? 
+                                    What support or changes could help make this more manageable?"
+                                  </p>
+                                </div>
+
+                                <ConversationPrompts 
+                                  taskName={hotspot.taskName}
+                                  isCouple={false}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-8 text-center">
+                          <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                          <h3 className="text-lg font-medium text-green-700 mb-2">Well-Managed Tasks!</h3>
+                          <p className="text-muted-foreground mb-4">
+                            Your current task management appears well-balanced without major strain areas.
+                          </p>
+                          <div className="p-3 bg-blue-50/30 rounded-lg border border-blue-200 max-w-md mx-auto">
+                            <div className="text-sm font-medium text-blue-900 mb-1">Maintenance Prompt</div>
+                            <p className="text-sm text-blue-800 italic">
+                              "What's working well for you right now that you want to make sure you keep?"
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     const imbalances = [];
                     
                     // Use the calculated overall percentages to detect imbalances
@@ -823,7 +979,7 @@ const Results: React.FC = () => {
                       }
                     }
                     
-                    // Check each task for imbalances
+                    // Check each task for imbalances first
                     state.taskResponses
                       .filter(r => !r.notApplicable)
                       .forEach(myResponse => {
@@ -848,20 +1004,8 @@ const Results: React.FC = () => {
                                        (task && 'task_name' in task) ? task.task_name : 
                                        myResponse.taskId;
 
-                        console.log('DEBUG - Checking task:', {
-                          taskName,
-                          myShare,
-                          partnerShare,
-                          gap,
-                          myBurden: myResponse.likertRating?.burden,
-                          partnerBurden: partnerResponse.likertRating?.burden,
-                          myFairness: myResponse.likertRating?.fairness,
-                          partnerFairness: partnerResponse.likertRating?.fairness
-                        });
-
                         // High responsibility gap (lowered to 15% for testing)
                         if (gap >= 15) {
-                          console.log('DEBUG - Found responsibility gap!', taskName, gap);
                           imbalances.push({
                             taskName,
                             type: 'High Responsibility Gap',
@@ -871,12 +1015,11 @@ const Results: React.FC = () => {
                           });
                         }
 
-                        // High burden + high responsibility (lowered to 40%+ responsibility AND 3+ burden)
+                        // High burden + high responsibility
                         const myBurden = myResponse.likertRating?.burden || 0;
                         const partnerBurden = partnerResponse.likertRating?.burden || 0;
                         
                         if (myShare >= 40 && myBurden >= 3) {
-                          console.log('DEBUG - Found high burden+responsibility for me!', taskName);
                           imbalances.push({
                             taskName,
                             type: 'High Burden & Responsibility',
@@ -887,7 +1030,6 @@ const Results: React.FC = () => {
                         }
 
                         if (partnerShare >= 40 && partnerBurden >= 3) {
-                          console.log('DEBUG - Found high burden+responsibility for partner!', taskName);
                           imbalances.push({
                             taskName,
                             type: 'High Burden & Responsibility',
@@ -897,7 +1039,7 @@ const Results: React.FC = () => {
                           });
                         }
 
-                        // Fairness disagreement (one rates ≤2, other ≥4)
+                        // Fairness disagreement
                         const myFairness = myResponse.likertRating?.fairness || 0;
                         const partnerFairness = partnerResponse.likertRating?.fairness || 0;
                         
@@ -915,9 +1057,9 @@ const Results: React.FC = () => {
 
                     // Sort by priority and take top 3
                     imbalances.sort((a, b) => b.priority - a.priority);
-
+                    
                     return imbalances.length > 0 ? (
-                      imbalances.map((imbalance, index) => (
+                      imbalances.slice(0, 3).map((imbalance, index) => (
                         <div key={`${imbalance.taskName}-${index}`} className="p-4 border rounded-lg space-y-3">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 space-y-3">
@@ -998,7 +1140,7 @@ const Results: React.FC = () => {
                       <div className="relative w-48 h-24 mx-auto">
                         <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded-t-full"></div>
                         <div 
-                          className="absolute w-1 h-12 bg-primary rounded-full origin-bottom"
+                          className="absolute w-1 h-12 bg-blue-600 rounded-full origin-bottom"
                           style={{
                             left: '50%',
                             bottom: '0',
@@ -1006,11 +1148,14 @@ const Results: React.FC = () => {
                             transformOrigin: 'center bottom'
                           }}
                         ></div>
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full"></div>
+                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-600 rounded-full"></div>
                       </div>
                       <div>
-                        <div className="text-3xl font-bold text-primary">{wmliResults.myWMLI_Intensity}/100</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-3xl font-bold text-blue-600">{wmliResults.myWMLI_Intensity}/100</div>
+                        <div className={`text-sm font-medium ${
+                          wmliResults.myWMLI_Intensity <= 30 ? 'text-green-600' :
+                          wmliResults.myWMLI_Intensity <= 60 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
                           {wmliResults.myWMLI_Intensity <= 30 ? 'Light subjective workload' :
                            wmliResults.myWMLI_Intensity <= 60 ? 'Moderate subjective workload' :
                            'Heavy subjective workload'}
