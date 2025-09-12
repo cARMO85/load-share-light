@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -9,7 +10,7 @@ import { ProgressSteps } from '@/components/ui/progress-steps';
 import { useAssessment } from '@/context/AssessmentContext';
 import { allTasks, ALL_CATEGORIES, isPhysicalTask, isCognitiveTask, allTaskLookup } from '@/data/allTasks';
 import { TaskResponse, LikertRating } from '@/types/assessment';
-import { Clock, Brain, Users, UserCheck, Heart, Calendar, Eye, BarChart3 } from 'lucide-react';
+import { Clock, Brain, Users, UserCheck, Heart, Calendar, Eye, BarChart3, MessageSquare } from 'lucide-react';
 import { InfoButton } from '@/components/InfoButton';
 import { createDemoResponses, isDevelopment } from '@/lib/devUtils';
 import { testProfiles } from '@/components/DevProfileSelector';
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const TaskQuestionnaire: React.FC = () => {
   const navigate = useNavigate();
-  const { state, setTaskResponse, setPartnerTaskResponse, setCurrentStep, setCurrentResponder } = useAssessment();
+  const { state, setTaskResponse, setPartnerTaskResponse, setCurrentStep, setCurrentResponder, addDiscussionNote } = useAssessment();
   
   const isTogetherMode = state.householdSetup.assessmentMode === 'together';
   
@@ -49,6 +50,17 @@ const TaskQuestionnaire: React.FC = () => {
         });
         setResponses(newResponses);
         
+        // Add sample notes for some tasks
+        const sampleNotes = [
+          "This sparked a really good discussion about expectations",
+          "We had different views on how burdensome this task is",
+          "Aha moment: we both thought the other was doing more of this!",
+          "Need to revisit this - clear disagreement on fairness"
+        ];
+        myResponses.slice(0, 4).forEach((response, index) => {
+          addDiscussionNote(response.taskId, sampleNotes[index]);
+        });
+        
         // Set partner responses if in together mode
         if (isTogetherMode) {
           partnerResponses.forEach(response => {
@@ -60,7 +72,7 @@ const TaskQuestionnaire: React.FC = () => {
     }
     
     // Default demo data
-    const { myResponses, partnerResponses } = createDemoResponses();
+    const { myResponses, partnerResponses, discussionNotes } = createDemoResponses();
     
     // Set responses in local state
     const newResponses: Record<string, TaskResponse> = {};
@@ -69,6 +81,11 @@ const TaskQuestionnaire: React.FC = () => {
       setTaskResponse(response);
     });
     setResponses(newResponses);
+    
+    // Add discussion notes
+    Object.entries(discussionNotes).forEach(([taskId, note]) => {
+      addDiscussionNote(taskId, note);
+    });
     
     // Set partner responses if in together mode
     if (isTogetherMode) {
@@ -319,9 +336,15 @@ const TaskQuestionnaire: React.FC = () => {
               )}
             </div>
           )}
-          <p className="text-muted-foreground mb-4">
+          <p className="text-muted-foreground mb-2">
             {isTogetherMode ? "Discuss and assign each task" : "Assign household tasks"}
           </p>
+          {Object.keys(state.discussionNotes || {}).length > 0 && (
+            <div className="mb-4 flex items-center justify-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+              <MessageSquare className="h-4 w-4" />
+              <span>{Object.keys(state.discussionNotes || {}).length} task{Object.keys(state.discussionNotes || {}).length !== 1 ? 's' : ''} with notes</span>
+            </div>
+          )}
         </div>
           
         {/* Category Header */}
@@ -478,7 +501,32 @@ const TaskQuestionnaire: React.FC = () => {
                            <p className="text-xs text-muted-foreground mt-2 italic">
                              A task may happen often and you think it was never truly acknowledged and given the respect it deserves.
                            </p>
-                          </div>
+                           </div>
+                           
+                           {/* Discussion Notes Section */}
+                           <div className="space-y-2 mt-4 pt-4 border-t border-muted">
+                             <Label className="text-sm font-medium flex items-center gap-2">
+                               <MessageSquare className="h-4 w-4" />
+                               Discussion Notes
+                               <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                             </Label>
+                             <Textarea
+                               placeholder={isTogetherMode 
+                                 ? "Add notes about your discussion: aha moments, disagreements, surprises..." 
+                                 : "Add personal notes: insights, concerns, or observations about this task..."
+                               }
+                               value={state.discussionNotes?.[task.id] || ''}
+                               onChange={(e) => addDiscussionNote(task.id, e.target.value)}
+                               className="min-h-[80px] text-sm"
+                               rows={3}
+                             />
+                             <p className="text-xs text-muted-foreground">
+                               {isTogetherMode 
+                                 ? "These notes will help structure your post-assessment conversation"
+                                 : "Use these notes to capture thoughts for future discussions with your partner"
+                               }
+                             </p>
+                           </div>
                         </div>
                       )}
                     </>

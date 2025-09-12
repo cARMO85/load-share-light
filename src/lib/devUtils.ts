@@ -73,14 +73,31 @@ export const sampleInsights = [
 export const createDemoResponses = (): { 
   myResponses: TaskResponse[], 
   partnerResponses: TaskResponse[], 
-  insights: typeof sampleInsights 
+  insights: typeof sampleInsights,
+  discussionNotes: Record<string, string>
 } => {
   const myResponses: TaskResponse[] = [];
   const partnerResponses: TaskResponse[] = [];
+  const discussionNotes: Record<string, string> = {};
 
   // Scenario: More balanced relationship with different strengths  
   allTasks.forEach((task, index) => {
     const taskId = task.id;
+    
+    // Add sample discussion notes for some tasks
+    const noteChance = Math.random();
+    if (noteChance > 0.7) {
+      const noteTypes = [
+        "Aha moment: We had no idea who was actually doing this until we talked about it!",
+        "Disagreement: We see this task very differently - need to discuss expectations",
+        "Surprise: One of us feels way more burdened by this than the other realized",
+        "Breakthrough: Finally understand why this feels so overwhelming - it's not just the task itself",
+        "Conflict: We both think the other should do more of this",
+        "Agreement: We're both happy with how this works in our household",
+        "Insight: This task involves way more mental planning than we thought"
+      ];
+      discussionNotes[taskId] = noteTypes[Math.floor(Math.random() * noteTypes.length)];
+    }
     
     // Create a more balanced scenario where partner handles some categories better
     const isPhysical = 'title' in task;
@@ -198,7 +215,7 @@ export const createDemoResponses = (): {
     }
   });
 
-  return { myResponses, partnerResponses, insights: sampleInsights };
+  return { myResponses, partnerResponses, insights: sampleInsights, discussionNotes };
 };
 
 export const addSampleInsights = (addInsight: (insight: any) => void) => {
