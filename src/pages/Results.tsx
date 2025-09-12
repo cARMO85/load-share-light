@@ -27,6 +27,7 @@ import {
   BarChart3,
   PieChart
 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -644,125 +645,135 @@ const Results: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  // Couple View - Both Partners' Results
+                  // Couple View - Both Partners' Results Table
                   <div className="space-y-6">
-                    {/* WMLI Intensity Comparison Chart */}
-                    <div className="p-6 bg-muted/30 rounded-lg">
-                      <div className="text-center mb-4">
-                        <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
-                          <Brain className="h-5 w-5" />
-                          Mental Load Intensity Comparison
-                        </h3>
-                        <p className="text-sm text-muted-foreground">How heavy the mental load feels for each partner (0-100)</p>
-                      </div>
-                      
-                      <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={[
-                            {
-                              name: 'Partner 1',
-                              intensity: wmliResults.myWMLI_Intensity || 0,
-                              fill: 'hsl(var(--primary))'
-                            },
-                            {
-                              name: 'Partner 2', 
-                              intensity: wmliResults.partnerWMLI_Intensity || 0,
-                              fill: 'hsl(var(--secondary))'
-                            }
-                          ]}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis domain={[0, 100]} />
-                            <Tooltip 
-                              formatter={(value) => [`${value}/100`, 'Intensity']}
-                              labelFormatter={(label) => `${label} Mental Load Intensity`}
-                            />
-                            <Bar dataKey="intensity" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-                        <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded">
-                          <div className="font-medium text-blue-900 dark:text-blue-100">Partner 1</div>
-                          <div className="text-2xl font-bold text-blue-600">{wmliResults.myWMLI_Intensity || 0}/100</div>
-                          <div className={`text-xs ${
-                            (wmliResults.myWMLI_Intensity || 0) >= 75 ? 'text-red-600' :
-                            (wmliResults.myWMLI_Intensity || 0) >= 50 ? 'text-yellow-600' : 'text-green-600'
-                          }`}>
-                            {(wmliResults.myWMLI_Intensity || 0) >= 75 ? 'Very high workload' :
-                             (wmliResults.myWMLI_Intensity || 0) >= 50 ? 'Moderate workload' : 'Light workload'}
-                          </div>
-                        </div>
-                        <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded">
-                          <div className="font-medium text-orange-900 dark:text-orange-100">Partner 2</div>
-                          <div className="text-2xl font-bold text-orange-600">{wmliResults.partnerWMLI_Intensity || 0}/100</div>
-                          <div className={`text-xs ${
-                            (wmliResults.partnerWMLI_Intensity || 0) >= 75 ? 'text-red-600' :
-                            (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? 'text-yellow-600' : 'text-green-600'
-                          }`}>
-                            {(wmliResults.partnerWMLI_Intensity || 0) >= 75 ? 'Very high workload' :
-                             (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? 'Moderate workload' : 'Light workload'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* WMLI Share - Equity Pie Chart */}
-                    <div className="p-6 bg-muted/30 rounded-lg">
-                      <div className="text-center mb-4">
-                        <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
-                          <PieChart className="h-5 w-5" />
-                          Mental Load Distribution
-                        </h3>
-                        <p className="text-sm text-muted-foreground">Share of household mental load by partner</p>
-                      </div>
-                      
-                      <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsPieChart>
-                            <Pie
-                              data={[
-                                { name: 'Partner 1', value: wmliResults.myWMLI_Share || 50, fill: 'hsl(var(--primary))' },
-                                { name: 'Partner 2', value: wmliResults.partnerWMLI_Share || 50, fill: 'hsl(var(--secondary))' }
-                              ]}
-                              cx="50%"
-                              cy="50%"
-                              outerRadius={80}
-                              dataKey="value"
-                              label={({ name, value }) => `${name}: ${value}%`}
-                            >
-                            </Pie>
-                            <Tooltip formatter={(value) => [`${value}%`, 'Share']} />
-                          </RechartsPieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-                        <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded">
-                          <div className="font-medium text-blue-900 dark:text-blue-100">Partner 1 Share</div>
-                          <div className="text-2xl font-bold text-blue-600">{wmliResults.myWMLI_Share || 50}%</div>
-                          <div className={`text-xs ${
-                            (wmliResults.myWMLI_Share || 50) >= 65 ? 'text-red-600' :
-                            (wmliResults.myWMLI_Share || 50) <= 35 ? 'text-red-600' : 'text-green-600'
-                          }`}>
-                            {(wmliResults.myWMLI_Share || 50) >= 65 ? 'Higher share' :
-                             (wmliResults.myWMLI_Share || 50) <= 35 ? 'Lower share' : 'Balanced share'}
-                          </div>
-                        </div>
-                        <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded">
-                          <div className="font-medium text-orange-900 dark:text-orange-100">Partner 2 Share</div>
-                          <div className="text-2xl font-bold text-orange-600">{wmliResults.partnerWMLI_Share || 50}%</div>
-                          <div className={`text-xs ${
-                            (wmliResults.partnerWMLI_Share || 50) >= 65 ? 'text-red-600' :
-                            (wmliResults.partnerWMLI_Share || 50) <= 35 ? 'text-red-600' : 'text-green-600'
-                          }`}>
-                            {(wmliResults.partnerWMLI_Share || 50) >= 65 ? 'Higher share' :
-                             (wmliResults.partnerWMLI_Share || 50) <= 35 ? 'Lower share' : 'Balanced share'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Metric</TableHead>
+                          <TableHead className="text-center">Partner 1</TableHead>
+                          <TableHead className="text-center">Partner 2</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <Brain className="h-4 w-4" />
+                              Mental Load Intensity
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="space-y-1">
+                              <div className={`text-lg font-bold ${
+                                (wmliResults.myWMLI_Intensity || 0) >= 75 ? 'text-red-600' :
+                                (wmliResults.myWMLI_Intensity || 0) >= 50 ? 'text-yellow-600' : 'text-green-600'
+                              }`}>
+                                {wmliResults.myWMLI_Intensity || 0}/100
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {(wmliResults.myWMLI_Intensity || 0) >= 75 ? 'Very high' :
+                                 (wmliResults.myWMLI_Intensity || 0) >= 50 ? 'Moderate' : 'Light'}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="space-y-1">
+                              <div className={`text-lg font-bold ${
+                                (wmliResults.partnerWMLI_Intensity || 0) >= 75 ? 'text-red-600' :
+                                (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? 'text-yellow-600' : 'text-green-600'
+                              }`}>
+                                {wmliResults.partnerWMLI_Intensity || 0}/100
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {(wmliResults.partnerWMLI_Intensity || 0) >= 75 ? 'Very high' :
+                                 (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? 'Moderate' : 'Light'}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant={Math.abs((wmliResults.myWMLI_Intensity || 0) - (wmliResults.partnerWMLI_Intensity || 0)) > 20 ? "destructive" : "secondary"}>
+                              {Math.abs((wmliResults.myWMLI_Intensity || 0) - (wmliResults.partnerWMLI_Intensity || 0)) > 20 ? "Imbalanced" : "Balanced"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <PieChart className="h-4 w-4" />
+                              Mental Load Share
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="space-y-1">
+                              <div className={`text-lg font-bold ${
+                                (wmliResults.myWMLI_Share || 50) >= 65 ? 'text-red-600' :
+                                (wmliResults.myWMLI_Share || 50) <= 35 ? 'text-red-600' : 'text-green-600'
+                              }`}>
+                                {wmliResults.myWMLI_Share || 50}%
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {(wmliResults.myWMLI_Share || 50) >= 65 ? 'Higher share' :
+                                 (wmliResults.myWMLI_Share || 50) <= 35 ? 'Lower share' : 'Balanced'}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="space-y-1">
+                              <div className={`text-lg font-bold ${
+                                (wmliResults.partnerWMLI_Share || 50) >= 65 ? 'text-red-600' :
+                                (wmliResults.partnerWMLI_Share || 50) <= 35 ? 'text-red-600' : 'text-green-600'
+                              }`}>
+                                {wmliResults.partnerWMLI_Share || 50}%
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {(wmliResults.partnerWMLI_Share || 50) >= 65 ? 'Higher share' :
+                                 (wmliResults.partnerWMLI_Share || 50) <= 35 ? 'Lower share' : 'Balanced'}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant={Math.abs((wmliResults.myWMLI_Share || 50) - (wmliResults.partnerWMLI_Share || 50)) > 15 ? "destructive" : "secondary"}>
+                              {Math.abs((wmliResults.myWMLI_Share || 50) - (wmliResults.partnerWMLI_Share || 50)) > 15 ? "Imbalanced" : "Balanced"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <BarChart3 className="h-4 w-4" />
+                              Visible Work Share
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="space-y-1">
+                              <div className="text-lg font-bold text-primary">
+                                {visibleResults.myVisiblePercentage}%
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Time-based tasks
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="space-y-1">
+                              <div className="text-lg font-bold text-primary">
+                                {visibleResults.partnerVisiblePercentage}%
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Time-based tasks
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant={Math.abs(visibleResults.myVisiblePercentage - visibleResults.partnerVisiblePercentage) > 20 ? "destructive" : "secondary"}>
+                              {Math.abs(visibleResults.myVisiblePercentage - visibleResults.partnerVisiblePercentage) > 20 ? "Imbalanced" : "Balanced"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
 
                     {/* Household Wellbeing Indicators */}
                     {(wmliResults.myFlags.highSubjectiveStrain || wmliResults.myFlags.fairnessRisk || wmliResults.myFlags.equityPriority ||
