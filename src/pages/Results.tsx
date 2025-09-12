@@ -202,8 +202,63 @@ const Results: React.FC = () => {
     .filter(r => !r.notApplicable)
     .forEach(myResponse => {
       const partnerResponse = partnerResponses.find(pr => pr.taskId === myResponse.taskId);
+      
+      // If no partner response, analyze for single-person couple hotspots
       if (!partnerResponse) {
-        console.log(`Debug - No partner response for task: ${myResponse.taskId}`);
+        console.log(`Debug - No partner response for task: ${myResponse.taskId}, analyzing single-person hotspots`);
+        
+        const myResp = getResponsibilityShare(myResponse);
+        const myBurden = myResponse.likertRating?.burden ?? null;
+        const myFairness = myResponse.likertRating?.fairness ?? null;
+        
+        const task = allTaskLookup[myResponse.taskId];
+        const taskName =
+          (task && 'title' in task) ? task.title :
+          (task && 'task_name' in task) ? task.task_name :
+          myResponse.taskId;
+
+        // High responsibility + high burden
+        if (myResp >= 0.7 && (myBurden ?? 0) >= 4) {
+          imbalances.push({
+            taskId: myResponse.taskId,
+            taskName,
+            type: 'imbalance',
+            imbalanceType: 'high-burden-responsibility',
+            priority: myResp * 100 + (myBurden ?? 0) * 15,
+            keyInsight: `You're carrying ${Math.round(myResp * 100)}% of this task and it feels very burdensome (${myBurden}/5). This could lead to burnout without support.`,
+            conversationPrompt: `What parts of ${taskName.toLowerCase()} feel most overwhelming? How could your partner help share this load?`,
+            tags: ['High Solo Burden'],
+            myResponsibility: myResp,
+            partnerResponsibility: 1 - myResp,
+            myBurden,
+            partnerBurden: null,
+            myFairness,
+            partnerFairness: null,
+            whoDoesMore: myResp > 0.6 ? 'You' : myResp < 0.4 ? 'Your partner' : 'Evenly shared',
+          });
+        }
+
+        // High responsibility + low fairness (feeling unacknowledged)
+        if (myResp >= 0.6 && (myFairness ?? 5) <= 2) {
+          imbalances.push({
+            taskId: myResponse.taskId,
+            taskName,
+            type: 'imbalance',
+            imbalanceType: 'fairness-disagreement',
+            priority: myResp * 100 + (5 - (myFairness ?? 5)) * 15,
+            keyInsight: `You handle ${Math.round(myResp * 100)}% of this task but feel it's unfairly distributed (${myFairness}/5). This suggests lack of recognition or support.`,
+            conversationPrompt: `How could your partner better acknowledge or help with ${taskName.toLowerCase()}?`,
+            tags: ['Unfair Distribution'],
+            myResponsibility: myResp,
+            partnerResponsibility: 1 - myResp,
+            myBurden,
+            partnerBurden: null,
+            myFairness,
+            partnerFairness: null,
+            whoDoesMore: myResp > 0.6 ? 'You' : myResp < 0.4 ? 'Your partner' : 'Evenly shared',
+          });
+        }
+        
         return;
       }
 
@@ -323,7 +378,10 @@ const Results: React.FC = () => {
       });
 
     // Sort by priority, take top 3
-    return imbalances.sort((a, b) => b.priority - a.priority).slice(0, 3);
+    console.log('Debug - Raw imbalances before sort:', imbalances);
+    const sortedHotspots = imbalances.sort((a, b) => b.priority - a.priority).slice(0, 3);
+    console.log('Debug - Final hotspots:', sortedHotspots);
+    return sortedHotspots;
   };
 
   const toggleSection = (section: keyof typeof openSections) => {
@@ -338,6 +396,10 @@ const Results: React.FC = () => {
   const hotspots = getHotspots();
   
   // Debug logging
+  console.log('Debug - Hotspots calculated:', {
+    hotspotsCount: hotspots.length,
+    hotspots: hotspots.map(h => ({ taskName: h.taskName, type: h.type, priority: h.priority }))
+  });
   console.log('Debug - Assessment data:', {
     isSingleAdult,
     isTogetherMode,
