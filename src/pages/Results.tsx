@@ -423,30 +423,29 @@ const Results: React.FC = () => {
       {/* Sticky Navigation */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-3">
-           <nav className="flex items-center justify-between">
-             <div className="flex items-center space-x-6 text-sm">
-               <button onClick={() => scrollToSection('overview')} className="hover:text-primary transition-colors">
-                 Big Numbers
-               </button>
-               <button onClick={() => scrollToSection('drivers')} className="hover:text-primary transition-colors">
-                 Imbalances
-               </button>
-               <button onClick={() => scrollToSection('intensity')} className="hover:text-primary transition-colors">
-                 Mental Load
-               </button>
-               <button onClick={() => scrollToSection('next-steps')} className="hover:text-primary transition-colors">
-                 Next Steps
-               </button>
-             </div>
-             <Button 
-               variant="outline" 
-               size="sm" 
-               onClick={() => navigate('/')}
-               className="text-sm"
-             >
-               Home
-             </Button>
-           </nav>
+          <nav className="flex items-center justify-between">
+            <div className="flex items-center space-x-6 text-sm">
+              <button onClick={() => scrollToSection('overview')} className="hover:text-primary transition-colors">
+                Overview
+              </button>
+              <button onClick={() => scrollToSection('drivers')} className="hover:text-primary transition-colors">
+                Drivers
+              </button>
+              <button onClick={() => scrollToSection('comparison')} className="hover:text-primary transition-colors">
+                Visible vs Mental
+              </button>
+              <button onClick={() => scrollToSection('intensity')} className="hover:text-primary transition-colors">
+                Intensity
+              </button>
+              <button onClick={() => scrollToSection('next-steps')} className="hover:text-primary transition-colors">
+                Next Steps
+              </button>
+            </div>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-1" />
+              Export Report
+            </Button>
+          </nav>
         </div>
       </div>
 
@@ -521,6 +520,41 @@ const Results: React.FC = () => {
                 ) : (
                   // Couple View - Both Partners' Results
                   <div className="space-y-6">
+                    {/* Household Status */}
+                    <div className="text-center p-6 rounded-lg border-2 border-dashed border-muted-foreground/30">
+                      <h3 className="text-lg font-semibold mb-2">Household Balance Status</h3>
+                      {(() => {
+                        const visibleGap = Math.abs(visibleResults.myVisiblePercentage - 50);
+                        const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
+                        const avgGap = (visibleGap + mentalGap) / 2;
+                        
+                        if (avgGap <= 8) {
+                          return (
+                            <div className="text-green-700">
+                              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                              <p className="text-lg font-medium">Well Balanced Partnership</p>
+                              <p className="text-sm text-muted-foreground">Both partners carry roughly equal shares of household work</p>
+                            </div>
+                          );
+                        } else if (avgGap <= 20) {
+                          return (
+                            <div className="text-amber-700">
+                              <MessageCircle className="h-8 w-8 mx-auto mb-2 text-amber-600" />
+                              <p className="text-lg font-medium">Some Imbalance Present</p>
+                              <p className="text-sm text-muted-foreground">One partner may be carrying more load - worth discussing</p>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div className="text-red-700">
+                              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-red-600" />
+                              <p className="text-lg font-medium">Significant Imbalance</p>
+                              <p className="text-sm text-muted-foreground">Workload distribution needs immediate attention</p>
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
 
                     {/* Both Partners' Individual Scores */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -896,6 +930,170 @@ const Results: React.FC = () => {
           </Collapsible>
         </Card>
 
+        {/* 3. Visible vs Mental */}
+        <Card id="comparison" className="border-2">
+          <Collapsible open={openSections.comparison} onOpenChange={() => toggleSection('comparison')}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Visible vs Mental Load
+                    </CardTitle>
+                    <CardDescription>How time and cognitive work compare</CardDescription>
+                  </div>
+                  {openSections.comparison ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Visible Time */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span className="font-medium">Visible Time Share</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        {isSingleAdult ? (
+                          <span>You: 100%</span>
+                        ) : (
+                          <>
+                            <span>You: {visibleResults.myVisiblePercentage}%</span>
+                            <span>Partner: {100 - visibleResults.myVisiblePercentage}%</span>
+                          </>
+                        )}
+                      </div>
+                      {isSingleAdult ? (
+                        <Progress value={100} className="h-3" />
+                      ) : (
+                        <div className="flex h-3 rounded-full overflow-hidden bg-muted border">
+                          <div 
+                            className="bg-blue-500"
+                            style={{ width: `${visibleResults.myVisiblePercentage}%` }}
+                          ></div>
+                          <div 
+                            className="bg-orange-500"
+                            style={{ width: `${100 - visibleResults.myVisiblePercentage}%` }}
+                          ></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mental Load */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4" />
+                      <span className="font-medium">Mental Load Share</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        {isSingleAdult ? (
+                          <span>You: 100%</span>
+                        ) : (
+                          <>
+                            <span>You: {wmliResults.myWMLI_Share || 50}%</span>
+                            <span>Partner: {100 - (wmliResults.myWMLI_Share || 50)}%</span>
+                          </>
+                        )}
+                      </div>
+                      {isSingleAdult ? (
+                        <Progress value={100} className="h-3" />
+                      ) : (
+                        <div className="flex h-3 rounded-full overflow-hidden bg-muted border">
+                          <div 
+                            className="bg-blue-500"
+                            style={{ width: `${wmliResults.myWMLI_Share || 50}%` }}
+                          ></div>
+                          <div 
+                            className="bg-orange-500"
+                            style={{ width: `${100 - (wmliResults.myWMLI_Share || 50)}%` }}
+                          ></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Household Equity Chart */}
+                {!isSingleAdult && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-center">Household Equity Overview</h4>
+                    <div className="w-full max-w-md mx-auto">
+                      <div className="flex h-8 rounded-full overflow-hidden border">
+                        <div 
+                          className="bg-blue-500 flex items-center justify-center text-white text-xs font-medium"
+                          style={{ width: `${wmliResults.myWMLI_Share || 50}%` }}
+                        >
+                          You {wmliResults.myWMLI_Share || 50}%
+                        </div>
+                        <div 
+                          className="bg-orange-500 flex items-center justify-center text-white text-xs font-medium"
+                          style={{ width: `${100 - (wmliResults.myWMLI_Share || 50)}%` }}
+                        >
+                          Partner {100 - (wmliResults.myWMLI_Share || 50)}%
+                        </div>
+                      </div>
+                      <div className="text-center mt-2">
+                        <span className="text-xs text-muted-foreground">
+                          Mental Load Distribution
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm">
+                    <strong>Pattern: </strong>
+                    {(() => {
+                      const visibleShare = visibleResults.myVisiblePercentage;
+                      const mentalShare = wmliResults.myWMLI_Share || 50;
+                      const diff = Math.abs(visibleShare - mentalShare);
+                      
+                      if (isSingleAdult) {
+                        return `Single household - You manage 100% of both time and mental load.`;
+                      }
+                      
+                      // For couples, first check if the distribution is fair (around 50%)
+                      const avgShare = (visibleShare + mentalShare) / 2;
+                      const fairnessGap = Math.abs(avgShare - 50);
+                      
+                      if (fairnessGap > 15) {
+                        // Significantly imbalanced household
+                        if (avgShare < 35) {
+                          return `Undercontributing - You carry only ${visibleShare}% of time and ${mentalShare}% of mental load. Consider taking on more responsibility.`;
+                        } else {
+                          return `Overcontributing - You carry ${visibleShare}% of time and ${mentalShare}% of mental load. This may lead to burnout.`;
+                        }
+                      } else if (fairnessGap > 8) {
+                        // Somewhat imbalanced but not extreme
+                        if (avgShare < 42) {
+                          return `Slight undercontribution - You carry ${visibleShare}% of time and ${mentalShare}% of mental load.`;
+                        } else {
+                          return `Slight overcontribution - You carry ${visibleShare}% of time and ${mentalShare}% of mental load.`;
+                        }
+                      } else {
+                        // Fair distribution, now check alignment between visible and mental
+                        if (diff <= 8) {
+                          return `Well balanced - You carry ${visibleShare}% of time and ${mentalShare}% of mental load. Good alignment!`;
+                        } else if (mentalShare > visibleShare) {
+                          return `High mental load - You carry ${visibleShare}% time but ${mentalShare}% mental load. You're doing more planning/monitoring.`;
+                        } else {
+                          return `High visible work - You carry ${visibleShare}% time but ${mentalShare}% mental load. Partner may handle more planning.`;
+                        }
+                      }
+                    })()}
+                  </p>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
 
         {/* 4. Mental Load Intensity */}
         <Card id="intensity" className="border-2">
