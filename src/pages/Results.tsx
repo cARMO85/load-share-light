@@ -653,7 +653,6 @@ const Results: React.FC = () => {
                           <TableHead>Metric</TableHead>
                           <TableHead className="text-center">Partner 1</TableHead>
                           <TableHead className="text-center">Partner 2</TableHead>
-                          <TableHead className="text-center">Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -672,10 +671,10 @@ const Results: React.FC = () => {
                               }`}>
                                 {wmliResults.myWMLI_Intensity || 0}/100
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <Badge variant={(wmliResults.myWMLI_Intensity || 0) >= 75 ? "destructive" : (wmliResults.myWMLI_Intensity || 0) >= 50 ? "secondary" : "default"} className="text-xs">
                                 {(wmliResults.myWMLI_Intensity || 0) >= 75 ? 'Very high' :
                                  (wmliResults.myWMLI_Intensity || 0) >= 50 ? 'Moderate' : 'Light'}
-                              </div>
+                              </Badge>
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
@@ -686,16 +685,11 @@ const Results: React.FC = () => {
                               }`}>
                                 {wmliResults.partnerWMLI_Intensity || 0}/100
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <Badge variant={(wmliResults.partnerWMLI_Intensity || 0) >= 75 ? "destructive" : (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? "secondary" : "default"} className="text-xs">
                                 {(wmliResults.partnerWMLI_Intensity || 0) >= 75 ? 'Very high' :
                                  (wmliResults.partnerWMLI_Intensity || 0) >= 50 ? 'Moderate' : 'Light'}
-                              </div>
+                              </Badge>
                             </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant={Math.abs((wmliResults.myWMLI_Intensity || 0) - (wmliResults.partnerWMLI_Intensity || 0)) > 20 ? "destructive" : "secondary"}>
-                              {Math.abs((wmliResults.myWMLI_Intensity || 0) - (wmliResults.partnerWMLI_Intensity || 0)) > 20 ? "Imbalanced" : "Balanced"}
-                            </Badge>
                           </TableCell>
                         </TableRow>
                         <TableRow>
@@ -713,10 +707,10 @@ const Results: React.FC = () => {
                               }`}>
                                 {wmliResults.myWMLI_Share || 50}%
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <Badge variant={(wmliResults.myWMLI_Share || 50) >= 65 || (wmliResults.myWMLI_Share || 50) <= 35 ? "destructive" : "default"} className="text-xs">
                                 {(wmliResults.myWMLI_Share || 50) >= 65 ? 'Higher share' :
                                  (wmliResults.myWMLI_Share || 50) <= 35 ? 'Lower share' : 'Balanced'}
-                              </div>
+                              </Badge>
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
@@ -727,16 +721,11 @@ const Results: React.FC = () => {
                               }`}>
                                 {wmliResults.partnerWMLI_Share || 50}%
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <Badge variant={(wmliResults.partnerWMLI_Share || 50) >= 65 || (wmliResults.partnerWMLI_Share || 50) <= 35 ? "destructive" : "default"} className="text-xs">
                                 {(wmliResults.partnerWMLI_Share || 50) >= 65 ? 'Higher share' :
                                  (wmliResults.partnerWMLI_Share || 50) <= 35 ? 'Lower share' : 'Balanced'}
-                              </div>
+                              </Badge>
                             </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant={Math.abs((wmliResults.myWMLI_Share || 50) - (wmliResults.partnerWMLI_Share || 50)) > 15 ? "destructive" : "secondary"}>
-                              {Math.abs((wmliResults.myWMLI_Share || 50) - (wmliResults.partnerWMLI_Share || 50)) > 15 ? "Imbalanced" : "Balanced"}
-                            </Badge>
                           </TableCell>
                         </TableRow>
                         <TableRow>
@@ -751,9 +740,9 @@ const Results: React.FC = () => {
                               <div className="text-lg font-bold text-primary">
                                 {visibleResults.myVisiblePercentage}%
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <Badge variant="outline" className="text-xs">
                                 Time-based tasks
-                              </div>
+                              </Badge>
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
@@ -761,15 +750,10 @@ const Results: React.FC = () => {
                               <div className="text-lg font-bold text-primary">
                                 {visibleResults.partnerVisiblePercentage}%
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <Badge variant="outline" className="text-xs">
                                 Time-based tasks
-                              </div>
+                              </Badge>
                             </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant={Math.abs(visibleResults.myVisiblePercentage - visibleResults.partnerVisiblePercentage) > 20 ? "destructive" : "secondary"}>
-                              {Math.abs(visibleResults.myVisiblePercentage - visibleResults.partnerVisiblePercentage) > 20 ? "Imbalanced" : "Balanced"}
-                            </Badge>
                           </TableCell>
                         </TableRow>
                       </TableBody>
