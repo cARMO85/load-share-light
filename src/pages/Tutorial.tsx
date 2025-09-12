@@ -155,10 +155,10 @@ const Tutorial: React.FC = () => {
           </div>
           
           {(demoRatings.groceryBurden > 0 && demoRatings.mealPlanBurden > 0) && (
-            <Card className="p-4 bg-success/10 border-success/30">
+            <Card className="p-4 bg-primary/5 border-primary/20">
               <div className="text-center space-y-2">
-                <CheckCircle className="h-6 w-6 text-success mx-auto" />
-                <p className="text-sm text-success-foreground">
+                <CheckCircle className="h-6 w-6 text-primary mx-auto" />
+                <p className="text-sm text-foreground">
                   Perfect! You've experienced the rating system. The assessment will use these burden ratings along with task assignments to calculate your mental load insights.
                 </p>
               </div>
