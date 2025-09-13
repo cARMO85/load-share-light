@@ -104,10 +104,6 @@ const Results: React.FC = () => {
 
   // Status determination
   const getStatusInfo = () => {
-    if (isSingleAdult) {
-      return { status: 'Single Household', color: 'bg-blue-500', description: 'Individual assessment complete' };
-    }
-
     const mentalGap = Math.abs((wmliResults.myWMLI_Share || 50) - 50);
     const hasHighBurden = wmliResults.myFlags.highSubjectiveStrain || wmliResults.partnerFlags?.highSubjectiveStrain;
     const hasFairnessRisk = wmliResults.myFlags.fairnessRisk || wmliResults.partnerFlags?.fairnessRisk;
@@ -123,51 +119,6 @@ const Results: React.FC = () => {
 
   // Data-driven imbalance detection with specific templates
   const getHotspots = () => {
-    if (isSingleAdult) {
-      // Individual: surface top drivers of subjective strain
-      const taskScores = state.taskResponses
-        .filter(r => !r.notApplicable && r.likertRating)
-        .map(response => {
-          const responsibility = response.mySharePercentage != null
-            ? response.mySharePercentage / 100
-            : response.assignment === 'me' ? 1
-            : response.assignment === 'partner' ? 0
-            : 0.5;
-
-          const burden = response.likertRating!.burden;   // 1–5
-          const fairness = response.likertRating!.fairness; // 1–5
-
-          const unfairness01 = (5 - fairness) / 4;      // 0–1
-          const burden01 = (burden - 1) / 4;            // 0–1
-
-          const driverScore = responsibility * ((burden01 + unfairness01) / 2);
-
-          const task = allTaskLookup[response.taskId];
-          const taskName =
-            (task && 'title' in task) ? task.title :
-            (task && 'task_name' in task) ? task.task_name :
-            response.taskId;
-
-          return {
-            taskId: response.taskId,
-            taskName,
-            type: 'individual' as const,
-            driverScore,
-            responsibility,
-            burden,
-            fairness,
-            tags: [
-              ...(burden >= 4 && responsibility >= 0.6 ? ['High burden'] : []),
-              ...(fairness <= 2 && responsibility >= 0.6 ? ['Unfairness concern'] : []),
-            ],
-          };
-        })
-        .sort((a, b) => b.driverScore - a.driverScore)
-        .slice(0, 3);
-
-      return taskScores;
-    }
-
     // Couples
     const partnerResponses = state.partnerTaskResponses || [];
     const imbalances: Array<{
@@ -652,108 +603,7 @@ const Results: React.FC = () => {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-6">
-                {isSingleAdult ? (
-                  // Single Adult - Show WMLI Breakdown
-                  <div className="space-y-6">
-                    {/* Big Numbers Display */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* Mental Load Intensity */}
-                      <div className={`p-6 rounded-lg text-center ${
-                        wmliResults.myWMLI_Intensity >= 75 ? 'bg-red-50 dark:bg-red-950/20 border border-red-200' :
-                        wmliResults.myWMLI_Intensity >= 50 ? 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200' :
-                        'bg-green-50 dark:bg-green-950/20 border border-green-200'
-                      }`}>
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <Brain className="h-5 w-5" />
-                          <span className="text-sm font-medium">Mental Load Intensity</span>
-                        </div>
-                        <div className={`text-4xl font-bold mb-2 ${
-                          wmliResults.myWMLI_Intensity >= 75 ? 'text-red-600' :
-                          wmliResults.myWMLI_Intensity >= 50 ? 'text-yellow-600' :
-                          'text-green-600'
-                        }`}>
-                          {wmliResults.myWMLI_Intensity}/100
-                        </div>
-                        <div className={`text-sm ${
-                          wmliResults.myWMLI_Intensity >= 75 ? 'text-red-700' :
-                          wmliResults.myWMLI_Intensity >= 50 ? 'text-yellow-700' :
-                          'text-green-700'
-                        }`}>
-                          {wmliResults.myWMLI_Intensity >= 75 ? 'Very high subjective workload' :
-                           wmliResults.myWMLI_Intensity >= 50 ? 'Moderate subjective workload' :
-                           'Light subjective workload'}
-                        </div>
-                      </div>
-                      
-                      {/* Mental Load Share */}
-                      <div className="p-6 rounded-lg text-center bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <PieChart className="h-5 w-5" />
-                          <span className="text-sm font-medium">Your Mental Load Share</span>
-                        </div>
-                        <div className="text-4xl font-bold text-blue-600 mb-2">
-                          {wmliResults.myWMLI_Share || 100}%
-                        </div>
-                        <div className="text-sm text-blue-700">
-                          Individual household
-                        </div>
-                      </div>
-                      
-                      {/* Visible Work Share */}
-                      <div className="p-6 rounded-lg text-center bg-purple-50 dark:bg-purple-950/20 border border-purple-200">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <BarChart3 className="h-5 w-5" />
-                          <span className="text-sm font-medium">Visible Work Share</span>
-                        </div>
-                        <div className="text-4xl font-bold text-purple-600 mb-2">
-                          {visibleResults.myVisiblePercentage}%
-                        </div>
-                        <div className="text-sm text-purple-700">
-                          Time-based tasks
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Evidence Flags */}
-                    {(wmliResults.myFlags.highSubjectiveStrain || wmliResults.myFlags.fairnessRisk || wmliResults.myFlags.equityPriority) && (
-                      <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200">
-                        <div className="flex items-start gap-3">
-                          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-amber-800 dark:text-amber-200 mb-2">Wellbeing Indicators</h4>
-                            <div className="space-y-2">
-                              {wmliResults.myFlags.highSubjectiveStrain && (
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="destructive" className="text-xs">High Subjective Strain</Badge>
-                                  <span className="text-sm text-amber-700 dark:text-amber-300">
-                                    Multiple tasks feel burdensome - consider support or simplification
-                                  </span>
-                                </div>
-                              )}
-                              {wmliResults.myFlags.fairnessRisk && (
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="border-orange-500 text-orange-600 text-xs">Fairness Risk</Badge>
-                                  <span className="text-sm text-amber-700 dark:text-amber-300">
-                                    Some tasks may feel unappreciated or unsupported
-                                  </span>
-                                </div>
-                              )}
-                              {wmliResults.myFlags.equityPriority && (
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="border-purple-500 text-purple-600 text-xs">Equity Priority</Badge>
-                                  <span className="text-sm text-amber-700 dark:text-amber-300">
-                                    Workload distribution may benefit from adjustment
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  // Couple View - Both Partners' Results Table
+                {/* Couple View - Both Partners' Results Table */}
                   <div className="space-y-6">
                     <Table>
                       <TableHeader>
@@ -943,7 +793,6 @@ const Results: React.FC = () => {
                       </div>
                     )}
                   </div>
-                )}
 
                 {/* Status Chip */}
                 <div className="flex justify-center">
@@ -1005,9 +854,11 @@ const Results: React.FC = () => {
                                 <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-200">
                                   <div className="text-sm font-medium text-blue-900 mb-1">Mental Load Impact</div>
                                   <p className="text-sm text-blue-800">
-                                    You handle {Math.round(hotspot.responsibility * 100)}% of this task, 
-                                    with burden rating of {hotspot.burden.toFixed(1)}/5 and fairness rating of {hotspot.fairness.toFixed(1)}/5.
-                                    Driver score: {hotspot.driverScore.toFixed(3)}
+                                    You handle {Math.round(hotspot.myResponsibility * 100)}% of this task, 
+                                    {hotspot.myBurden && hotspot.myFairness && (
+                                      <>with burden rating of {hotspot.myBurden.toFixed(1)}/5 and fairness rating of {hotspot.myFairness.toFixed(1)}/5.</>
+                                    )}
+                                    Priority score: {hotspot.priority.toFixed(1)}
                                   </p>
                                 </div>
                                 
@@ -1385,7 +1236,7 @@ const Results: React.FC = () => {
                               • <strong>{hotspot.taskName}:</strong> {
                                 hotspot.keyInsight 
                                   ? hotspot.keyInsight.split('.')[0] 
-                                  : `High driver score (${Math.round((hotspot.driverScore || 0) * 100)}%)`
+                                  : `Priority score: ${Math.round(hotspot.priority || 0)}`
                               }
                             </div>
                           ))}
