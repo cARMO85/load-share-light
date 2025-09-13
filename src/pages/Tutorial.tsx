@@ -232,118 +232,42 @@ const Tutorial: React.FC = () => {
                 </div>
               </div>
             </Card>
-            
-            <Card className="p-4 bg-muted/20">
-              <div className="space-y-3">
-                <h4 className="font-medium">Planning Weekly Meals</h4>
-                <p className="text-sm text-muted-foreground">How burdensome is this task? (1-5 scale)</p>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map(value => (
-                    <Button
-                      key={value}
-                      variant={demoRatings.mealPlanBurden === value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setDemoRatings(prev => ({ ...prev, mealPlanBurden: value }))}
-                      className="w-12"
-                    >
-                      {value}
-                    </Button>
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Not burdensome</span>
-                  <span>Very burdensome</span>
-                </div>
-              </div>
-            </Card>
           </div>
           
-          {(demoRatings.groceryBurden > 0 && demoRatings.mealPlanBurden > 0) && (
-            <Card className="p-4 bg-primary/5 border-primary/20">
-              <div className="text-center space-y-2">
-                <CheckCircle className="h-6 w-6 text-primary mx-auto" />
-                <p className="text-sm text-foreground">
-                  Perfect! You've experienced the rating system. The assessment will use these burden ratings along with task assignments to calculate your mental load insights.
+          <div className="bg-accent/5 p-5 rounded-lg border border-accent/20 space-y-4">
+            <h4 className="font-medium text-center">What You'll Also See: The "Acknowledged" Slider</h4>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                For each task, you'll also use a slider to indicate: <strong>"How much does your partner acknowledge/appreciate the work that goes into this task?"</strong>
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded border border-red-200 dark:border-red-800">
+                  <p className="text-sm font-medium text-red-700 dark:text-red-300">Low Acknowledgment (0-30%)</p>
+                  <p className="text-xs text-red-600 dark:text-red-400">"My partner doesn't realize how much mental effort this takes"</p>
+                </div>
+                <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded border border-green-200 dark:border-green-800">
+                  <p className="text-sm font-medium text-green-700 dark:text-green-300">High Acknowledgment (70-100%)</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">"My partner sees and appreciates the invisible work I do"</p>
+                </div>
+              </div>
+              <div className="bg-muted/30 p-3 rounded">
+                <p className="text-xs text-muted-foreground text-center">
+                  <strong>Why this matters:</strong> Tasks that feel burdensome AND unacknowledged create the highest stress and relationship tension
                 </p>
-              </div>
-            </Card>
-          )}
-        </div>
-      )
-    },
-    {
-      title: "Understanding Visible vs Invisible Work",
-      icon: <Lightbulb className="h-12 w-12 text-primary" />,
-      content: (
-        <div className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="p-5 bg-muted/20">
-              <h4 className="font-medium mb-3 text-center flex items-center gap-2 justify-center">
-                <Eye className="h-5 w-5 text-primary" />
-                Visible Work
-              </h4>
-              <div className="space-y-3">
-                <div className="bg-primary/5 p-3 rounded border border-primary/20">
-                  <p className="text-sm font-medium">Laundry Example</p>
-                  <p className="text-xs text-muted-foreground">"I did 3 loads this week"</p>
-                </div>
-                <div className="bg-primary/5 p-3 rounded border border-primary/20">
-                  <p className="text-sm font-medium">Dinner Example</p>
-                  <p className="text-xs text-muted-foreground">"I cooked Monday, Wednesday, Friday"</p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center italic">
-                Easy to see, count, and divide equally
-              </p>
-            </Card>
-            
-            <Card className="p-5 bg-secondary/10 border border-secondary/20">
-              <h4 className="font-medium mb-3 text-center flex items-center gap-2 justify-center">
-                <Brain className="h-5 w-5 text-secondary" />
-                Invisible Mental Load
-              </h4>
-              <div className="space-y-3">
-                <div className="bg-secondary/10 p-3 rounded border border-secondary/30">
-                  <p className="text-sm font-medium">Laundry Mental Load</p>
-                  <p className="text-xs text-muted-foreground">"Noticing clothes are dirty, checking if we have detergent, remembering to move clothes to dryer, knowing which items need special care"</p>
-                </div>
-                <div className="bg-secondary/10 p-3 rounded border border-secondary/30">
-                  <p className="text-sm font-medium">Dinner Mental Load</p>
-                  <p className="text-xs text-muted-foreground">"Planning meals, checking fridge contents, making grocery list, remembering dietary preferences, coordinating timing"</p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center italic">
-                Harder to see, often unacknowledged, creates mental burden
-              </p>
-            </Card>
-          </div>
-          
-          <div className="bg-accent/5 p-6 rounded-lg border border-accent/20">
-            <h4 className="font-medium mb-4 text-center">Why This Assessment Matters</h4>
-            <div className="grid gap-4 md:grid-cols-3 text-center">
-              <div>
-                <p className="text-sm font-medium text-foreground">Reveals Hidden Patterns</p>
-                <p className="text-xs text-muted-foreground mt-1">Shows who's really carrying the mental burden</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Creates Understanding</p>
-                <p className="text-xs text-muted-foreground mt-1">Helps partners see each other's contributions</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Improves Conversations</p>
-                <p className="text-xs text-muted-foreground mt-1">Provides data for better household negotiations</p>
               </div>
             </div>
           </div>
           
-          <div className="text-center space-y-3">
-            <p className="text-muted-foreground font-medium">
-              Most couples discover surprising imbalances they never realized existed
-            </p>
-            <p className="text-sm text-muted-foreground">
-              This creates better conversations and understanding, not blame or conflict.
-            </p>
-          </div>
+          {(demoRatings.groceryBurden > 0) && (
+            <Card className="p-4 bg-primary/5 border-primary/20">
+              <div className="text-center space-y-2">
+                <CheckCircle className="h-6 w-6 text-primary mx-auto" />
+                <p className="text-sm text-foreground">
+                  Perfect! You've experienced the rating system. The assessment will use burden ratings, acknowledgment levels, and task assignments to reveal your mental load patterns.
+                </p>
+              </div>
+            </Card>
+          )}
         </div>
       )
     },
