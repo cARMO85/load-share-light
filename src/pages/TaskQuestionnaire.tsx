@@ -97,11 +97,28 @@ const TaskQuestionnaire: React.FC = () => {
 
   // Organize tasks by category and filter by conditions
   const tasksByCategory = useMemo(() => {
-    // Filter tasks based on household setup - simplified for all tasks
+    // Filter tasks based on household setup conditions
     const filtered = allTasks.filter(task => {
-      const { children } = state.householdSetup;
+      const { children, isEmployed, partnerEmployed } = state.householdSetup;
       
-      // Show childcare tasks only if there are children
+      // Handle cognitive tasks with condition_trigger
+      if ('condition_trigger' in task) {
+        const triggers = task.condition_trigger;
+        
+        // Check if task should be shown based on conditions
+        if (triggers.includes('has_children') && children === 0) {
+          return false;
+        }
+        
+        if (triggers.includes('both_employed') && !(isEmployed && partnerEmployed)) {
+          return false;
+        }
+        
+        // 'all' and 'two_adults' conditions are always met for couples
+        return true;
+      }
+      
+      // Handle physical childcare tasks
       if (task.category === "Childcare" && children === 0) {
         return false;
       }

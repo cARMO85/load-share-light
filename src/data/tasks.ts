@@ -138,6 +138,67 @@ export const cognitiveTasks: CognitiveTask[] = [
     source_details: "Kin-keeping and Social Network Maintenance Studies",
     description: "Maintaining relationships with family and friends, organizing celebrations, and managing social obligations.",
     measurementType: 'likert'
+  },
+
+  // CHILDCARE-SPECIFIC TASKS (shown when children > 0)
+  {
+    id: "childcare_organization",
+    task_name: "Organizing childcare arrangements",
+    category: TASK_CATEGORIES.ANTICIPATION,
+    default_frequency: 'weekly',
+    condition_trigger: ["has_children"],
+    source: "Childcare Research",
+    source_details: "Hochschild (1989) - The Second Shift",
+    description: "Arranging childcare (nursery, babysitters, after-school care), researching and coordinating care options.",
+    measurementType: 'likert'
+  },
+  {
+    id: "children_education_activities",
+    task_name: "Managing children's education and activities",
+    category: TASK_CATEGORIES.MONITORING,
+    default_frequency: 'weekly',
+    condition_trigger: ["has_children"],
+    source: "Educational Psychology",
+    source_details: "Craig (2006) - Children's schedules and parental management",
+    description: "Managing school admin, homework support, extracurricular activities, and educational coordination.",
+    measurementType: 'likert'
+  },
+  {
+    id: "children_health_emotional_care",
+    task_name: "Children's health and emotional care",
+    category: TASK_CATEGORIES.EMOTIONAL_LABOUR,
+    default_frequency: 'weekly',
+    condition_trigger: ["has_children"],
+    source: "Child Development Research",
+    source_details: "Lareau (2011) - Emotional labor in parenting",
+    description: "Managing children's doctor visits, emotional well-being, daily health routines, and developmental support.",
+    measurementType: 'likert'
+  },
+
+  // DUAL-EMPLOYMENT TASKS (shown when both partners employed)
+  {
+    id: "work_life_balance_coordination",
+    task_name: "Balancing employment with household responsibilities",
+    category: TASK_CATEGORIES.DECISION_MAKING,
+    default_frequency: 'weekly',
+    condition_trigger: ["both_employed"],
+    source: "Work-Life Balance Research",
+    source_details: "Garey (1999), Milkie & Peltola (1999) - Dual-earner stress",
+    description: "Planning and coordinating to balance work schedules with home responsibilities, managing work-home conflicts.",
+    measurementType: 'likert'
+  },
+
+  // UNIVERSAL DISRUPTION MANAGEMENT
+  {
+    id: "disruption_management",
+    task_name: "Managing unexpected disruptions and changes",
+    category: TASK_CATEGORIES.IDENTIFICATION,
+    default_frequency: 'weekly',
+    condition_trigger: ["all"],
+    source: "Crisis Management Research",
+    source_details: "Daminger (2019) - Managing the unexpected",
+    description: "Adjusting plans when something goes wrong (child sick, appliance broken, last-minute changes), crisis coordination.",
+    measurementType: 'likert'
   }
 ];
 
