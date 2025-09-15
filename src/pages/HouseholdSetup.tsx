@@ -22,6 +22,12 @@ const HouseholdSetup: React.FC = () => {
   const handleNext = () => {
     setHouseholdSetup(setup);
     setCurrentStep(2);
+    navigate('/questionnaire');
+  };
+
+  const handleTutorial = () => {
+    setHouseholdSetup(setup);
+    setCurrentStep(2);
     navigate('/tutorial');
   };
 
@@ -137,23 +143,38 @@ const HouseholdSetup: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-6">
-              <Button 
-                onClick={handleNext} 
-                variant="hero" 
-                size="lg" 
-                className="w-full"
-              >
-                Continue to Tutorial
-              </Button>
-              
-              {/* Future versions note */}
-              <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-muted">
-                <p className="text-sm text-muted-foreground text-center">
-                  <strong>Coming Soon:</strong> We're working on versions for single parents and other family types. 
-                  This current version focuses on couples to ensure the best possible experience.
-                </p>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  onClick={handleNext} 
+                  variant="hero" 
+                  size="lg" 
+                  className="flex-1"
+                >
+                  Start Assessment
+                </Button>
+                
+                <Button 
+                  onClick={handleTutorial} 
+                  variant="outline" 
+                  size="lg" 
+                  className="flex-1"
+                >
+                  Take Tutorial First
+                </Button>
               </div>
+              
+              <p className="text-sm text-muted-foreground text-center">
+                Tutorial recommended for first-time users (5 min)
+              </p>
+            </div>
+
+            {/* Future versions note */}
+            <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-muted">
+              <p className="text-sm text-muted-foreground text-center">
+                <strong>Coming Soon:</strong> We're working on versions for single parents and other family types. 
+                This current version focuses on couples to ensure the best possible experience.
+              </p>
             </div>
           </CardContent>
         </Card>

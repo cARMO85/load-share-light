@@ -30,14 +30,9 @@ const Tutorial: React.FC = () => {
   });
 
   useEffect(() => {
-    // Check if user has completed or skipped tutorial before
-    const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
-    if (hasSeenTutorial === 'true') {
-      // Auto-skip to questionnaire if they've seen it before
-      setCurrentStep(2);
-      navigate('/questionnaire');
-    }
-  }, [navigate, setCurrentStep]);
+    // Set current step when entering tutorial
+    setCurrentStep(2);
+  }, [setCurrentStep]);
 
   const handleNext = () => {
     localStorage.setItem('hasSeenTutorial', 'true');

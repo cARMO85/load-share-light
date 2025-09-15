@@ -44,10 +44,19 @@ const Index = () => {
               </Button>
               
               <Button 
-                onClick={handleLearnMore} 
+                onClick={() => navigate('/tutorial')} 
                 variant="outline" 
                 size="lg" 
                 className="px-8 py-6 text-lg"
+              >
+                Take Tutorial
+              </Button>
+              
+              <Button 
+                onClick={handleLearnMore} 
+                variant="ghost" 
+                size="lg" 
+                className="px-6 py-6 text-base"
               >
                 Learn More
               </Button>
