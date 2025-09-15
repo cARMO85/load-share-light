@@ -146,6 +146,14 @@ const HouseholdSetup: React.FC = () => {
               >
                 Continue to Tutorial
               </Button>
+              
+              {/* Future versions note */}
+              <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-muted">
+                <p className="text-sm text-muted-foreground text-center">
+                  <strong>Coming Soon:</strong> We're working on versions for single parents and other family types. 
+                  This current version focuses on couples to ensure the best possible experience.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
