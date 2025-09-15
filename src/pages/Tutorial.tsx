@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +29,24 @@ const Tutorial: React.FC = () => {
     mealPlanBurden: 0
   });
 
+  useEffect(() => {
+    // Check if user has completed or skipped tutorial before
+    const hasSeenTutorial = localStorage.getItem('hasSeenTutorial');
+    if (hasSeenTutorial === 'true') {
+      // Auto-skip to questionnaire if they've seen it before
+      setCurrentStep(2);
+      navigate('/questionnaire');
+    }
+  }, [navigate, setCurrentStep]);
+
   const handleNext = () => {
+    localStorage.setItem('hasSeenTutorial', 'true');
+    setCurrentStep(2);
+    navigate('/questionnaire');
+  };
+
+  const handleSkip = () => {
+    localStorage.setItem('hasSeenTutorial', 'true');
     setCurrentStep(2);
     navigate('/questionnaire');
   };
@@ -315,6 +332,15 @@ const Tutorial: React.FC = () => {
         <ProgressSteps currentStep={2} totalSteps={4} steps={steps} />
         
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <Button 
+              variant="outline" 
+              onClick={handleSkip}
+              className="text-sm"
+            >
+              Skip Tutorial
+            </Button>
+          </div>
           <h1 className="text-4xl font-bold text-foreground mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Understanding Your Mental Load
           </h1>
