@@ -137,7 +137,7 @@ const Results: React.FC = () => {
       partnerBurden: number | null;
       myFairness: number | null;
       partnerFairness: number | null;
-      whoDoesMore: 'You' | 'Your partner' | 'Evenly shared';
+      whoDoesMore: 'One partner' | 'Other partner' | 'Evenly shared';
     }> = [];
 
     const getResponsibilityShare = (r: any) => {
@@ -177,8 +177,8 @@ const Results: React.FC = () => {
             type: 'imbalance',
             imbalanceType: 'high-burden-responsibility',
             priority: myResp * 100 + (myBurden ?? 0) * 15,
-            keyInsight: `You're carrying ${Math.round(myResp * 100)}% of this task and it feels burdensome (${myBurden}/5). This could lead to burnout without support.`,
-            conversationPrompt: `What parts of ${taskName.toLowerCase()} feel most overwhelming? How could your partner help share this load?`,
+            keyInsight: `One partner handles ${Math.round(myResp * 100)}% of this task and you both rate it as burdensome (${myBurden}/5). This workload concentration could lead to relationship strain.`,
+            conversationPrompt: `What parts of ${taskName.toLowerCase()} feel most overwhelming? How could responsibilities be better shared?`,
             tags: ['High Solo Burden'],
             myResponsibility: myResp,
             partnerResponsibility: 1 - myResp,
@@ -186,7 +186,7 @@ const Results: React.FC = () => {
             partnerBurden: null,
             myFairness,
             partnerFairness: null,
-            whoDoesMore: myResp > 0.6 ? 'You' : myResp < 0.4 ? 'Your partner' : 'Evenly shared',
+            whoDoesMore: myResp > 0.6 ? 'One partner' : myResp < 0.4 ? 'Other partner' : 'Evenly shared',
           });
         }
 
@@ -199,8 +199,8 @@ const Results: React.FC = () => {
             type: 'imbalance',
             imbalanceType: 'fairness-disagreement',
             priority: myResp * 100 + (5 - (myFairness ?? 5)) * 15,
-            keyInsight: `You handle ${Math.round(myResp * 100)}% of this task but feel it's unfairly distributed (${myFairness}/5). This suggests lack of recognition or support.`,
-            conversationPrompt: `How could your partner better acknowledge or help with ${taskName.toLowerCase()}?`,
+            keyInsight: `One partner handles ${Math.round(myResp * 100)}% of this task but you both rate it as unfairly distributed (${myFairness}/5). This suggests the need for better recognition or redistribution.`,
+            conversationPrompt: `How could this task be better acknowledged or shared between both partners?`,
             tags: ['Unfair Distribution'],
             myResponsibility: myResp,
             partnerResponsibility: 1 - myResp,
@@ -208,7 +208,7 @@ const Results: React.FC = () => {
             partnerBurden: null,
             myFairness,
             partnerFairness: null,
-            whoDoesMore: myResp > 0.6 ? 'You' : myResp < 0.4 ? 'Your partner' : 'Evenly shared',
+            whoDoesMore: myResp > 0.6 ? 'One partner' : myResp < 0.4 ? 'Other partner' : 'Evenly shared',
           });
         }
         
@@ -221,8 +221,8 @@ const Results: React.FC = () => {
             type: 'imbalance',
             imbalanceType: 'responsibility-gap',
             priority: (1 - myResp) * 100 + (myBurden ?? 0) * 10,
-            keyInsight: `Your partner handles ${Math.round((1 - myResp) * 100)}% of this task. Even though you do less, you still find it somewhat burdensome (${myBurden}/5), suggesting this area needs attention.`,
-            conversationPrompt: `Could you take on more of ${taskName.toLowerCase()} to better support your partner?`,
+            keyInsight: `One partner handles ${Math.round((1 - myResp) * 100)}% of this task, yet you both still find it somewhat burdensome (${myBurden}/5), suggesting the workload impact affects the relationship.`,
+            conversationPrompt: `How could the responsibilities for ${taskName.toLowerCase()} be redistributed more evenly?`,
             tags: ['Partner Overload'],
             myResponsibility: myResp,
             partnerResponsibility: 1 - myResp,
@@ -230,7 +230,7 @@ const Results: React.FC = () => {
             partnerBurden: null,
             myFairness,
             partnerFairness: null,
-            whoDoesMore: myResp > 0.6 ? 'You' : myResp < 0.4 ? 'Your partner' : 'Evenly shared',
+            whoDoesMore: myResp > 0.6 ? 'One partner' : myResp < 0.4 ? 'Other partner' : 'Evenly shared',
           });
         }
         
@@ -243,8 +243,8 @@ const Results: React.FC = () => {
             type: 'imbalance',
             imbalanceType: 'fairness-disagreement',
             priority: (myBurden ?? 0) * 20 + (5 - (myFairness ?? 5)) * 15,
-            keyInsight: `This task feels moderately burdensome (${myBurden}/5) and unfairly distributed (${myFairness}/5). The combination suggests need for better acknowledgment or redistribution.`,
-            conversationPrompt: `What would make ${taskName.toLowerCase()} feel more fairly shared between you and your partner?`,
+            keyInsight: `You both rate this task as moderately burdensome (${myBurden}/5) and unfairly distributed (${myFairness}/5). This combination suggests the household needs better acknowledgment or redistribution.`,
+            conversationPrompt: `What would make ${taskName.toLowerCase()} feel more fairly shared in the household?`,
             tags: ['Burden + Unfairness'],
             myResponsibility: myResp,
             partnerResponsibility: 1 - myResp,
@@ -252,7 +252,7 @@ const Results: React.FC = () => {
             partnerBurden: null,
             myFairness,
             partnerFairness: null,
-            whoDoesMore: myResp > 0.6 ? 'You' : myResp < 0.4 ? 'Your partner' : 'Evenly shared',
+            whoDoesMore: myResp > 0.6 ? 'One partner' : myResp < 0.4 ? 'Other partner' : 'Evenly shared',
           });
         }
         
@@ -277,7 +277,7 @@ const Results: React.FC = () => {
         const whoDoesMore =
           Math.abs(myResp - partnerResp) < 0.05
             ? 'Evenly shared'
-            : myResp > partnerResp ? 'You' : 'Your partner';
+            : myResp > partnerResp ? 'One partner' : 'Other partner';
 
       // ---------- Template 1: Responsibility gap ----------
       console.log(`Debug - Task ${taskName}: gap=${gapPct}%, myResp=${myResp}, partnerResp=${partnerResp}`);
@@ -334,8 +334,8 @@ const Results: React.FC = () => {
             type: 'imbalance',
             imbalanceType: 'high-burden-responsibility',
             priority: partnerResp * 100 + (partnerBurden ?? 0) * 10,
-            keyInsight: `Your partner carries ${Math.round(partnerResp * 100)}% of this responsibility and rates it very burdensome (${partnerBurden}/5). They may need support or redistribution.`,
-            conversationPrompt: 'What part of this task feels heaviest for your partner? Could some of it be shared or simplified?',
+            keyInsight: `One partner carries ${Math.round(partnerResp * 100)}% of this responsibility and you both rate it as very burdensome (${partnerBurden}/5). This concentration may need support or redistribution.`,
+            conversationPrompt: 'What part of this task feels heaviest? Could some of it be shared or simplified?',
             tags: ['High Burden & Responsibility'],
             myResponsibility: myResp,
             partnerResponsibility: partnerResp,
@@ -353,7 +353,7 @@ const Results: React.FC = () => {
           ((myFairness <= 2 && partnerFairness >= 4) || (myFairness >= 4 && partnerFairness <= 2));
 
         if (fairnessDisagrees) {
-          const unfairSide = (myFairness ?? 0) <= 2 ? 'You' : 'Your partner';
+          const unfairSide = (myFairness ?? 0) <= 2 ? 'One partner' : 'The other partner';
           imbalances.push({
             taskId: myResponse.taskId,
             taskName,
@@ -573,13 +573,13 @@ const Results: React.FC = () => {
         
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold">Your Household Work Assessment</h1>
+          <h1 className="text-3xl font-bold">Household Work Assessment Results</h1>
           <p className="text-lg text-muted-foreground">
             {isTogetherMode 
-              ? "Explore your results together and strengthen your partnership"
+              ? "Explore these results together and strengthen your partnership"
               : isSingleAdult 
-                ? "Insights about your household work patterns"
-                : "Share these insights with your partner"
+                ? "Insights about household work patterns"
+                : "Share these insights and discuss together"
             }
           </p>
         </div>
@@ -820,7 +820,7 @@ const Results: React.FC = () => {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5" />
-                      {isSingleAdult ? 'Tasks adding most to your mental load' : 'Biggest imbalances between partners'}
+                      {isSingleAdult ? 'Tasks adding most to mental load' : 'Biggest imbalances between partners'}
                     </CardTitle>
                     <CardDescription>
                       {isSingleAdult 
@@ -935,7 +935,7 @@ const Results: React.FC = () => {
                         <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
                         <h3 className="text-lg font-medium text-green-700 mb-2">Well-Balanced Partnership!</h3>
                         <p className="text-muted-foreground mb-4">
-                          Your household shows good balance without major imbalance hotspots.
+                          The household shows good balance without major imbalance hotspots.
                         </p>
                         <div className="p-3 bg-blue-50/30 rounded-lg border border-blue-200 max-w-md mx-auto">
                           <div className="text-sm font-medium text-blue-900 mb-1">Maintenance Prompt</div>
@@ -967,7 +967,7 @@ const Results: React.FC = () => {
                          <HelpCircle className="h-4 w-4" />
                        </Button>
                     </CardTitle>
-                    <CardDescription>Understanding your mental workload level</CardDescription>
+                    <CardDescription>Understanding mental workload levels</CardDescription>
                   </div>
                   {openSections.intensity ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
@@ -1016,7 +1016,7 @@ const Results: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Your Intensity */}
                       <div className="text-center space-y-4">
-                        <h4 className="font-medium text-blue-900">Your Mental Load Intensity</h4>
+                        <h4 className="font-medium text-blue-900">Partner A - Mental Load Intensity</h4>
                         <div className="relative w-48 h-24 mx-auto">
                           <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 rounded-t-full"></div>
                           <div 
@@ -1086,9 +1086,9 @@ const Results: React.FC = () => {
                             if (gap <= 10) {
                               return "Both partners experience similar levels of mental load intensity - good alignment in how burdensome household tasks feel.";
                             } else if (myIntensity > partnerIntensity) {
-                              return `You experience ${gap} points higher intensity than your partner. Consider discussing whether some responsibilities could be redistributed.`;
+                              return `One partner experiences ${gap} points higher intensity than the other. Consider discussing whether some responsibilities could be redistributed.`;
                             } else {
-                              return `Your partner experiences ${gap} points higher intensity than you. They may benefit from support or task redistribution.`;
+                              return `One partner experiences ${gap} points higher intensity than the other. They may benefit from support or task redistribution.`;
                             }
                           })()}
                         </p>
@@ -1101,7 +1101,7 @@ const Results: React.FC = () => {
                 <div className="space-y-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm">
-                      <strong>Mental Load Intensity (0–100):</strong> This score reflects how heavy {isSingleAdult ? 'your' : 'each partner\'s'} share of invisible household work feels — higher = more mental strain.
+                      <strong>Mental Load Intensity (0–100):</strong> This score reflects how heavy {isSingleAdult ? 'the' : 'each partner\'s'} share of invisible household work feels — higher = more mental strain.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
                       Technical: Average subjective workload across tasks (burden + unfairness, weighted by responsibility).
@@ -1180,22 +1180,22 @@ const Results: React.FC = () => {
                       <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">What's Working Well</h4>
                       <div className="text-sm text-green-700 dark:text-green-300 space-y-1">
                         {statusInfo.status === 'Balanced' && (
-                          <p>• Your household shows excellent balance in mental load distribution</p>
+                          <p>• The household shows excellent balance in mental load distribution</p>
                         )}
                         {wmliResults.myWMLI_Intensity >= 15 && wmliResults.myWMLI_Intensity <= 33 && (
-                          <p>• Your mental load intensity is at a healthy level ({wmliResults.myWMLI_Intensity.toFixed(0)}/100)</p>
+                          <p>• Partner A's mental load intensity is at a healthy level ({wmliResults.myWMLI_Intensity.toFixed(0)}/100)</p>
                         )}
                         {wmliResults.myWMLI_Intensity > 33 && wmliResults.myWMLI_Intensity <= 66 && (
-                          <p>• Your mental load intensity is moderate but manageable ({wmliResults.myWMLI_Intensity.toFixed(0)}/100)</p>
+                          <p>• Partner A's mental load intensity is moderate but manageable ({wmliResults.myWMLI_Intensity.toFixed(0)}/100)</p>
                         )}
                         {wmliResults.myWMLI_Intensity < 15 && !isSingleAdult && (
-                          <p>• Your mental load intensity is very low ({wmliResults.myWMLI_Intensity.toFixed(0)}/100) - this may indicate your partner is carrying most of the household burden</p>
+                          <p>• Partner A's mental load intensity is very low ({wmliResults.myWMLI_Intensity.toFixed(0)}/100) - this may indicate Partner B is carrying most of the household burden</p>
                         )}
                         {hotspots.length === 0 && (
-                          <p>• No major imbalance hotspots detected in your household patterns</p>
+                          <p>• No major imbalance hotspots detected in household patterns</p>
                         )}
                         {hotspots.length > 0 && hotspots.length <= 2 && (
-                          <p>• Only {hotspots.length} area{hotspots.length > 1 ? 's' : ''} need attention - most of your household runs smoothly</p>
+                          <p>• Only {hotspots.length} area{hotspots.length > 1 ? 's' : ''} need attention - most of the household runs smoothly</p>
                         )}
                         {!wmliResults.myFlags.highSubjectiveStrain && (
                           <p>• You're not experiencing excessive subjective strain from household work</p>
@@ -1207,12 +1207,12 @@ const Results: React.FC = () => {
                           <p>• Visible task time is reasonably balanced ({visibleResults.myVisiblePercentage.toFixed(0)}% vs {(100-visibleResults.myVisiblePercentage).toFixed(0)}%)</p>
                         )}
                         {isSingleAdult && (
-                          <p>• You're successfully managing your household independently</p>
+                          <p>• Successfully managing the household independently</p>
                         )}
                         {!isSingleAdult && Math.abs((wmliResults.myWMLI_Share || 50) - 50) <= 10 && (
                           <p>• Mental load sharing is well-balanced ({(wmliResults.myWMLI_Share || 50).toFixed(0)}% vs {(100-(wmliResults.myWMLI_Share || 50)).toFixed(0)}%)</p>
                         )}
-                        <p>• Taking this assessment demonstrates your commitment to household equity and awareness</p>
+                        <p>• Taking this assessment demonstrates commitment to household equity and awareness</p>
                       </div>
                     </div>
                   </div>
@@ -1228,7 +1228,7 @@ const Results: React.FC = () => {
                     {hotspots.length > 0 && (
                       <div className="p-3 border rounded-lg bg-red-50 dark:bg-red-950/20 border-red-200">
                         <div className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">
-                          Priority: Address Your {hotspots.length} Household Hotspot{hotspots.length > 1 ? 's' : ''}
+                          Priority: Address {hotspots.length} Household Hotspot{hotspots.length > 1 ? 's' : ''}
                         </div>
                         <div className="text-sm text-red-700 dark:text-red-300 space-y-1">
                           {hotspots.map((hotspot, index) => (
@@ -1251,7 +1251,7 @@ const Results: React.FC = () => {
                           High Mental Load Alert
                         </div>
                         <div className="text-sm text-orange-700 dark:text-orange-300">
-                          • Your mental load intensity is {wmliResults.myWMLI_Intensity.toFixed(0)}/100 - consider reducing burden or seeking support
+                          • Partner A's mental load intensity is {wmliResults.myWMLI_Intensity.toFixed(0)}/100 - consider reducing burden or seeking support
                         </div>
                       </div>
                     )}
@@ -1263,7 +1263,7 @@ const Results: React.FC = () => {
                           Household Imbalance Alert
                         </div>
                         <div className="text-sm text-red-700 dark:text-red-300">
-                          • Your mental load intensity is very low ({wmliResults.myWMLI_Intensity.toFixed(0)}/100), suggesting your partner may be overwhelmed with household responsibilities. Consider taking on more tasks to achieve better balance.
+                          • Partner A's mental load intensity is very low ({wmliResults.myWMLI_Intensity.toFixed(0)}/100), suggesting Partner B may be overwhelmed with household responsibilities. Consider redistributing tasks to achieve better balance.
                         </div>
                       </div>
                     )}
@@ -1299,7 +1299,7 @@ const Results: React.FC = () => {
                           Recognition & Fairness
                         </div>
                         <div className="text-sm text-amber-700 dark:text-amber-300">
-                          • Address acknowledgment and appreciation for your household contributions
+                          • Address acknowledgment and appreciation for household contributions
                         </div>
                       </div>
                     )}
