@@ -1,0 +1,11 @@
+# Include everything in src and public
+src/**
+public/**
+
+# Also include configs and root files
+*.json
+*.ts
+*.tsx
+*.css
+*.md
+*.yml
